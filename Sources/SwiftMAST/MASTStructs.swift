@@ -61,7 +61,9 @@ public struct MASTRequest {
          Parameters:
          dataSet: The MAST data set subfolder
          */
-        var url = URLComponents(string: (self.searchType == .mission) ? APIUrl : scsAPIUrl)
+        var path = (self.searchType == .mission) ? APIUrl : scsAPIUrl
+        path = path.replacingOccurrences(of: "dataSet", with: dataSet.id)
+        var url = URLComponents(string: path)
         url!.queryItems = Array(parameters.keys).map {URLQueryItem(name: $0, value: parameters[$0]!)}
             return url!.url!
         }
