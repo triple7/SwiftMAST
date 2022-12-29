@@ -51,7 +51,7 @@ public class SwiftMAST:NSObject {
 
  extension SwiftMAST: URLSessionDelegate {
 
-     func getTargetByMission(target: String, mission: MASTDataSet, _ closure: @escaping (Bool)-> Void) {
+     public func getTableByMission(target: String, mission: MASTDataSet, _ closure: @escaping (Bool)-> Void) {
          /** Requests a mission related table
           Adds a table into the targets dictionary and adds a response type for further processing
           Params:
@@ -91,7 +91,7 @@ public class SwiftMAST:NSObject {
      task.resume()
      }
 
-     func getTableByConeSearch(ra: Float, dec: Float, radius: Float, mission: MASTDataSet, _ closure: @escaping (Bool)-> Void) {
+     public func getTableByConeSearch(ra: Float, dec: Float, radius: Float, mission: MASTDataSet, _ closure: @escaping (Bool)-> Void) {
          /** Requests a cone based search
           Adds a table into the targets dictionary and adds a response type for further processing
           Params:
