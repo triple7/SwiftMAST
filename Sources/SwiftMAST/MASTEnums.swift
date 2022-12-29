@@ -10,6 +10,10 @@ import Foundation
 public typealias MGP = MASTGeneralParameter
 
 public enum MASTGeneralParameter:String, CaseIterable, Identifiable {
+    /** MAST general parameters
+     reference [general parameters](https://archive.stsci.edu/vo/help/search_help.html)
+     */
+    case target /* target name as identifiable string"*/
  case  resolver /* Character :
   "NED",
   "SIMBAD",
@@ -18,6 +22,7 @@ public enum MASTGeneralParameter:String, CaseIterable, Identifiable {
 case  radius /* Float : Range: 0.0 - ?*/
 case  ra /* Float : Range: 0.0 - 360.0*/
 case  dec /* Float : Range: -90.0 - 90.0*/
+    case SR /* search radius in degrees*/
 case  equinox /* Character :  J2000, B1900, B1950*/
 case  selectedColumnsCsv /* Character : Example: hut_target_name,hut_data_id*/
 case  ordercolumn1 /* Character : Example: ang_sep*/
@@ -263,7 +268,8 @@ case .hpol: return "ground based spetropolarimater"
 public enum MASTSearchType:String, CaseIterable, Identifiable {
     case mission
     case simpleCone
-    case imageAccess
+    case image
+    case spectra
     
     public var id:String {
         return self.rawValue
@@ -273,7 +279,41 @@ public enum MASTSearchType:String, CaseIterable, Identifiable {
         switch self {
         case .mission: return "Mission search"
         case .simpleCone: return "Simple cone search"
-        case .imageAccess: return "Simple image access protocol"
+        case .image: return "Simple image access protocol"
+        case .spectra: return "Simple spectra Access protocol"
+        }
+    }
+    
+    var defaultParameters:[MGP: String] {
+        switch self {
+        case .mission:
+            return [
+                MGP.outputformat: "JSON",
+                MGP.makedistinct: "on",
+                MGP.max_records: "20",
+                MGP.verb: "3"
+            ]
+        case .simpleCone:
+            return [
+                MGP.outputformat: "JSON",
+                MGP.makedistinct: "on",
+                MGP.max_records: "20",
+                MGP.verb: "3"
+            ]
+        case .image:
+            return [
+                MGP.outputformat: "JSON",
+                MGP.makedistinct: "on",
+                MGP.max_records: "20",
+                MGP.verb: "3"
+            ]
+        case .spectra:
+            return [
+                MGP.outputformat: "JSON",
+                MGP.makedistinct: "on",
+                MGP.max_records: "20",
+                MGP.verb: "3"
+            ]
         }
     }
 }

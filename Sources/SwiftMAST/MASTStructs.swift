@@ -34,11 +34,25 @@ public struct MASTRequest {
     private(set) var parameters:[String: String]
     let searchType:MASTSearchType
     
-    public init(searchType: MASTSearchType, parameters: [MGP: Any]) {
+    public init(target: String, searchType: MASTSearchType) {
         self.searchType = searchType
+        var parameters = searchType.defaultParameters
+        parameters[MGP.target] = target
         self.parameters = [String:String]()
         for key in parameters.keys {
-            self.parameters[key.id] = parameters[key] as? String ?? ""
+            self.parameters[key.id] = parameters[key]
+        }
+    }
+
+    public init(ra: Float, dec: Float, radius: Float, searchType: MASTSearchType) {
+        self.searchType = searchType
+        var parameters = searchType.defaultParameters
+        parameters[MGP.ra] = "\(ra)"
+                   parameters[MGP.dec] = "\(dec)"
+                   parameters[MGP.SR] = "\(radius)"
+        self.parameters = [String:String]()
+        for key in parameters.keys {
+            self.parameters[key.id] = parameters[key]
         }
     }
 
