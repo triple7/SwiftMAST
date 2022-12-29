@@ -1,2 +1,3 @@
-# SwiftFits
-Swift wrapper of the NASA cFitsIO library
+# SwiftMAST
+
+A description of this package.
