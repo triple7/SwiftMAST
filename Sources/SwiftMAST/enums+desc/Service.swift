@@ -260,6 +260,7 @@ public enum MASTService:String, CaseIterable, Identifiable {
     
     public func json(parameters: [MAP: Any])->Data {
         let json = MASTJson(service: self.id, params: MAJP(params: parameters))
+        print(json)
            let data = try! JSONEncoder().encode(json)
         return data
     }
