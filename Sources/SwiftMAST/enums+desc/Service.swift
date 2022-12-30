@@ -262,6 +262,8 @@ public enum MASTService:String, CaseIterable, Identifiable {
         let json = MASTJson(service: self.id, params: MAJP(params: parameters))
         print(json)
            let data = try! JSONEncoder().encode(json)
+        let newJson = try! JSONSerialization.jsonObject(with: data, options: [])
+        print(newJson)
         return data
     }
 }
