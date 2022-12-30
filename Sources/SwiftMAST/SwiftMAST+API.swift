@@ -14,12 +14,11 @@ extension SwiftMAST {
      These methods facilitate accessing, requesting and download Json/media and are composed of all the available MAST service queries, with a swift flavour.
      */
     
-    public func createRequest(url: URL, json: Data)->URLRequest {
+    public func createRequest(url: URL)->URLRequest {
         var request = URLRequest(url: url)
         request.setValue("application/x-www-form-urlencoded",forHTTPHeaderField: "Content-Type")
         request.setValue("text/plain",forHTTPHeaderField: "Accept")
         request.httpMethod = "POST"
-        request.httpBody = json
         return request
     }
     
@@ -30,13 +29,12 @@ extension SwiftMAST {
          closure: whether request was successful
          */
         
-        let url = MASTRequest(searchType: .apiRequest).getApiUrl()
-        
         let service = Service.Mast_Name_Lookup
         let json = service.json(parameters: [MAP.input: target, MAP.format: "json"])
 
-        let request = createRequest(url: url, json: json)
-        print(request.httpBody!)
+        let url = MASTRequest(searchType: .apiRequest).getApiUrl(json: json)
+        
+        let request = createRequest(url: url)
         print(request.url!)
         let configuration = URLSessionConfiguration.ephemeral
     let queue = OperationQueue.main

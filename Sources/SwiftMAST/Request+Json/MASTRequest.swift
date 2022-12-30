@@ -57,9 +57,12 @@ public struct MASTRequest {
             return url!.url!
         }
 
-    func getApiUrl()->URL {
+    func getApiUrl(json: Data)->URL {
+        let text = String(decoding: json, as: UTF8.self)
+
         let path = (self.searchType == .apiRequest) ? apiRequestUrl : apiDownloadUrl
-        let url = URLComponents(string: path)
+        var url = URLComponents(string: path)
+        url?.queryItems = [URLQueryItem(name: "request", value: parameters[text]!)]
         return url!.url!
     }
 }
