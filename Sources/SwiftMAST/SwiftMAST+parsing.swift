@@ -7,8 +7,6 @@
 
 import Foundation
 
-
-
  extension SwiftMAST {
 
      internal func parseCsvTable(text: String)->MASTTarget {

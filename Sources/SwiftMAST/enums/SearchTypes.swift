@@ -7,12 +7,13 @@
 
 import Foundation
 
-
 public enum MASTSearchType:String, CaseIterable, Identifiable {
     case mission
     case simpleCone
     case image
     case spectra
+    case apiRequest
+    case apiDownload
     
     public var id:String {
         return self.rawValue
@@ -24,6 +25,8 @@ public enum MASTSearchType:String, CaseIterable, Identifiable {
         case .simpleCone: return "Simple cone search"
         case .image: return "Simple image access protocol"
         case .spectra: return "Simple spectra Access protocol"
+        case .apiRequest: return "MAST API request"
+        case .apiDownload: return "MAST API download"
         }
     }
     
@@ -57,6 +60,7 @@ public enum MASTSearchType:String, CaseIterable, Identifiable {
                 MGP.max_records: "20",
                 MGP.verb: "3"
             ]
+        default: return [MGP: String]()
         }
     }
 }

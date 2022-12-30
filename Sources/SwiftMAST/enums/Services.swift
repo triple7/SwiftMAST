@@ -346,10 +346,12 @@ public enum MASTTicField:String, CaseIterable, Identifiable {
     case w3mag
     case w4mag
     case zmag
-
+    
     public var id:String {
         return self.rawValue
     }
-    
-    
+
+    public var json:String {
+        return "test"
+    }
 }
