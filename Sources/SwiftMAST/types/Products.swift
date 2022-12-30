@@ -7,7 +7,9 @@
 
 import Foundation
 
-public enum MASTProducts:String, CaseIterable, Identifiable {
+public typealias Products = MASTProductsField
+
+public enum MASTProductsField:String, CaseIterable, Identifiable {
  case calib_level
 case dataURI
 case dataproduct_type

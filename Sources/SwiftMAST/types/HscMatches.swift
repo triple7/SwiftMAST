@@ -7,7 +7,10 @@
 
 import Foundation
 
-public enum MASTHscmatches:String, CaseIterable, Identifiable {
+
+public typealias HSCMatches = MASTHscmatchesField
+
+public enum MASTHscmatchesField:String, CaseIterable, Identifiable {
  case AbsCorr
 case Aperture
 case CI

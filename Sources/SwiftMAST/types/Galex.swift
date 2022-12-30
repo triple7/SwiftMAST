@@ -6,8 +6,9 @@
 //
 
 import Foundation
+public typealias Galex = MASTGalexField
 
-public enum MASTGalex:String, CaseIterable, Identifiable {
+public enum MASTGalexField:String, CaseIterable, Identifiable {
  case IAUName
 case MatchDEC
 case MatchID

@@ -6,7 +6,9 @@
 
 import Foundation
 
-public enum MASTJwstinstrument:String, CaseIterable, Identifiable {
+public typealias JWSTInstruments = MASTJwstinstrumentField
+
+public enum MASTJwstinstrumentField:String, CaseIterable, Identifiable {
  case nextend
  
 public var id:String {

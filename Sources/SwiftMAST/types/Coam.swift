@@ -6,8 +6,9 @@
 //
 
 import Foundation
+public typealias Coam = MASTCoamField
 
-public enum MASTCoam:String, CaseIterable, Identifiable {
+public enum MASTCoamField:String, CaseIterable, Identifiable {
  case calib_level
 case dataRights
 case dataURL

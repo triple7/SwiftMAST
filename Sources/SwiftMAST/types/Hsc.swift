@@ -6,8 +6,10 @@
 //
 
 import Foundation
+typealias HSC = MASTHscField
 
-public enum MASTHsc:String, CaseIterable, Identifiable {
+
+public enum MASTHscField:String, CaseIterable, Identifiable {
  case A_F435W
 case A_F435W_MAD
 case A_F435W_N

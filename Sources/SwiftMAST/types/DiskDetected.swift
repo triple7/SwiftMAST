@@ -6,9 +6,9 @@
 //
 
 import Foundation
+public typealias DiskDetected = MASTDiskdetectedField
 
-
-public enum MASTDiskdetected:String, CaseIterable, Identifiable {
+public enum MASTDiskdetectedField:String, CaseIterable, Identifiable {
  case A_contamination
 case G_contamination
 case P_contamination

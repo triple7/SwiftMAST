@@ -6,8 +6,9 @@
 //
 
 import Foundation
+public typealias HSCSpectra = MASTHscspectraField
 
-public enum MASTHscspectra:String, CaseIterable, Identifiable {
+public enum MASTHscspectraField:String, CaseIterable, Identifiable {
  case Aperture
 case DatasetName
 case Dec
