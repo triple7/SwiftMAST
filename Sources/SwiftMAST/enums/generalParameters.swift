@@ -7,7 +7,6 @@
 
 import Foundation
 
-
 public typealias MGP = MASTGeneralParameter
 
 public enum MASTGeneralParameter:String, CaseIterable, Identifiable {
