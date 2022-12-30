@@ -36,6 +36,8 @@ extension SwiftMAST {
         let json = service.json(parameters: [MAP.input: target, MAP.format: "json"])
 
         let request = createRequest(url: url, json: json)
+        print(request.httpBody!)
+        print(request.url!)
         let configuration = URLSessionConfiguration.ephemeral
     let queue = OperationQueue.main
         let session = URLSession(configuration: configuration, delegate: self, delegateQueue: queue)
