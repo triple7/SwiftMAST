@@ -23,7 +23,7 @@ public struct MASTSyslog:CustomStringConvertible {
     }
     
     public var description:String {
-        return "\(log): \(message)"
+        return "MAST: \(log)-\(message) \(timecode)"
     }
 }
 
@@ -83,7 +83,7 @@ public class SwiftMAST:NSObject {
              }
 
              let text = String(decoding: data!, as: UTF8.self)
-             let table = self?.parseCsvTable(text: text)
+             let table = self?.parseJson(text: text)
              self?.targets[mission.id] = table
              self?.sysLog.append(MASTSyslog(log: .Ok, message: "ephemerus downloaded"))
          closure(true)

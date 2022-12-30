@@ -9,11 +9,15 @@ import Foundation
 
  extension SwiftMAST {
 
+     internal func parseJson(text: String)->MASTTarget {
+         return MASTTarget(header: [String](), data: [[String]]())
+     }
+
      internal func parseCsvTable(text: String)->MASTTarget {
          var table = text.components(separatedBy: "\n")
          let header = table.removeFirst().components(separatedBy: ",")
          let rows = table.map{$0.components(separatedBy: ",")}
          return MASTTarget(header: header, data: rows)
      }
-     
+
 }

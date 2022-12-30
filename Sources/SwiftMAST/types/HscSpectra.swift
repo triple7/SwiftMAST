@@ -6,6 +6,7 @@
 //
 
 import Foundation
+
 public typealias HSCSpectra = MASTHscspectraField
 
 public enum MASTHscspectraField:String, CaseIterable, Identifiable {

@@ -6,7 +6,9 @@
 
 import Foundation
 
-public enum MASTServices:String, CaseIterable, Identifiable {
+public typealias Service = MASTService
+
+public enum MASTService:String, CaseIterable, Identifiable {
     case Mast_Catalogs_Filtered_Tic
     case Mast_Catalogs_Filtered_Tic_Rows
     case Mast_Catalogs_Filtered_Tic_Position
@@ -256,8 +258,10 @@ public enum MASTServices:String, CaseIterable, Identifiable {
         }
     }
     
-    public func json(parameters: [MAP: Any])->MASTJson {
-        return MASTJson(service: self.id, params: MAJP(params: parameters))
+    public func json(parameters: [MAP: Any])->Data {
+        let json = MASTJson(service: self.id, params: MAJP(params: parameters))
+           let data = try! JSONEncoder().encode(json)
+        return data
     }
 }
 
