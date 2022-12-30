@@ -82,8 +82,7 @@ public class SwiftMAST:NSObject {
                  closure(false)
              }
 
-             let text = String(decoding: data!, as: UTF8.self)
-             let table = self?.parseJson(text: text)
+             let table = self?.parseJson(data: data!)
              self?.targets[mission.id] = table
              self?.sysLog.append(MASTSyslog(log: .Ok, message: "ephemerus downloaded"))
          closure(true)

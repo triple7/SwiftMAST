@@ -5,7 +5,7 @@
 //  Created by Yuma decaux on 30/12/2022.
 //
 
-enum QValue: Decodable {
+enum QValue:Decodable {
     /** Quantum value which collapses to a working type
      for decodable Json returns of any type
      */
@@ -37,7 +37,7 @@ enum QValue: Decodable {
         
         throw QuantumError.missingValue
     }
-    
+
     enum QuantumError:Error {
         case missingValue
     }

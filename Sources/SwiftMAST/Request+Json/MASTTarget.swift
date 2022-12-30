@@ -13,16 +13,16 @@ public struct MASTTarget {
      for all MAST search table requests.
      The dictionary is further processed from the associated search type
      */
-    private let header:[String]
-    private let data:[[String]]
+    private let fields:[String]
+    private let values:[[String]]
     
-    public init(header: [String], data:[[String]]) {
-        self.header = header
-        self.data = data
+    public init(fields: [String], values:[[String]]) {
+        self.fields = fields
+        self.values = values
     }
     
-    public func headers()->[String] {
-        return self.header
+    public func header()->[String] {
+        return self.fields
     }
 }
 
