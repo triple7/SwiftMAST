@@ -63,7 +63,7 @@ print(text)
         let path = (self.searchType == .apiRequest) ? apiRequestUrl : apiDownloadUrl
         var url = URLComponents(string: path)
         print(url)
-        url?.queryItems = [URLQueryItem(name: "request", value: parameters[text]!)]
+        url?.queryItems = [URLQueryItem(name: "request", value: text)]
         return url!.url!
     }
 }
