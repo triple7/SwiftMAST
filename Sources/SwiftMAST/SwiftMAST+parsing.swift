@@ -11,7 +11,17 @@ import Foundation
 /** MAST request return type parsing functions
  */
      
-     internal func parseJson(data: Data)->MASTTarget {
+     internal func parseXml(data: Data)->MASTTable {
+         let text = String(decoding: data, as: UTF8.self)
+         print(text)
+         var table = MASTTable()
+         let parser = XMLParser(data: data)
+         parser.delegate = table
+         let result = parser.parse()
+return table
+     }
+
+     internal func parseJson(data: Data)->MASTTable {
          let text = String(decoding: data, as: UTF8.self)
          print(text)
 
@@ -21,14 +31,14 @@ import Foundation
          for row in payload.data {
              values.append(fields.map{String(row[$0].debugDescription)})
          }
-         return MASTTarget(fields: fields, values: values)
+         return MASTTable(fields: fields, values: values)
      }
 
-     internal func parseCsvTable(text: String)->MASTTarget {
+     internal func parseCsvTable(text: String)->MASTTable {
          var table = text.components(separatedBy: "\n")
          let header = table.removeFirst().components(separatedBy: ",")
          let rows = table.map{$0.components(separatedBy: ",")}
-         return MASTTarget(fields: header, values: rows)
+         return MASTTable(fields: header, values: rows)
      }
 
 }

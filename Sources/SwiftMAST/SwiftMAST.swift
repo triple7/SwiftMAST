@@ -35,14 +35,14 @@ public class SwiftMAST:NSObject {
      * progress: progress in percentage of download for a target
      * expectedContentLength: size in kbytes of data
      */
-    public var targets:[String: MASTTarget]
+    public var targets:[String: MASTTable]
     private var buffer:Int!
     public var progress:Float?
     private var expectedContentLength:Int?
     public var sysLog:[MASTSyslog]!
     
     public override init() {
-        self.targets = [String: MASTTarget]()
+        self.targets = [String: MASTTable]()
         self.buffer = 0
         self.sysLog = [MASTSyslog]()
     }
