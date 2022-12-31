@@ -13,6 +13,7 @@ public enum MASTAPIReturnType:String, CaseIterable, Identifiable {
     case extjs
     case csv
     case votable
+    case xml
     
     public var id:String {
         return self.rawValue

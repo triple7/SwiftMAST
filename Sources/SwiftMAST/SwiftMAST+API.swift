@@ -14,19 +14,16 @@ extension SwiftMAST {
      These methods facilitate accessing, requesting and download Json/media and are composed of all the available MAST service queries, with a swift flavour.
      */
     
-    
-    public func resolveName(target: String, _ closure: @escaping (Bool)-> Void) {
+    public func quryMast(service: Service, params: [MAP: Any], returnType: APIReturnType,_ closure: @escaping (Bool)-> Void) {
         /** Requests a lookup on a given identifiable name
          Params:
-         target: identifiable target name
+         service: service to query
+         params: key/value dictionary
+         returnType: json/xml
          closure: whether request was successful
          */
         
-//        let service = Service.Mast_Name_Lookup
-//        let json = service.json(parameters: [MAP.input: target])
-
-                let missions = Service.Mast_Missions_List
-        let json = missions.json(parameters: [MAP: String]())
+        let json = service.json(parameters: params)
 
         let url = MASTRequest(searchType: .apiRequest).getApiUrl(json: json)
         
@@ -52,9 +49,17 @@ extension SwiftMAST {
                 return
             }
 
-            let table = self?.parseXml(data: data!)
-            self?.targets["lookup-\(target)"] = table
-            self?.sysLog.append(MASTSyslog(log: .Ok, message: "lookup \(target) successful"))
+            var table:MASTTable!
+            switch returnType {
+            case .json:
+                table = self?.parseXml(data: data!)
+            case .xml:
+                 table = self?.parseXml(data: data!)
+            default: table = MASTTable()
+            }
+
+            self?.targets[service.id] = table
+            self?.sysLog.append(MASTSyslog(log: .Ok, message: "request successful"))
         closure(true)
             return
     }

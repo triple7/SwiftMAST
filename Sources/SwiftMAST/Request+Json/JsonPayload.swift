@@ -66,12 +66,12 @@ public struct MASTJsonPayload:Decodable {
 }
 
 public struct MASTJsonPaging:Decodable {
-    let page:QValue
-let pageSize:QValue
-    let pagesFiltered:QValue
-    let rows:QValue
-    let rowsFiltered:QValue
-    let rowsTotal:QValue
+    let page:Int
+let pageSize:Int
+    let pagesFiltered:Int
+    let rows:Int
+    let rowsFiltered:Int
+    let rowsTotal:Int
 }
 
 public struct MASTJsonField:Decodable {
