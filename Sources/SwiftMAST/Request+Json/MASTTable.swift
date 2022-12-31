@@ -69,7 +69,7 @@ extension MASTTable:XMLParserDelegate {
     }
 
     internal func populateTable() {
-        print(self.xmlDictArr)
+        print(self.xmlDict)
     }
     
 }
