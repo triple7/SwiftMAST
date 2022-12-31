@@ -59,7 +59,7 @@ public struct MASTRequest {
 
     func getApiUrl(json: Data)->URL {
 
-        let t0 = String(decoding: json, as: UTF8.self)
+        let t0 = String(decoding: json, as: UTF8.self).replacingOccurrences(of: "\"", with: "'")
         print(t0)
         let text = t0.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed)!
         let path = (self.searchType == .apiRequest) ? apiRequestUrl : apiDownloadUrl
