@@ -34,13 +34,11 @@ extension SwiftMAST {
 
         let url = MASTRequest(searchType: .apiRequest).getApiUrl(json: json)
         
-        let request = createRequest(url: url)
-        print(request.url!)
         let configuration = URLSessionConfiguration.ephemeral
     let queue = OperationQueue.main
         let session = URLSession(configuration: configuration, delegate: self, delegateQueue: queue)
 
-        let task = session.dataTask(with: request) { [weak self] data, response, error in
+        let task = session.dataTask(with: url) { [weak self] data, response, error in
             if error != nil {
                 self?.sysLog.append(MASTSyslog(log: .RequestError, message: error!.localizedDescription))
                 closure(false)
