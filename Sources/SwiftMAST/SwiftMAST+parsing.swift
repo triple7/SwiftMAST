@@ -12,6 +12,9 @@ import Foundation
  */
      
      internal func parseJson(data: Data)->MASTTarget {
+         let text = String(decoding: data, as: UTF8.self)
+         print(text)
+
          let payload = try! JSONDecoder().decode(JsonPayload.self, from: data)
          let fields = payload.fields.map{$0.name}
          var values = [[String]]()
