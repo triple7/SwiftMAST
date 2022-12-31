@@ -7,12 +7,12 @@
 
 import Foundation
 
-
 public struct MASTJson:Encodable {
     /** json representation for a MAST Api json payload
      */
     let service:String
     let params:MASTJsonParams
+    let format:String
 }
 
 public typealias MAJP = MASTJsonParams
@@ -38,12 +38,10 @@ public struct MASTJsonParams:Encodable {
     var ni:Int?
     var magtype:Int?
     var input:String?
-    var format:String
     var url:String?
     var maxrecords:Int?
     
     public init(params: [MAP: Any]) {
-        self.format = params[MAP.format] as! String
         for k in params.keys {
             switch k {
             case .columns: self.columns = params[k] as? String
@@ -64,7 +62,6 @@ public struct MASTJsonParams:Encodable {
             case .ni: self.ni = params[k] as? Int
             case .magtype: self.magtype = params[k] as? Int
             case .input: self.input = params[k] as? String
-            case .format: break
             case .url: self.url = params[k] as? String
             case .maxrecords: self.maxrecords = params[k] as? Int
             }

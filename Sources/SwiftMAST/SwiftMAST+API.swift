@@ -31,7 +31,7 @@ extension SwiftMAST {
          */
         
         let service = Service.Mast_Name_Lookup
-        let json = service.json(parameters: [MAP.input: target, MAP.format: "json"])
+        let json = service.json(parameters: [MAP.input: target])
 
         let url = MASTRequest(searchType: .apiRequest).getApiUrl(json: json)
         

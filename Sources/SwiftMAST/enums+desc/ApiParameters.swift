@@ -31,7 +31,6 @@ public enum MASTApiParameter:String, CaseIterable, Identifiable {
     case ni //Int
     case magtype //Int
     case input //String
-    case format //String
     case url //String
     case maxrecords //Int
 
