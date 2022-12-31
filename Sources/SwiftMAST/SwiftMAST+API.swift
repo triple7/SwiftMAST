@@ -14,16 +14,17 @@ extension SwiftMAST {
      These methods facilitate accessing, requesting and download Json/media and are composed of all the available MAST service queries, with a swift flavour.
      */
     
-    public func quryMast(service: Service, params: [MAP: Any], returnType: APIReturnType,_ closure: @escaping (Bool)-> Void) {
-        /** Requests a lookup on a given identifiable name
-         Params:
-         service: service to query
-         params: key/value dictionary
-         returnType: json/xml
+    public func quryMast(service: Service, params: MASTJson, returnType: APIReturnType,_ closure: @escaping (Bool)-> Void) {
+        /** Forms a request object from the given MAST service domain path and given parameters
+         Adds a resulting table to the targets dictionary for further processing
+         Parameters:
+         service: MAST service domain path
+         params: pre-formed parameter json object
+         returnType: expected response format [json/xml]
          closure: whether request was successful
          */
         
-        let json = service.json(parameters: params)
+        let json = service.jsonData(json: params)
 
         let url = MASTRequest(searchType: .apiRequest).getApiUrl(json: json)
         
@@ -52,10 +53,13 @@ extension SwiftMAST {
             var table:MASTTable!
             switch returnType {
             case .json:
-                table = self?.parseXml(data: data!)
+                table = self?.parseJson(data: data!)
             case .xml:
                  table = self?.parseXml(data: data!)
-            default: table = MASTTable()
+            default:
+                self?.sysLog.append(MASTSyslog(log: .RequestError, message: "Return type not recognized or not yet available"))
+            closure(false)
+                return
             }
 
             self?.targets[service.id] = table
