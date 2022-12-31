@@ -19,7 +19,6 @@ extension SwiftMAST {
         request.setValue("application/x-www-form-urlencoded",forHTTPHeaderField: "Content-Type")
         request.setValue("text/plain",forHTTPHeaderField: "Accept")
         request.httpMethod = "POST"
-        print(request.allHTTPHeaderFields)
         return request
     }
     
