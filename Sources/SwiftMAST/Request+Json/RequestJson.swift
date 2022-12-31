@@ -8,24 +8,24 @@
 import Foundation
 
 public struct MASTJson:Encodable {
-    /** json representation for a MAST Api json payload
+    /** json representation for a MAST Api json request object
      */
     let service:String
-    let params:MASTJsonParams
-    let format:String
+    var data:[String: String]?
+    var params:MAJP?
+    var format:String?
+    var pagesize:Int?
+    var page:Int?
+    var removecache:Bool?
 }
 
 public typealias MAJP = MASTJsonParams
+
 public struct MASTJsonParams:Encodable {
-    /** MAST API request payload parameters in json
-     note: not all parameters are required
+    /** MAST API request parameters
      */
     var columns:String?
-    var filters:String?
-    var paramName:String?
-    var values:String?
-    var separator:String?
-    var freeText:String?
+    var filters:[MASTJsonFilter]?
     var ra:Float?
     var dec:Float?
     var radius:Float?
@@ -45,11 +45,7 @@ public struct MASTJsonParams:Encodable {
         for k in params.keys {
             switch k {
             case .columns: self.columns = params[k] as? String
-            case .filters: self.filters = params[k] as? String
-            case .paramName: self.paramName = params[k] as? String
-            case .values: self.values = params[k] as? String
-            case .separator: self.separator = params[k] as? String
-            case .freeText: self.freeText = params[k] as? String
+            case .filters: self.filters = params[k] as? [MASTJsonFilter]
             case .ra: self.ra = params[k] as? Float
             case .dec: self.dec = params[k] as? Float
             case .radius: self.radius = params[k] as? Float
@@ -64,8 +60,16 @@ public struct MASTJsonParams:Encodable {
             case .input: self.input = params[k] as? String
             case .url: self.url = params[k] as? String
             case .maxrecords: self.maxrecords = params[k] as? Int
+            default: break
             }
              }
     }
+}
+
+public struct MASTJsonFilter:Encodable {
+    let paramName:String
+    let values:[String]
+    var separator:String?
+    var freeText:String?
 }
 
