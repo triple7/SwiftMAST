@@ -56,7 +56,7 @@ extension SwiftMAST {
                 return
             }
 
-            let table = self?.parseJson(data: data!)
+            let table = self?.parseXml(data: data!)
             self?.targets["lookup-\(target)"] = table
             self?.sysLog.append(MASTSyslog(log: .Ok, message: "lookup \(target) successful"))
         closure(true)
