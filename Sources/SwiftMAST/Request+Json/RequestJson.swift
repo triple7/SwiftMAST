@@ -20,6 +20,8 @@ public struct MASTJson:Encodable {
     var timeout:Int?
     var removenullcolumns:Bool?
 
+    // Mark: Json request general parameters
+    
     public mutating func setGeneralParameter( params: [MAP: Any]) {
         for param in params.keys {
             setGeneralParameter(param: param, value: params[param]!)
@@ -37,6 +39,8 @@ public struct MASTJson:Encodable {
         }
     }
 
+    // mark: request Json service parameters
+    
     public mutating func setParameter(params: [MAP: Any]) {
         for param in params.keys {
             setParameter(param: param, value: params[param]!)
@@ -45,6 +49,16 @@ public struct MASTJson:Encodable {
 
     public mutating func setParameter( param: MAP, value: Any) {
         self.params?.setParameter(parameter: param, value: value)
+    }
+    
+    // Mark: request Json advanced filter parameters
+    
+    public mutating func setFilterParameter(params: [MAP: Any]) {
+        
+    }
+    
+    public mutating func setFilterParameter( param: MAP, value: Any) {
+        
     }
     
 }
@@ -98,11 +112,18 @@ public struct MASTJsonParams:Encodable {
         default: break
         }
     }
+    
+    public mutating func addFilter(paramName: String, values: [Any], separator: String?=nil) {
+        if self.filters == nil {
+            self.filters = []
+        }
+        self.filters?.append(MASTJsonFilter(paramName: paramName, values: values.map{QValue(value: $0 as! String)}, separator: separator))
+    }
 }
 
 public struct MASTJsonFilter:Encodable {
     let paramName:String
-    let values:[String]
+    let values:[QValue]
     var separator:String?
     var freeText:String?
 }

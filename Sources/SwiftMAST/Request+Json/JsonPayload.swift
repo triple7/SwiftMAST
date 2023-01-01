@@ -5,9 +5,9 @@
 //  Created by Yuma decaux on 30/12/2022.
 //
 
-enum QValue:Decodable {
+enum QValue:Codable {
     /** Quantum value which collapses to a working type
-     for decodable Json returns of any type
+     for codable Json structs
      */
     case int(Int)
     case string(String)
@@ -38,6 +38,26 @@ enum QValue:Decodable {
         self = .string("null")
 //        throw QuantumError.missingValue
     }
+
+    init(value: String) {
+        if let int = Int(value) {
+            self = .int(int)
+            return
+        }
+
+        if let float = Float(value) {
+            self = .float(float)
+            return
+        }
+        
+        if let bool = Bool(value) {
+            self = .bool(bool)
+            return
+        }
+        
+            self = .string(value)
+    }
+
 
     enum QuantumError:Error {
         case missingValue

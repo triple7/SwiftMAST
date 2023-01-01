@@ -12,15 +12,15 @@ let package = Package(
             targets: ["SwiftMAST"]),
     ],
     dependencies: [
-        .package(url: "https://github.com/brampf/fitscore", .upToNextMajor(from: "0.3.0")),    ],
+        .package(url: "https://github.com/brampf/fitscore.git", branch: "master"),.package(url: "https://github.com/apple/swift-numerics.git", branch: "main")],
     targets: [
         // Targets are the basic building blocks of a package. A target can define a module or a test suite.
         // Targets can depend on other targets in this package, and on products in packages this package depends on.
         .target(
             name: "SwiftMAST",
-            dependencies: []),
+            dependencies: [.product(name: "FITSCore", package: "FITSCore"), .product(name: "Numerics", package: "swift-numerics")]),
         .testTarget(
             name: "SwiftMASTTests",
-            dependencies: ["SwiftMAST"]),
+            dependencies: ["SwiftMAST", .product(name: "FITSCore", package: "FITSCore")]),
     ]
 )

@@ -3,19 +3,19 @@
     {
       "identity" : "fitscore",
       "kind" : "remoteSourceControl",
-      "location" : "https://github.com/brampf/fitscore",
+      "location" : "https://github.com/brampf/fitscore.git",
       "state" : {
-        "revision" : "a750b171ad4efb2348564a3473ade03c8c4f3ec4",
-        "version" : "0.3.0"
+        "branch" : "master",
+        "revision" : "93a1f0c7056a323b9f27cb618c83f64d458edb7b"
       }
     },
     {
       "identity" : "swift-numerics",
       "kind" : "remoteSourceControl",
-      "location" : "https://github.com/apple/swift-numerics",
+      "location" : "https://github.com/apple/swift-numerics.git",
       "state" : {
-        "revision" : "6583ac70c326c3ee080c1d42d9ca3361dca816cd",
-        "version" : "0.1.0"
+        "branch" : "main",
+        "revision" : "97c716ba37f8c79ed5ae20f9fd3c378360bd3cce"
       }
     }
   ],
