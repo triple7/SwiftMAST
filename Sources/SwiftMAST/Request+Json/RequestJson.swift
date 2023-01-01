@@ -18,8 +18,8 @@ public struct MASTJson:Encodable {
     var page:Int?
     var removecache:Bool?
     
-    public func setParameter( param: MAP, value: Any) {
-        
+    public mutating func setParameter( param: MAP, value: Any) {
+        self.params?.setParameter(parameter: param, value: value)
     }
     
 }
