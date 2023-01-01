@@ -24,18 +24,19 @@ return table
 print(text)
          let payload = try! JSONDecoder().decode(JsonPayload.self, from: data)
          let fields = payload.fields.map{$0.name}
-         var values = [[String]]()
+         var values = [[QValue]]()
          for row in payload.data {
-             values.append(fields.map{String(row[$0].debugDescription)})
+             values.append(fields.map{row[$0]!})
          }
          return MASTTable(fields: fields, values: values)
      }
 
      internal func parseCsvTable(text: String)->MASTTable {
          var table = text.components(separatedBy: "\n")
-         let header = table.removeFirst().components(separatedBy: ",")
+         let fields = table.removeFirst().components(separatedBy: ",")
          let rows = table.map{$0.components(separatedBy: ",")}
-         return MASTTable(fields: header, values: rows)
+         let values = rows.map{$0.map{QValue(value: $0)}}
+         return MASTTable(fields: fields, values: values)
      }
 
 }

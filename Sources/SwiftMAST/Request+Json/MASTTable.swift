@@ -12,32 +12,32 @@ public class MASTTable:NSObject {
      for all MAST search table requests.
      The dictionary is further processed from the associated search type
      
-     This table allows for json and xml processing
+     This table results from json and xml processing
      Properties:
      * fields: the header of the table
-     values: rows of values mapped to the fields
+     * values: rows of values mapped to the fields
      */
     private var fields:[String]
-    private var values:[[String]]
+    private var values:[[QValue]]
     
     /* XML parsing related objects */
     var xmlDict = [String: Any]()
     var xmlDictArr = [[String: Any]]()
     var currentElement = ""
     
-    public init(fields: [String], values:[[String]]) {
+    public init(fields: [String], values:[[QValue]]) {
         self.fields = fields
         self.values = values
     }
     
     public override init() {
         self.fields = [String]()
-        self.values = [[String]]()
+        self.values = [[QValue]]()
     }
     
 }
 
-extension MASTTable:XMLParserDelegate {
+                        extension MASTTable:XMLParserDelegate {
     
     public func parserDidStartDocument(_ parser: XMLParser) {
     }

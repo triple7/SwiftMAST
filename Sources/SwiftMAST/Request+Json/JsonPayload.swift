@@ -5,7 +5,7 @@
 //  Created by Yuma decaux on 30/12/2022.
 //
 
-enum QValue:Codable {
+public enum QValue:Codable {
     /** Quantum value which collapses to a working type
      for codable Json structs
      */
@@ -14,7 +14,7 @@ enum QValue:Codable {
     case float(Float)
     case bool(Bool)
     
-    init(from decoder: Decoder) throws {
+    public init(from decoder: Decoder) throws {
         if let int = try? decoder.singleValueContainer().decode(Int.self) {
             self = .int(int)
             return
@@ -57,7 +57,6 @@ enum QValue:Codable {
         
             self = .string(value)
     }
-
 
     enum QuantumError:Error {
         case missingValue
