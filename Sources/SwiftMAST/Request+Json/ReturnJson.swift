@@ -65,7 +65,7 @@ public enum QValue:Codable {
 
 // Mark: JsonPayload structure hierarchy for the MAST json returns
 
-public typealias JsonPayload = MASTJsonPayload
+public typealias ReturnJson = MASTJsonPayload
 
 public struct MASTJsonPayload:Decodable {
     let status:String

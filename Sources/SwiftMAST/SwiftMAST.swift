@@ -1,12 +1,5 @@
 import Foundation
 
-public enum MASTError:Error {
-    case NoSuchObject
-    case RequestError
-    case DataCorrupted
-    case Ok
-}
-
 public struct MASTSyslog:CustomStringConvertible {
     let log:MASTError
     let message:String

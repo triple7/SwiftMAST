@@ -14,7 +14,7 @@ extension SwiftMAST {
      These methods facilitate accessing, requesting and download Json/media and are composed of all the available MAST service queries, with a swift flavour.
      */
     
-    public func queryMast(service: Service, params: MASTJson, returnType: APIReturnType,_ closure: @escaping (Bool)-> Void) {
+    public func queryMast(service: Service, params: MASTJson, returnType: APIReturnType,_ closure: @escaping (Bool) -> Void) {
         /** Forms a request object from the given MAST service domain path and given parameters
          Adds a resulting table to the targets dictionary for further processing
          Parameters:
@@ -33,9 +33,9 @@ extension SwiftMAST {
         let session = URLSession(configuration: configuration, delegate: self, delegateQueue: queue)
 
         let task = session.dataTask(with: url) { [weak self] data, response, error in
-            if error != nil {
+            guard error != nil else {
                 self?.sysLog.append(MASTSyslog(log: .RequestError, message: error!.localizedDescription))
-                closure(false)
+closure(false)
                 return
             }
             guard let response = response as? HTTPURLResponse else {

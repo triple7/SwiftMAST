@@ -22,7 +22,7 @@ return table
      internal func parseJson(data: Data)->MASTTable {
          let text = String(decoding: data, as: UTF8.self)
 print(text)
-         let payload = try! JSONDecoder().decode(JsonPayload.self, from: data)
+         let payload = try! JSONDecoder().decode(ReturnJson.self, from: data)
          let fields = payload.fields.map{$0.name}
          var values = [[QValue]]()
          for row in payload.data {
