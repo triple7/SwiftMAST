@@ -17,6 +17,19 @@ public struct MASTJson:Encodable {
     var pagesize:Int?
     var page:Int?
     var removecache:Bool?
+    var timeout:Int?
+    var removenullcolumns:Bool?
+
+    public mutating func setGeneralParameter(param: MAP, value: Any) {
+        switch param {
+        case .pagesize: self.pagesize = value as? Int
+        case .page: self.page = value as? Int
+        case .removecache: self.removecache = value as? Bool
+        case .timeout: self.timeout = value as? Int
+        case .removenullcolumns: self.removenullcolumns = value as? Bool
+        default: break
+        }
+    }
     
     public mutating func setParameter( param: MAP, value: Any) {
         self.params?.setParameter(parameter: param, value: value)
@@ -45,8 +58,6 @@ public struct MASTJsonParams:Encodable {
     var input:String?
     var url:String?
     var maxrecords:Int?
-    var timeout:Int?
-    var removenullcolumns:Bool?
     
     public init(params: [MAP: Any]) {
         for k in params.keys {
@@ -72,8 +83,6 @@ public struct MASTJsonParams:Encodable {
         case .input: self.input = value as? String
         case .url: self.url = value as? String
         case .maxrecords: self.maxrecords = value as? Int
-        case .timeout: self.timeout = value as? Int
-        case .removenullcolumns: self.removenullcolumns = value as? Bool
         default: break
         }
     }
