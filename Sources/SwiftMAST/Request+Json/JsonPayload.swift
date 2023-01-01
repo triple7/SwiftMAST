@@ -34,8 +34,9 @@ enum QValue:Decodable {
             self = .string(string)
             return
         }
-        
-        throw QuantumError.missingValue
+  
+        self = .string("null")
+//        throw QuantumError.missingValue
     }
 
     enum QuantumError:Error {
