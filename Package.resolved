@@ -10,6 +10,15 @@
       }
     },
     {
+      "identity" : "fitskit",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/brampf/fitskit.git",
+      "state" : {
+        "branch" : "master",
+        "revision" : "0e4094ed8c45d094551c519d4e36d466ea900de6"
+      }
+    },
+    {
       "identity" : "swift-numerics",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/apple/swift-numerics.git",
