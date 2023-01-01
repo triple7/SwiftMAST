@@ -51,7 +51,7 @@ public struct MASTJsonPayload:Decodable {
     let status:String
     let msg:String
     let paging:MASTJsonPaging
-    var percent_complete:Int
+    var percent_complete:Int?
     let fields:[MASTJsonField]
     let data:[[String:QValue]]
 
