@@ -17,6 +17,11 @@ public struct MASTJson:Encodable {
     var pagesize:Int?
     var page:Int?
     var removecache:Bool?
+    
+    public func setParameter( param: MAP, value: Any) {
+        
+    }
+    
 }
 
 public typealias MAJP = MASTJsonParams
@@ -43,26 +48,30 @@ public struct MASTJsonParams:Encodable {
     
     public init(params: [MAP: Any]) {
         for k in params.keys {
-            switch k {
-            case .columns: self.columns = params[k] as? String
-            case .filters: self.filters = params[k] as? [MASTJsonFilter]
-            case .ra: self.ra = params[k] as? Float
-            case .dec: self.dec = params[k] as? Float
-            case .radius: self.radius = params[k] as? Float
-            case .raColumn: self.raColumn = params[k] as? String
-            case .decColumn: self.decColumn = params[k] as? String
-            case .exclude_hla: self.exclude_hla = params[k] as? Bool
-            case .position: self.position = params[k] as? String
-            case .obsid: self.obsid = params[k] as? Int
-            case .nr: self.nr = params[k] as? Int
-            case .ni: self.ni = params[k] as? Int
-            case .magtype: self.magtype = params[k] as? Int
-            case .input: self.input = params[k] as? String
-            case .url: self.url = params[k] as? String
-            case .maxrecords: self.maxrecords = params[k] as? Int
-            default: break
-            }
+            setParameter(parameter: k, value: params[k]!)
              }
+    }
+    
+    public mutating func setParameter(parameter: MAP, value: Any) {
+        switch parameter {
+        case .columns: self.columns = value as? String
+        case .filters: self.filters = value as? [MASTJsonFilter]
+        case .ra: self.ra = value as? Float
+        case .dec: self.dec = value as? Float
+        case .radius: self.radius = value as? Float
+        case .raColumn: self.raColumn = value as? String
+        case .decColumn: self.decColumn = value as? String
+        case .exclude_hla: self.exclude_hla = value as? Bool
+        case .position: self.position = value as? String
+        case .obsid: self.obsid = value as? Int
+        case .nr: self.nr = value as? Int
+        case .ni: self.ni = value as? Int
+        case .magtype: self.magtype = value as? Int
+        case .input: self.input = value as? String
+        case .url: self.url = value as? String
+        case .maxrecords: self.maxrecords = value as? Int
+        default: break
+        }
     }
 }
 

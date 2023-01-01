@@ -12,7 +12,6 @@ import Foundation
  */
      
      internal func parseXml(data: Data)->MASTTable {
-         let text = String(decoding: data, as: UTF8.self)
          let table = MASTTable()
          let parser = XMLParser(data: data)
          parser.delegate = table
