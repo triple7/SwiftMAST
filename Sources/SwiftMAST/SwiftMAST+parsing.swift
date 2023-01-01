@@ -13,17 +13,15 @@ import Foundation
      
      internal func parseXml(data: Data)->MASTTable {
          let text = String(decoding: data, as: UTF8.self)
-         print(text)
          let table = MASTTable()
          let parser = XMLParser(data: data)
          parser.delegate = table
-         let result = parser.parse()
+         _ = parser.parse()
 return table
      }
 
      internal func parseJson(data: Data)->MASTTable {
          let text = String(decoding: data, as: UTF8.self)
-         print(text)
 
          let payload = try! JSONDecoder().decode(JsonPayload.self, from: data)
          let fields = payload.fields.map{$0.name}
