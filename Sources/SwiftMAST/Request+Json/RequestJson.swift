@@ -45,6 +45,8 @@ public struct MASTJsonParams:Encodable {
     var input:String?
     var url:String?
     var maxrecords:Int?
+    var timeout:Int?
+    var removenullcolumns:Bool?
     
     public init(params: [MAP: Any]) {
         for k in params.keys {
@@ -70,6 +72,8 @@ public struct MASTJsonParams:Encodable {
         case .input: self.input = value as? String
         case .url: self.url = value as? String
         case .maxrecords: self.maxrecords = value as? Int
+        case .timeout: self.timeout = value as? Int
+        case .removenullcolumns: self.removenullcolumns = value as? Bool
         default: break
         }
     }

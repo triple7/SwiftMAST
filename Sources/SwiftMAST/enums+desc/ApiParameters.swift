@@ -33,6 +33,8 @@ public enum MASTApiParameter:String, CaseIterable, Identifiable {
     case input //String
     case url //String
     case maxrecords //Int
+    case timeout // int
+    case removenullcolumns // bool
 
     public var id:String {
         return self.rawValue
