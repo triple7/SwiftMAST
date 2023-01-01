@@ -43,5 +43,10 @@ case page // Int
     public var id:String {
         return self.rawValue
     }
+    
+    
+    public var defaultGeneralParameters:[MAP: Any] {
+        return [MAP.pagesize: 500, MAP.timeout: 3, MAP.removenullcolumns: true]
+    }
 }
 

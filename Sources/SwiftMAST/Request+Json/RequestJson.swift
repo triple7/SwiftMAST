@@ -20,6 +20,12 @@ public struct MASTJson:Encodable {
     var timeout:Int?
     var removenullcolumns:Bool?
 
+    public mutating func setGeneralParameters( params: [MAP: Any]) {
+        for param in params.keys {
+            setGeneralParameter(param: param, value: params[param]!)
+        }
+    }
+    
     public mutating func setGeneralParameter(param: MAP, value: Any) {
         switch param {
         case .pagesize: self.pagesize = value as? Int
@@ -30,7 +36,13 @@ public struct MASTJson:Encodable {
         default: break
         }
     }
-    
+
+    public mutating func setParameter( params: [MAP: Any]) {
+        for param in params.keys {
+            setParameter(param: param, value: params[param]!)
+        }
+    }
+
     public mutating func setParameter( param: MAP, value: Any) {
         self.params?.setParameter(parameter: param, value: value)
     }
