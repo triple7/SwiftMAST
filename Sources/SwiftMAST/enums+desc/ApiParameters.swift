@@ -44,8 +44,7 @@ case page // Int
         return self.rawValue
     }
     
-    
-    public var defaultGeneralParameters:[MAP: Any] {
+    public func defaultGeneralParameters()->[MAP: Any] {
         return [MAP.pagesize: 500, MAP.timeout: 3, MAP.removenullcolumns: true]
     }
 }
