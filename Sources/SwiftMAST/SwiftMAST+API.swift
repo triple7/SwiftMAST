@@ -33,7 +33,7 @@ extension SwiftMAST {
         let session = URLSession(configuration: configuration, delegate: self, delegateQueue: queue)
 
         let task = session.dataTask(with: url) { [weak self] data, response, error in
-            guard error != nil else {
+            guard error == nil else {
                 self?.sysLog.append(MASTSyslog(log: .RequestError, message: error!.localizedDescription))
 closure(false)
                 return

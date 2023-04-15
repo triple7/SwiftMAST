@@ -73,3 +73,18 @@ public class MASTTable:NSObject {
     }
     
 }
+
+
+extension MASTTable {
+    
+    public func getRows(filters: [ResultField])->[ResultField: [QValue]] {
+        var output = [ResultField: [QValue]]()
+        for filter in filters {
+            if let idx = fields.firstIndex(of: filter.id) {
+                output[filter] = values.map{$0[idx]}
+            }
+        }
+        return output
+    }
+    
+}
