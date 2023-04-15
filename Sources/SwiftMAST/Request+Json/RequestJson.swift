@@ -121,9 +121,9 @@ public struct MASTJsonParams:Encodable {
     }
 }
 
-public struct MASTJsonFilter<t>:Encodable {
+public struct MASTJsonFilter:Encodable {
     let paramName:String
-    let values:AnyCollection
+    let values:Array<QValue>
     var separator:String?
     var freeText:String?
 }
