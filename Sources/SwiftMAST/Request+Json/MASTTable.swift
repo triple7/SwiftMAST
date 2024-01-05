@@ -1,5 +1,5 @@
 //
-//  File.swift
+//  MASTTable.swift
 //  
 //
 //  Created by Yuma decaux on 30/12/2022.
@@ -35,6 +35,14 @@ public class MASTTable:NSObject {
         self.values = [[QValue]]()
     }
     
+    public func getFields() -> [String] {
+        return self.fields
+    }
+    
+    public func getValues( for field: String) -> [QValue] {
+        let idx = self.fields.index(of: field)!
+        return self.values.map{$0[idx]}
+    }
 }
 
                         extension MASTTable:XMLParserDelegate {
