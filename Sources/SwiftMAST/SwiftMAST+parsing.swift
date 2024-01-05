@@ -12,6 +12,7 @@ import Foundation
  */
      
      internal func parseXml(data: Data)->MASTTable {
+         print(data0)
          let table = MASTTable()
          let parser = XMLParser(data: data)
          parser.delegate = table
