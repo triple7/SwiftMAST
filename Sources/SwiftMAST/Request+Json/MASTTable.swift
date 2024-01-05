@@ -78,6 +78,7 @@ public class MASTTable:NSObject {
 
     internal func populateTable() {
         print(self.xmlDict)
+        self.fields = self.xmlDict.keys.map{$0}
     }
     
 }
