@@ -16,7 +16,7 @@ extension MASTTable {
     public func getNameLookupResults()->[NameLookupJson] {
         var output = [NameLookupJson]()
         for row in self.values {
-            
+            output.append(NameLookupJson(data: row))
         }
         return [NameLookupJson]()
     }

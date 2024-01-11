@@ -1,6 +1,6 @@
 //
-//  File.swift
-//  
+//  ReturnJson.swift
+//
 //
 //  Created by Yuma decaux on 30/12/2022.
 //
@@ -74,7 +74,7 @@ public struct MASTJsonPayload:Decodable {
     let paging:MASTJsonPaging
     var percent_complete:Int?
     let fields:[MASTJsonField]
-    let data:[[String:QValue]]
+    let data:[[String:String]]
 
     private enum CodingKeys:String, CodingKey {
         case status = "status"
@@ -103,7 +103,7 @@ public struct MASTJsonField:Decodable {
 public struct NameLookupJson:Codable {
     let ra:Float
     let cached:Bool
-    let resolverTime:Float
+    let resolverTime:Int
     let dec:Float
     let resolver:String
     let canonicalName:String
@@ -112,17 +112,17 @@ public struct NameLookupJson:Codable {
     let searchRadius:Float
     let searchString:String
 
-//    public init(data: [QValue]) {
-//        ra = data[0]
-//        cached = data[1]
-//        resolverTime = data[2]
-//        dec = data[3]
-//        resolver = data[4]
-//        canonicalName = data[5]
-//        radius = data[6]
-//        objectType = data[7]
-//        searchRadius = data[8]
-//        searchString = data[9]
-//    }
-//    
+    public init(data: [String]) {
+        ra = Float(data[0])!
+        cached = Bool(data[1])!
+        resolverTime = Int(data[2])!
+        dec = Float(data[3])!
+        resolver = data[4]
+        canonicalName = data[5]
+        radius = Float(data[6])!
+        objectType = data[7]
+        searchRadius = Float(data[8])!
+        searchString = data[9]
+    }
+    
 }

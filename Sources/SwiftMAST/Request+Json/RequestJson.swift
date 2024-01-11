@@ -152,13 +152,13 @@ public struct MASTJsonParams:Encodable {
         if self.filters == nil {
             self.filters = []
         }
-        self.filters?.append(MASTJsonFilter(paramName: paramName, values: values.map{QValue(value: $0 as! String)}, separator: separator))
+        self.filters?.append(MASTJsonFilter(paramName: paramName, values: values.map{$0 as! String}, separator: separator))
     }
 }
 
 public struct MASTJsonFilter:Encodable {
     let paramName:String
-    let values:Array<QValue>
+    let values:Array<String>
     var separator:String?
     var freeText:String?
 }
