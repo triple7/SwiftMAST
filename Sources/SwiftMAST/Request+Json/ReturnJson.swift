@@ -58,6 +58,7 @@ public enum QValue:Codable {
             self = .string(value)
     }
 
+    
     enum QuantumError:Error {
         case missingValue
     }
@@ -99,3 +100,29 @@ public struct MASTJsonField:Decodable {
     let type:String
 }
 
+public struct NameLookupJson:Codable {
+    let ra:Float
+    let cached:Bool
+    let resolverTime:Float
+    let dec:Float
+    let resolver:String
+    let canonicalName:String
+    let radius:Float
+    let objectType:String
+    let searchRadius:Float
+    let searchString:String
+
+//    public init(data: [QValue]) {
+//        ra = data[0]
+//        cached = data[1]
+//        resolverTime = data[2]
+//        dec = data[3]
+//        resolver = data[4]
+//        canonicalName = data[5]
+//        radius = data[6]
+//        objectType = data[7]
+//        searchRadius = data[8]
+//        searchString = data[9]
+//    }
+//    
+}

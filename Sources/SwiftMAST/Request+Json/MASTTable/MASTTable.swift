@@ -17,8 +17,8 @@ public class MASTTable:NSObject {
      * fields: the header of the table
      * values: rows of values mapped to the fields
      */
-    private var fields:[String]
-    private var values:[[QValue]]
+    internal var fields:[String]
+    internal var values:[[QValue]]
     
     /* XML parsing related objects */
     var xmlDict = [String: Any]()
@@ -77,14 +77,11 @@ public class MASTTable:NSObject {
     }
 
     internal func populateTable() {
-//        print(self.xmlDict)
+        print(self.xmlDict)
         self.fields = self.xmlDict.keys.map{$0}
-        print("xml array")
-        print(self.xmlDictArr)
     }
     
 }
-
 
 extension MASTTable {
     
