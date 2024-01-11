@@ -18,7 +18,7 @@ extension MASTTable {
         for row in self.values {
             output.append(NameLookupJson(data: row, fields: self.fields))
         }
-        return [NameLookupJson]()
+        return output
     }
 
 }
