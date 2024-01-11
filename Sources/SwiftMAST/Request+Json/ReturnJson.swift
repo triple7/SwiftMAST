@@ -58,6 +58,18 @@ public enum QValue:Codable {
             self = .string(value)
     }
 
+    public var value:Any {
+        switch self {
+        case .string(let str):
+            return str
+        case .float(let ft):
+            return ft
+        case .bool(let b):
+            return b
+        case .int(let n):
+            return n
+        }
+    }
     
     enum QuantumError:Error {
         case missingValue
@@ -112,17 +124,17 @@ public struct NameLookupJson:Codable {
     let searchRadius:Float
     let searchString:String
 
-    public init(data: [String]) {
-        ra = Float(data[0])!
-        cached = Bool(data[1])!
-        resolverTime = Int(data[2])!
-        dec = Float(data[3])!
-        resolver = data[4]
-        canonicalName = data[5]
-        radius = Float(data[6])!
-        objectType = data[7]
-        searchRadius = Float(data[8])!
-        searchString = data[9]
+    public init(data: [QValue]) {
+        ra = data[0].value as! Float
+        cached = data[1].value as! Bool
+        resolverTime = data[2].value as! Int
+        dec = data[3].value as! Float
+        resolver = data[4].value as! String
+        canonicalName = data[5].value as! String
+        radius = data[6].value as! Float
+        objectType = data[7].value as! String
+        searchRadius = data[8].value as! Float
+        searchString = data[9].value as! String
     }
     
 }
