@@ -15,6 +15,7 @@ extension MASTTable {
     
     public func getNameLookupResults()->[NameLookupJson] {
         var output = [NameLookupJson]()
+        print("Field order is: \(self.fields)")
         for row in self.values {
             output.append(NameLookupJson(data: row))
         }
