@@ -18,28 +18,28 @@ public class MASTTable:NSObject {
      * values: rows of values mapped to the fields
      */
     internal var fields:[String]
-    internal var values:[[String]]
+    internal var values:[[QValue]]
     
     /* XML parsing related objects */
     var xmlDict = [String: Any]()
     var xmlDictArr = [[String: Any]]()
     var currentElement = ""
     
-    public init(fields: [String], values:[[String]]) {
+    public init(fields: [String], values:[[QValue]]) {
         self.fields = fields
         self.values = values
     }
     
     public override init() {
         self.fields = [String]()
-        self.values = [[String]]()
+        self.values = [[QValue]]()
     }
     
     public func getFields() -> [String] {
         return self.fields
     }
     
-    public func getValues( for field: String) -> [String] {
+    public func getValues( for field: String) -> [QValue] {
         let idx = self.fields.firstIndex(of: field)!
         return self.values.map{$0[idx]}
     }
@@ -77,18 +77,17 @@ public class MASTTable:NSObject {
     }
 
     internal func populateTable() {
-        print("populateTable")
         print(self.xmlDict)
         self.fields = self.xmlDict.keys.map{$0}
-        
+        self.values.append(self.xmlDict.keys.map{QValue(value: self.xmlDict[$0]! as! String)})
     }
-
+    
 }
 
 extension MASTTable {
     
-    public func getRows(filters: [ResultField])->[ResultField: [String]] {
-        var output = [ResultField: [String]]()
+    public func getRows(filters: [ResultField])->[ResultField: [QValue]] {
+        var output = [ResultField: [QValue]]()
         for filter in filters {
             if let idx = fields.firstIndex(of: filter.id) {
                 output[filter] = values.map{$0[idx]}

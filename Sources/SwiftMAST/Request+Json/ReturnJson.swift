@@ -74,7 +74,7 @@ public struct MASTJsonPayload:Decodable {
     let paging:MASTJsonPaging
     var percent_complete:Int?
     let fields:[MASTJsonField]
-    let data:[[String:String]]
+    let data:[[String:QValue]]
 
     private enum CodingKeys:String, CodingKey {
         case status = "status"
