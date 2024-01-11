@@ -124,17 +124,17 @@ public struct NameLookupJson:Codable {
     let searchRadius:Float
     let searchString:String
 
-    public init(data: [QValue]) {
-        ra = data[0].value as! Float
-        cached = data[1].value as! Bool
-        resolverTime = data[2].value as! Int
-        dec = data[3].value as! Float
-        resolver = data[4].value as! String
-        canonicalName = data[5].value as! String
-        radius = data[6].value as! Float
-        objectType = data[7].value as! String
-        searchRadius = data[8].value as! Float
-        searchString = data[9].value as! String
+    public init(data: [QValue], fields: [String]) {
+        ra = data[fields.firstIndex(of: "ra")!].value as! Float
+        cached = data[fields.firstIndex(of: "cached")!].value as! Bool
+        resolverTime = data[fields.firstIndex(of: "resolverTime")!].value as! Int
+        dec = data[fields.firstIndex(of: "dec")!].value as! Float
+        resolver = data[fields.firstIndex(of: "resolver")!].value as! String
+        canonicalName = data[fields.firstIndex(of: "canonicalName")!].value as! String
+        radius = data[fields.firstIndex(of: "radius")!].value as! Float
+        objectType = data[fields.firstIndex(of: "objectType")!].value as! String
+        searchRadius = data[fields.firstIndex(of: "searchRadius")!].value as! Float
+        searchString = data[fields.firstIndex(of: "searchString")!].value as! String
     }
     
 }
