@@ -9,6 +9,11 @@ import Foundation
 
 public typealias MAP = MASTApiParameter
 
+/** MAST API service parameters
+ https://mast.stsci.edu/api/v0/_services.html
+ Thes service request end points allow granular return payloads in multiple formats using the MAST API.
+ */
+
 public enum MASTApiParameter:String, CaseIterable, Identifiable {
     /** MAST API general parameters
      reference [general parameters](https://mast.stsci.edu/api/v0/_services.html)

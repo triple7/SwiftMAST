@@ -8,6 +8,9 @@
 import Foundation
 public typealias Coam = MASTCoamField
 
+/** COAM search fields
+ https://mast.stsci.edu/api/v0/_c_a_o_mfields.html
+ */
 public enum MASTCoamField:String, CaseIterable, Identifiable {
  case calib_level
 case dataRights
@@ -84,8 +87,23 @@ case .t_obs_release: return "Release Date"
 case .target_classification: return "Target Classification"
 case .target_name: return "Target Name"
 case .wavelength_region: return "Waveband"
-
 }
 }
+    
+    public func scienceImageFilters() -> [[MAP: Any]] {
+        return [
+            [MAP.paramName: MAP.filters as Any,
+             MAP.values: ["NUV" , "FUV"] as Any],
+            [MAP.paramName: Coam.calib_level as Any,
+             MAP.values: [3, 4] as Any],
+            [MAP.paramName: Coam.dataRights as Any,
+             MAP.values: ["public"] as Any],
+            [MAP.paramName: Coam.dataproduct_type as Any,
+             MAP.values: ["IMAGE"] as Any],
+            [MAP.paramName: Coam.intentType as Any,
+             MAP.values: ["science"] as Any]
+        ]
+    }
+    
  }
 
