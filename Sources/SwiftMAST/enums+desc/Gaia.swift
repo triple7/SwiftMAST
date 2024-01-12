@@ -8,7 +8,6 @@
 import Foundation
 typealias Gaia = MASTGaiaField
 
-
 public enum MASTGaiaField:String, CaseIterable, Identifiable {
  case astrometric_primary_flag
 case b
