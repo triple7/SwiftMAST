@@ -77,6 +77,7 @@ public struct MASTJson:Encodable {
     // mark: request Json service parameters
     
     public mutating func setParameter(params: [MAP: Any]) {
+        print("parameters to set \n \(params)")
         for param in params.keys {
             setParameter(param: param, value: params[param]!)
         }
