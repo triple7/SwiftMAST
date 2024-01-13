@@ -92,8 +92,7 @@ public struct MASTJson:Encodable {
     
     public mutating func setFilterParameters(params: [[MAP: Any]]) {
         print("Setting filter parameters")
-        print(self.params)
-        self.params?.setParameter(parameter: MAP.filters, value: params as Any)
+        self.setParameter(params: [MAP.filters: params as Any])
     }
     
     public mutating func setFilterParameter( param: MAP, value: Any) {
