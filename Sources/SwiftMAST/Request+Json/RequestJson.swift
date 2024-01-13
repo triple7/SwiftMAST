@@ -79,6 +79,7 @@ public struct MASTJson:Encodable {
     public mutating func setParameter(params: [MAP: Any]) {
         print("parameters to set \n \(params)")
         for param in params.keys {
+            print("Setting param: \(params)")
             setParameter(param: param, value: params[param]!)
         }
     }
