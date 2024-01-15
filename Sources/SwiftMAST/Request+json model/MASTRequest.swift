@@ -75,6 +75,7 @@ public struct MASTRequest {
             let floatQ = "{\"float\":{\"_0\":"
         let endQ = "}}"
         var output = text.replacingOccurrences(of: strQ, with: "")
+        output = output.replacingOccurrences(of: "separator", with: "")
         output = text.replacingOccurrences(of: intQ, with: "")
         output = text.replacingOccurrences(of: floatQ, with: "")
         output = text.replacingOccurrences(of: endQ, with: "")
