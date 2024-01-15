@@ -46,7 +46,7 @@ public struct MASTJson:Encodable {
     /** json representation for a MAST Api json request object
      */
     let service:String
-    var data:[String: String]?
+    var data:CrossmatchInput?
     var params:MAJP?
     var format:String?
     var pagesize:Int?
@@ -96,6 +96,21 @@ public struct MASTJson:Encodable {
         
     }
     
+    // Mark: RequestJson input data parameters
+public mutating func setCrossmatchinput(coordinates: [[String: Float]]) {
+        var cmData = [CrossmatchData]()
+        for coordinate in coordinates {
+            let ra = coordinate["ra"]!
+            let dec = coordinate["dec"]!
+            if let radius = coordinate["radius"] {
+                cmData.append(CrossmatchData(ra: ra, dec: dec, radius: radius))
+            } else {
+                cmData.append(CrossmatchData(ra: ra, dec: dec))
+            }
+        }
+    self.data = CrossmatchInput(fields: [CrossmatchField(name: "ra", type: "float"), CrossmatchField(name: "dec", type: "float")], data: cmData)
+    }
+
 }
 
 public typealias MAJP = MASTJsonParams
@@ -229,20 +244,6 @@ extension FilterValues:Codable {
 public struct CrossmatchInput:Codable {
     let fields:[CrossmatchField]
     let data:[CrossmatchData]
-    
-    static func getCrossmatchinput(coordinates: [[String: Float]]) ->CrossmatchInput {
-        var cmData = [CrossmatchData]()
-        for coordinate in coordinates {
-            let ra = coordinate["ra"]!
-            let dec = coordinate["dec"]!
-            if let radius = coordinate["radius"] {
-                cmData.append(CrossmatchData(ra: ra, dec: dec, radius: radius))
-            } else {
-                cmData.append(CrossmatchData(ra: ra, dec: dec))
-            }
-        }
-                              return CrossmatchInput(fields: [CrossmatchField(name: "ra", type: "float"), CrossmatchField(name: "dec", type: "float")], data: cmData)
-    }
 }
 
 public struct CrossmatchField:Codable {
