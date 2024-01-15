@@ -148,18 +148,77 @@ public struct MASTJsonParams:Encodable {
         }
     }
     
-    public mutating func addFilter(paramName: String, values: [Any], separator: String?=nil) {
+    public mutating func addFilter(paramName: String, values: FilterValues, separator: String?=nil) {
         if self.filters == nil {
             self.filters = []
         }
-        self.filters?.append(MASTJsonFilter(paramName: paramName, values: values.map{$0 as! String}, separator: separator))
+        self.filters?.append(MASTJsonFilter(paramName: paramName, values: values, separator: separator))
     }
 }
 
 public struct MASTJsonFilter:Encodable {
     let paramName:String
-    let values:[String]
+    let values:FilterValues
     var separator:String?
     var freeText:String?
 }
 
+public enum FilterValues {
+    case qValue(QValue)
+    case qArr([QValue])
+    case qDict([String: QValue])
+}
+
+extension FilterValues:Codable {
+    private enum CodingKeys:String, CodingKey {
+        case values = "values"
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        let singleContainer = try decoder.singleValueContainer()
+        
+        let values = try container.decode(String.self, forKey: .values)
+        switch values {
+        case "qValue":
+            let qValue = try singleContainer.decode(QValue.self)
+            self = .qValue(qValue)
+        case "qArr":
+            let qArr = try singleContainer.decode([QValue].self)
+            self = .qArr(qArr
+            )
+        case "qDict":
+            let qDict = try singleContainer.decode([String: QValue].self)
+            self = .qDict(qDict)
+        default:
+            fatalError("Unknown type of content.")
+        }
+    }
+    
+    public func encode(to encoder: Encoder) throws {
+        var singleContainer = encoder.singleValueContainer()
+        
+        switch self {
+        case .qValue(let qValue):
+            try singleContainer.encode(qValue)
+        case .qArr(let qArr):
+            try singleContainer.encode(qArr)
+        case .qDict(let qDict):
+            try singleContainer.encode(qDict)
+        }
+    }
+
+    public init(values: Any) {
+        switch values {
+        case let qValue as QValue:
+            self = .qValue(qValue)
+        case let qArr as [QValue]:
+            self = .qArr(qArr)
+        case let qDict as [String: QValue]:
+            self = .qDict(qDict)
+        default:
+            self = .qValue(QValue(value: ""))
+        }
+    }
+    
+}
