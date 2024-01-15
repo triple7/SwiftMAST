@@ -108,7 +108,7 @@ public mutating func setCrossmatchinput(coordinates: [[String: Float]]) {
                 cmData.append(CrossmatchData(ra: ra, dec: dec))
             }
         }
-    self.data = CrossmatchInput(fields: [CrossmatchField(name: "ra", type: "float"), CrossmatchField(name: "dec", type: "float")], data: cmData)
+    self.data = CrossmatchInput(fields: [CrossmatchField(name: "ra", type: "float"), CrossmatchField(name: "dec", type: "float"), CrossmatchField(name: "radius", type: "float")], data: cmData)
     }
 
 }
