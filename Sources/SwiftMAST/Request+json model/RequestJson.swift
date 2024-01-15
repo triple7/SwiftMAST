@@ -88,7 +88,7 @@ public struct MASTJson:Encodable {
     
     // Mark: request Json advanced filter parameters
     
-    public mutating func setFilterParameters(params: [[MAP: Any]]) {
+    public mutating func setFilterParameters(params: [MASTJsonFilter]) {
         self.setParameter(params: [MAP.filters: params as Any])
     }
     
