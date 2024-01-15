@@ -70,6 +70,7 @@ public struct MASTRequest {
     
     private func removeQValueString(text: String) -> String {
         let strQ = "{\"string\":{\"_0\":"
+        print("StringQ: \(strQ)")
         let intQ = "{\"int\":{\"_0\":"
             let floatQ = "{\"float\":{\"_0\":"
         let endQ = "}}"
