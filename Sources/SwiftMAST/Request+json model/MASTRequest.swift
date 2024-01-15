@@ -70,14 +70,13 @@ public struct MASTRequest {
     
     private func removeQValueString(text: String) -> String {
         let strQ = "{\"string\":{\"_0\":"
-        print("StringQ: \(strQ)")
         let intQ = "{\"int\":{\"_0\":"
             let floatQ = "{\"float\":{\"_0\":"
         let endQ = "}}"
-        var output = text.replaceAll(of: strQ, with: "")
-        output = text.replaceAll(of: intQ, with: "")
-        output = text.replaceAll(of: floatQ, with: "")
-        output = text.replaceAll(of: endQ, with: "")
+        var output = text.replacingOccurrences(of: strQ, with: "")
+        output = text.replacingOccurrences(of: intQ, with: "")
+        output = text.replacingOccurrences(of: floatQ, with: "")
+        output = text.replacingOccurrences(of: endQ, with: "")
         return output
     }
 }
