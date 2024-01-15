@@ -222,3 +222,37 @@ extension FilterValues:Codable {
     }
     
 }
+
+
+// Mark: CrossMatch input
+
+public struct CrossmatchInput:Codable {
+    let fields:[CrossmatchField]
+    let data:[CrossmatchData]
+    
+    static func getCrossmatchinput(coordinates: [[String: Float]]) ->CrossmatchInput {
+        var cmData = [CrossmatchData]()
+        for coordinate in coordinates {
+            let ra = coordinate["ra"]!
+            let dec = coordinate["dec"]!
+            if let radius = coordinate["radius"] {
+                cmData.append(CrossmatchData(ra: ra, dec: dec, radius: radius))
+            } else {
+                cmData.append(CrossmatchData(ra: ra, dec: dec))
+            }
+        }
+                              return CrossmatchInput(fields: [CrossmatchField(name: "ra", type: "float"), CrossmatchField(name: "dec", type: "float")], data: cmData)
+    }
+}
+
+public struct CrossmatchField:Codable {
+    let name:String
+    let type:String
+}
+
+public struct CrossmatchData:Codable {
+    let ra:Float
+    let dec:Float
+    var radius:Float?
+}
+

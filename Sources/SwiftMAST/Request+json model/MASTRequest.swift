@@ -80,5 +80,6 @@ public struct MASTRequest {
         output = text.replacingOccurrences(of: endQ, with: "", options: .literal)
         return output
     }
+    
 }
 
