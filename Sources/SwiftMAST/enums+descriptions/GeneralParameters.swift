@@ -9,10 +9,10 @@ import Foundation
 
 public typealias MGP = MASTGeneralParameter
 
+/** MAST general parameters
+ reference [general parameters](https://archive.stsci.edu/vo/help/search_help.html)
+ */
 public enum MASTGeneralParameter:String, CaseIterable, Identifiable {
-    /** MAST general parameters
-     reference [general parameters](https://archive.stsci.edu/vo/help/search_help.html)
-     */
     case target /* target name as identifiable string"*/
  case  resolver /* Character :
   "NED",

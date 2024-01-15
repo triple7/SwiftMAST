@@ -8,6 +8,9 @@ import Foundation
 
 public typealias Service = MASTService
 
+/** MAST service end points
+ https://mast.stsci.edu/api/v0/_services.html
+ */
 public enum MASTService:String, CaseIterable, Identifiable {
     case Mast_Catalogs_Filtered_Tic
     case Mast_Catalogs_Filtered_Tic_Rows

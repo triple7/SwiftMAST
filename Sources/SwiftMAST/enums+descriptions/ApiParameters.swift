@@ -14,10 +14,10 @@ public typealias MAP = MASTApiParameter
  Thes service request end points allow granular return payloads in multiple formats using the MAST API.
  */
 
+/** MAST API general parameters
+ reference [general parameters](https://mast.stsci.edu/api/v0/_services.html)
+ */
 public enum MASTApiParameter:String, CaseIterable, Identifiable {
-    /** MAST API general parameters
-     reference [general parameters](https://mast.stsci.edu/api/v0/_services.html)
-     */
     case columns //String
     case filters //String
     case paramName //String
@@ -44,13 +44,15 @@ public enum MASTApiParameter:String, CaseIterable, Identifiable {
 case page // Int
     case removecache // Bool
 
-
     public var id:String {
         return self.rawValue
     }
     
+    /** Default general parameters
+     Convenience function for optimising search results
+     */
     public func defaultGeneralParameters()->[MAP: Any] {
-        return [MAP.pagesize: 500, MAP.timeout: 3, MAP.removenullcolumns: true]
+        return [MAP.pagesize: 100, MAP.timeout: 3, MAP.removenullcolumns: true]
     }
 }
 

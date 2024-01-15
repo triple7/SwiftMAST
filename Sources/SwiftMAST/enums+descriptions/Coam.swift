@@ -90,20 +90,5 @@ case .wavelength_region: return "Waveband"
 }
 }
     
-    public func scienceImageFilters() -> [[MAP: Any]] {
-        return [
-            [MAP.paramName: MAP.filters as Any,
-             MAP.values: ["NUV" , "FUV"] as Any],
-            [MAP.paramName: Coam.calib_level as Any,
-             MAP.values: [3, 4] as Any],
-            [MAP.paramName: Coam.dataRights as Any,
-             MAP.values: ["public"] as Any],
-            [MAP.paramName: Coam.dataproduct_type as Any,
-             MAP.values: ["IMAGE"] as Any],
-            [MAP.paramName: Coam.intentType as Any,
-             MAP.values: ["science"] as Any]
-        ]
-    }
-    
  }
 

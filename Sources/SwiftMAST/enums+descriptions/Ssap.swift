@@ -7,7 +7,6 @@
 
 import Foundation
 
-
 public enum MASTSSAP:String, CaseIterable, Identifiable {
     case fos
     case ghrs

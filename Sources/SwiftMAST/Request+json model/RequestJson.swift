@@ -77,22 +77,18 @@ public struct MASTJson:Encodable {
     // mark: request Json service parameters
     
     public mutating func setParameter(params: [MAP: Any]) {
-        print("parameters to set \n \(params)")
         for param in params.keys {
-            print("Setting param: \(params)")
             setParameter(param: param, value: params[param]!)
         }
     }
 
     public mutating func setParameter( param: MAP, value: Any) {
-        print("Setting parameter \(param)")
         self.params?.setParameter(parameter: param, value: value)
     }
     
     // Mark: request Json advanced filter parameters
     
     public mutating func setFilterParameters(params: [[MAP: Any]]) {
-        print("Setting filter parameters")
         self.setParameter(params: [MAP.filters: params as Any])
     }
     
@@ -162,7 +158,7 @@ public struct MASTJsonParams:Encodable {
 
 public struct MASTJsonFilter:Encodable {
     let paramName:String
-    let values:Array<String>
+    let values:[String]
     var separator:String?
     var freeText:String?
 }

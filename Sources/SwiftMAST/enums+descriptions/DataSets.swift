@@ -7,7 +7,6 @@
 
 import Foundation
 
-
 public enum MASTDataSet:String, CaseIterable, Identifiable {
 case hst
 case hsc_sum

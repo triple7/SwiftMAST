@@ -7,13 +7,13 @@
 
 import Foundation
 
-
 public typealias ServiceRequest = MASTServiceRequest
 
+/** MAST service request formatter
+ for the main available requests taken from [MAST python examples](https://mast.stsci.edu/api/v0/pyex.html#MastCatalogsFilteredTicPy)
+ */
 public enum MASTServiceRequest:String, CaseIterable, Identifiable {
-    /** MAST service request formatter
-     for the main available requests taken from [MAST python examples](https://mast.stsci.edu/api/v0/pyex.html#MastCatalogsFilteredTicPy)
-     */
+    // TODO: populate all service types
     case lookup
     case missionList
     case coneSearch
