@@ -60,6 +60,7 @@ public struct MASTRequest {
     func getApiUrl(json: Data)->URL {
 
         let text = String(decoding: json, as: UTF8.self)
+        print("API URL: \n \(text)\n")
         let path = (self.searchType == .apiRequest) ? apiRequestUrl : apiDownloadUrl
         var url = URLComponents(string: path)
         url?.queryItems = [URLQueryItem(name: "request", value: text)]
