@@ -59,12 +59,25 @@ public struct MASTRequest {
 
     func getApiUrl(json: Data)->URL {
 
-        let text = String(decoding: json, as: UTF8.self)
+        var text = String(decoding: json, as: UTF8.self)
+        text = removeQValueString(text: text)
         print("API URL: \n \(text)\n")
         let path = (self.searchType == .apiRequest) ? apiRequestUrl : apiDownloadUrl
         var url = URLComponents(string: path)
         url?.queryItems = [URLQueryItem(name: "request", value: text)]
         return url!.url!
+    }
+    
+    private func removeQValueString(text: String) -> String {
+        let strQ = "{\"string\":{\"_0\":"
+        let intQ = "{\"int\":{\"_0\":"
+            let floatQ = "{\"float\":{\"_0\":"
+        let endQ = "}}"
+        var output = text.replaceAll(of: strQ, with: "")
+        output = text.replaceAll(of: intQ, with: "")
+        output = text.replaceAll(of: floatQ, with: "")
+        output = text.replaceAll(of: endQ, with: "")
+        return output
     }
 }
 
