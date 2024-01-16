@@ -172,57 +172,17 @@ public struct MASTJsonParams:Encodable {
     }
 }
 
-public struct MASTJsonFilter:Encodable {
+public struct MASTJsonFilter:Codable {
     let paramName:String
     let values:FilterValues
     var separator:String?
     var freeText:String?
 }
 
-public enum FilterValues {
+public enum FilterValues:Codable {
     case qValue(QValue)
     case qArr([QValue])
     case qDict([String: QValue])
-}
-
-extension FilterValues:Codable {
-    private enum CodingKeys:String, CodingKey {
-        case values = "values"
-    }
-
-    public init(from decoder: Decoder) throws {
-        let container = try decoder.container(keyedBy: CodingKeys.self)
-        let singleContainer = try decoder.singleValueContainer()
-        
-        let values = try container.decode(String.self, forKey: .values)
-        switch values {
-        case "qValue":
-            let qValue = try singleContainer.decode(QValue.self)
-            self = .qValue(qValue)
-        case "qArr":
-            let qArr = try singleContainer.decode([QValue].self)
-            self = .qArr(qArr
-            )
-        case "qDict":
-            let qDict = try singleContainer.decode([String: QValue].self)
-            self = .qDict(qDict)
-        default:
-            fatalError("Unknown type of content.")
-        }
-    }
-    
-    public func encode(to encoder: Encoder) throws {
-        var singleContainer = encoder.singleValueContainer()
-        
-        switch self {
-        case .qValue(let qValue):
-            try singleContainer.encode(qValue)
-        case .qArr(let qArr):
-            try singleContainer.encode(qArr)
-        case .qDict(let qDict):
-            try singleContainer.encode(qDict)
-        }
-    }
 
     public init(values: Any) {
         switch values {
@@ -236,9 +196,37 @@ extension FilterValues:Codable {
             self = .qValue(QValue(value: ""))
         }
     }
-    
-}
 
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.singleValueContainer()
+        if let qValue = try? container.decode(QValue.self) {
+            self = .qValue(qValue)
+            return
+        }
+        if let qArr = try? container.decode([QValue].self) {
+            self = .qArr(qArr)
+            return
+        }
+        if let qDict = try? container.decode([String: QValue].self) {
+            self = .qDict(qDict)
+            return
+        }
+        fatalError("Failed to decode FilterValues")
+    }
+
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.singleValueContainer()
+        switch self {
+        case .qValue(let qValue):
+            try container.encode(qValue)
+        case .qArr(let qArr):
+            try container.encode(qArr)
+        case .qDict(let qDict):
+            try container.encode(qDict)
+        }
+    }
+
+}
 
 // Mark: CrossMatch input
 
