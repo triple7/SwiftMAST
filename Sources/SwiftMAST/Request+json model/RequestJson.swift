@@ -182,7 +182,7 @@ public struct MASTJsonFilter:Codable {
 public enum FilterValues:Codable {
     case qValue(QValue)
     case qArr([QValue])
-    case qDict([String: QValue])
+    case qDict([[String: QValue]])
 
     public init(values: Any) {
         switch values {
@@ -190,10 +190,10 @@ public enum FilterValues:Codable {
             self = .qValue(qValue)
         case let qArr as [QValue]:
             self = .qArr(qArr)
-        case let qDict as [String: QValue]:
+        case let qDict as [[String: QValue]]:
             self = .qDict(qDict)
         default:
-            self = .qValue(QValue(value: ""))
+            fatalError("Incompatible data structure")
         }
     }
 
@@ -207,7 +207,7 @@ public enum FilterValues:Codable {
             self = .qArr(qArr)
             return
         }
-        if let qDict = try? container.decode([String: QValue].self) {
+        if let qDict = try? container.decode([[String: QValue]].self) {
             self = .qDict(qDict)
             return
         }
