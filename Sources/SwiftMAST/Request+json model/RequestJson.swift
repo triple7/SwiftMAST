@@ -239,7 +239,6 @@ extension FilterValues:Codable {
     
 }
 
-
 // Mark: CrossMatch input
 
 public struct CrossmatchInput:Codable {

@@ -5,7 +5,7 @@
 //  Created by Yuma decaux on 30/12/2022.
 //
 
-public enum QValue:Codable {
+public enum QValue {
     /** Quantum value which collapses to a working type
      for codable Json structs
      */
@@ -13,30 +13,34 @@ public enum QValue:Codable {
     case string(String)
     case float(Float)
     case bool(Bool)
-    
-    public init(from decoder: Decoder) throws {
-        if let int = try? decoder.singleValueContainer().decode(Int.self) {
-            self = .int(int)
-            return
-        }
+}
 
-        if let float = try? decoder.singleValueContainer().decode(Float.self) {
-            self = .float(float)
-            return
-        }
+extension QValue:Codable {
+    private enum CodingKeys:String, CodingKey {
+        case values = "values"
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        let singleContainer = try decoder.singleValueContainer()
         
-        if let bool = try? decoder.singleValueContainer().decode(Bool.self) {
-            self = .bool(bool)
-            return
-        }
-        
-        if let string = try? decoder.singleValueContainer().decode(String.self) {
+        let values = try container.decode(String.self, forKey: .values)
+        switch values {
+        case "int":
+            let int = try singleContainer.decode(Int.self)
+            self = .int(int)
+        case "string":
+            let string = try singleContainer.decode(String.self)
             self = .string(string)
-            return
+        case "float":
+            let float = try singleContainer.decode(Float.self)
+            self = .float(float)
+        case "bool":
+            let bool = try singleContainer.decode(Bool.self)
+            self = .bool(bool)
+        default:
+            fatalError("Unavailable data type")
         }
-  
-        self = .string("null")
-//        throw QuantumError.missingValue
     }
 
     init(value: String) {
@@ -44,18 +48,30 @@ public enum QValue:Codable {
             self = .int(int)
             return
         }
-
         if let float = Float(value) {
             self = .float(float)
             return
         }
-        
         if let bool = Bool(value) {
             self = .bool(bool)
             return
         }
-        
             self = .string(value)
+    }
+
+    public func encode(to encoder: Encoder) throws {
+        var singleContainer = encoder.singleValueContainer()
+        
+        switch self {
+        case .int(let int):
+            try singleContainer.encode(int)
+        case .string(let string):
+            try singleContainer.encode(string)
+        case .float(let float):
+            try singleContainer.encode(float)
+        case .bool(let bool):
+            try singleContainer.encode(bool)
+        }
     }
 
     public var value:Any {
@@ -71,9 +87,6 @@ public enum QValue:Codable {
         }
     }
     
-    enum QuantumError:Error {
-        case missingValue
-    }
 }
 
 // Mark: JsonPayload structure hierarchy for the MAST json returns
