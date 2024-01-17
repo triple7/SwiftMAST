@@ -100,15 +100,7 @@ public struct MASTJsonPayload:Decodable {
     var percent_complete:Int?
     let fields:[MASTJsonField]
     let data:FilterValues
-
-    private enum CodingKeys:String, CodingKey {
-        case status = "status"
-        case msg = "msg"
-        case paging = "paging"
-        case percent_complete = "percent complete"
-        case fields = "fields"
-        case data = "data"
-            }
+    
 }
 
 public struct MASTJsonPaging:Decodable {
