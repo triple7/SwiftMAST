@@ -183,7 +183,8 @@ public enum FilterValues:Codable {
     case qValue(QValue)
     case qArr([QValue])
     case qDict([[String: QValue]])
-
+    case qDictSingle([String: QValue])
+    
     public init(values: Any) {
         switch values {
         case let qValue as QValue:
@@ -192,6 +193,8 @@ public enum FilterValues:Codable {
             self = .qArr(qArr)
         case let qDict as [[String: QValue]]:
             self = .qDict(qDict)
+        case let qDictSingle as [String: QValue]:
+            self = .qDictSingle(qDictSingle)
         default:
             fatalError("Incompatible data structure")
         }
@@ -211,6 +214,10 @@ public enum FilterValues:Codable {
             self = .qDict(qDict)
             return
         }
+        if let qDictSingle = try? container.decode([String: QValue].self) {
+            self = .qDictSingle(qDictSingle)
+            return
+        }
         fatalError("Failed to decode FilterValues")
     }
 
@@ -223,6 +230,8 @@ public enum FilterValues:Codable {
             try container.encode(qArr)
         case .qDict(let qDict):
             try container.encode(qDict)
+        case .qDictSingle(let qDictSingle):
+            try container.encode(qDictSingle)
         }
     }
 

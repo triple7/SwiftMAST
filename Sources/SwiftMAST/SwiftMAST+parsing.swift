@@ -35,6 +35,8 @@ return table
                  for dict in qDict {
                      values.append(fields.map{dict[$0]!})
                  }
+             case .qDictSingle(let qDictSingle):
+                 values.append(fields.map{qDictSingle[$0]!})
              }
          }
          return MASTTable(fields: fields, values: values)
