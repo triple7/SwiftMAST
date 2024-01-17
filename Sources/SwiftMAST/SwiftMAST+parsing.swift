@@ -25,7 +25,8 @@ return table
          let payload = try! JSONDecoder().decode(ReturnJson.self, from: data)
          let fields = payload.fields.map{$0.name}
          var values = [[QValue]]()
-         switch payload.data {
+         for row in payload.data {
+             switch row {
              case .qValue(let qValue):
                  values.append([qValue])
              case .qArr(let qArr):
@@ -37,6 +38,7 @@ return table
              case .qDictSingle(let qDictSingle):
                  values.append(fields.map{qDictSingle[$0]!})
              }
+         }
          return MASTTable(fields: fields, values: values)
      }
 
