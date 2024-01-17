@@ -208,6 +208,7 @@ public enum FilterValues:Codable {
     public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         let type = try container.decode(String.self, forKey: .type)
+        print("Decoding type: \(type)")
         switch type {
         case "qValue":
             let qValue = try container.decode(QValue.self, forKey: .associatedValue)
