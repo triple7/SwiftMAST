@@ -32,8 +32,9 @@ return table
              case .qArr(let qArr):
                  values.append(qArr)
              case .qDict(let qDict):
-                 print(qDict)
-                 break
+                 for dict in qDict {
+                     values.append(fields.map{dict[$0]!})
+                 }
              }
          }
          return MASTTable(fields: fields, values: values)
