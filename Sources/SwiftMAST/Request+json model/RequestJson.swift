@@ -202,6 +202,7 @@ public enum FilterValues:Codable {
 
     public init(from decoder: Decoder) throws {
         let container = try decoder.singleValueContainer()
+        print(container)
         if let qValue = try? container.decode(QValue.self) {
             self = .qValue(qValue)
             return
