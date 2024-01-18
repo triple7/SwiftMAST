@@ -15,10 +15,11 @@ public enum QValue {
     case bool(Bool)
 }
 
+enum QValueCodingKeys: CodingKey {
+    case int, string, float, bool
+}
+
 extension QValue:Codable {
-    enum QValueCodingKeys: CodingKey {
-        case int, string, float, bool
-    }
 
     public init(from decoder: Decoder) throws {
         if let intValue = try? decoder.singleValueContainer().decode(Int.self) {
@@ -119,7 +120,7 @@ public struct MASTJsonPayload:Decodable {
         var dataArray: [[String: QValue]] = []
         print("got nested container")
         while !dataContainer.isAtEnd {
-            let valueContainer = try dataContainer.nestedContainer(keyedBy: QValue.QValueCodingKeys.self)
+            let valueContainer = try dataContainer.nestedContainer(keyedBy: QValueCodingKeys.self)
             var dataDictionary: [String: QValue] = [:]
             print("Found value container \(valueContainer)")
             for key in valueContainer.allKeys {
