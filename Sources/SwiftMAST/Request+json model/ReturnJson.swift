@@ -114,6 +114,7 @@ public struct MASTJsonPayload:Decodable {
         fields = try container.decode([MASTJsonField].self, forKey: .fields)
         
         // Decode data
+        print("Decode data")
         var dataContainer = try container.nestedUnkeyedContainer(forKey: .data)
         var dataArray: [[String: QValue]] = []
         
