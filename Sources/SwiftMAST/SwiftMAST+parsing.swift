@@ -26,18 +26,7 @@ return table
          let fields = payload.fields.map{$0.name}
          var values = [[QValue]]()
          for row in payload.data {
-             switch row {
-             case .qValue(let qValue):
-                 values.append([qValue])
-             case .qArr(let qArr):
-                 values.append(qArr)
-             case .qDict(let qDict):
-                 for dict in qDict {
-                     values.append(fields.map{dict[$0]!})
-                 }
-             case .qDictSingle(let qDictSingle):
-                 values.append(fields.map{qDictSingle[$0]!})
-             }
+                     values.append(fields.map{row[$0]!})
          }
          return MASTTable(fields: fields, values: values)
      }
