@@ -123,6 +123,7 @@ public struct MASTJsonPayload:Decodable {
             var dataDictionary: [String: QValue] = [:]
             print("Found value container")
             for key in valueContainer.allKeys {
+                print(key)
                 if let qValue = try? valueContainer.decode(QValue.self, forKey: key) {
                     print("Found QValue \(qValue)")
                     dataDictionary[key.stringValue] = qValue
