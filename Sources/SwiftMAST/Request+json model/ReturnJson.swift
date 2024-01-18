@@ -117,13 +117,14 @@ public struct MASTJsonPayload:Decodable {
         print("Decode data")
         var dataContainer = try container.nestedUnkeyedContainer(forKey: .data)
         var dataArray: [[String: QValue]] = []
-        
+        print("got nested container")
         while !dataContainer.isAtEnd {
             let valueContainer = try dataContainer.nestedContainer(keyedBy: QValue.QValueCodingKeys.self)
             var dataDictionary: [String: QValue] = [:]
             
             for key in valueContainer.allKeys {
                 if let qValue = try? valueContainer.decode(QValue.self, forKey: key) {
+                    print("Found QValue \(qValue)")
                     dataDictionary[key.stringValue] = qValue
                 }
             }
