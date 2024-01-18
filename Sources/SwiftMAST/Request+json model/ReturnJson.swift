@@ -16,31 +16,29 @@ public enum QValue {
 }
 
 extension QValue:Codable {
-    private enum CodingKeys:String, CodingKey {
-        case values = "values"
+    enum QValueCodingKeys: CodingKey {
+        case int, string, float, bool
     }
 
     public init(from decoder: Decoder) throws {
-        let container = try decoder.container(keyedBy: CodingKeys.self)
-        let singleContainer = try decoder.singleValueContainer()
-        
-        let values = try container.decode(String.self, forKey: .values)
-        switch values {
-        case "int":
-            let int = try singleContainer.decode(Int.self)
-            self = .int(int)
-        case "string":
-            let string = try singleContainer.decode(String.self)
-            self = .string(string)
-        case "float":
-            let float = try singleContainer.decode(Float.self)
-            self = .float(float)
-        case "bool":
-            let bool = try singleContainer.decode(Bool.self)
-            self = .bool(bool)
-        default:
-            fatalError("Unavailable data type")
+        if let intValue = try? decoder.singleValueContainer().decode(Int.self) {
+            self = .int(intValue)
+            return
         }
+        if let stringValue = try? decoder.singleValueContainer().decode(String.self) {
+            self = .string(stringValue)
+            return
+        }
+        if let floatValue = try? decoder.singleValueContainer().decode(Float.self) {
+            self = .float(floatValue)
+            return
+        }
+        if let boolValue = try? decoder.singleValueContainer().decode(Bool.self) {
+            self = .bool(boolValue)
+            return
+        }
+        
+        throw DecodingError.dataCorrupted(DecodingError.Context(codingPath: decoder.codingPath, debugDescription: "Invalid QValue"))
     }
 
     init(value: String) {
@@ -101,6 +99,40 @@ public struct MASTJsonPayload:Decodable {
     let fields:[MASTJsonField]
     let data:[[String:QValue]]
     
+
+    enum CodingKeys: String, CodingKey {
+        case status, msg, paging, percent_complete, fields, data
+    }
+    
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        
+        status = try container.decode(String.self, forKey: .status)
+        msg = try container.decode(String.self, forKey: .msg)
+        paging = try container.decode(MASTJsonPaging.self, forKey: .paging)
+        percent_complete = try container.decodeIfPresent(Int.self, forKey: .percent_complete)
+        fields = try container.decode([MASTJsonField].self, forKey: .fields)
+        
+        // Decode data
+        var dataContainer = try container.nestedUnkeyedContainer(forKey: .data)
+        var dataArray: [[String: QValue]] = []
+        
+        while !dataContainer.isAtEnd {
+            let valueContainer = try dataContainer.nestedContainer(keyedBy: QValue.QValueCodingKeys.self)
+            var dataDictionary: [String: QValue] = [:]
+            
+            for key in valueContainer.allKeys {
+                if let qValue = try? valueContainer.decode(QValue.self, forKey: key) {
+                    dataDictionary[key.stringValue] = qValue
+                }
+            }
+            
+            dataArray.append(dataDictionary)
+        }
+        
+        data = dataArray
+    }
+
 }
 
 public struct MASTJsonPaging:Decodable {
