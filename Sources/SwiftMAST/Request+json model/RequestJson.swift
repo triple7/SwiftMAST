@@ -185,11 +185,6 @@ public enum FilterValues:Codable {
     case qDict([[String: QValue]])
     case qDictSingle([String: QValue])
     
-    private enum CodingKeys:String, CodingKey {
-        case type
-        case associatedValue
-    }
-
     public init(values: Any) {
         switch values {
         case let qValue as QValue:
@@ -206,23 +201,20 @@ public enum FilterValues:Codable {
     }
 
     public init(from decoder: Decoder) throws {
-        let container = try decoder.container(keyedBy: CodingKeys.self)
-        let type = try container.decode(String.self, forKey: .type)
-        switch type {
-        case "qValue":
-            let qValue = try container.decode(QValue.self, forKey: .associatedValue)
+        let container = try decoder.singleValueContainer()
+        if let qValue = try? container.decode(QValue.self) {
             self = .qValue(qValue)
-        case "qArr":
-            let qArr = try container.decode([QValue].self, forKey: .associatedValue)
-            self = .qArr(qArr)
-        case "qDict":
-            let qDict = try container.decode([[String:QValue]].self, forKey: .associatedValue)
-            self = .qDict(qDict)
-            let qDictSingle = try container.decode([String:QValue].self, forKey: .associatedValue)
-            self = .qDictSingle(qDictSingle)
-        default:
-            fatalError("Failed to decode FilterValues")
         }
+        if let qArr = try? container.decode([QValue].self) {
+            self = .qArr(qArr)
+        }
+        if let qDict = try? container.decode([[String:QValue]].self) {
+            self = .qDict(qDict)
+        }
+        if let qDictSingle = try? container.decode([String:QValue].self) {
+            self = .qDictSingle(qDictSingle)
+        }
+            fatalError("Failed to decode FilterValues")
     }
 
     public func encode(to encoder: Encoder) throws {
