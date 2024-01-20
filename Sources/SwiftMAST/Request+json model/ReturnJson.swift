@@ -14,11 +14,6 @@ public enum QValue {
     case float(Float)
     case bool(Bool)
 }
-
-enum QValueCodingKeys: CodingKey {
-    case int, string, float, bool
-}
-
 extension QValue:Codable {
 
     public init(from decoder: Decoder) throws {
@@ -39,7 +34,11 @@ extension QValue:Codable {
             return
         }
         
-        throw DecodingError.dataCorrupted(DecodingError.Context(codingPath: decoder.codingPath, debugDescription: "Invalid QValue"))
+        // This is a NULL value so keep as empty string
+        // instead of throwing error
+        // The removenullrecord flag in the request
+        // will omit these key/value pairs
+        self = .string("")
     }
 
     init(value: String) {
