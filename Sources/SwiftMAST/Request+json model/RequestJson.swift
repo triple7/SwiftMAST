@@ -168,7 +168,7 @@ public struct MASTJsonParams:Encodable {
         if self.filters == nil {
             self.filters = []
         }
-        self.filters?.append(MASTJsonFilter(paramName: paramName, values: values, separator: separator))
+        self.filters?.append(MASTJsonFilter(paramName: paramName, values: values, separator: separator, freeText: ""))
     }
 }
 
@@ -177,6 +177,13 @@ public struct MASTJsonFilter:Codable {
     let values:FilterValues
     var separator:String?
     var freeText:String?
+
+    public init(paramName: String, values: FilterValues, separator: String? = nil, freeText: String? = nil) {
+        self.paramName = paramName
+        self.values = values
+        self.separator = separator
+        self.freeText = freeText
+    }
 }
 
 public enum FilterValues:Codable {
