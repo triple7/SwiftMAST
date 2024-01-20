@@ -113,8 +113,7 @@ public struct MASTJsonPayload:Decodable {
         paging = try container.decode(MASTJsonPaging.self, forKey: .paging)
         percent_complete = try container.decodeIfPresent(Int.self, forKey: .percent_complete)
         fields = try container.decode([MASTJsonField].self, forKey: .fields)
-
-        print("Fields\n\(fields)")
+        
         // Decode data
         print("Decode data")
         var dataContainer = try container.nestedUnkeyedContainer(forKey: .data)
@@ -125,7 +124,8 @@ public struct MASTJsonPayload:Decodable {
             var dataDictionary: [String: QValue] = [:]
             print("Found value container \(valueContainer)")
             for key in valueContainer.allKeys {
-                print(key)
+                print(key.stringValue)
+                
                 if let qValue = try? valueContainer.decode(QValue.self, forKey: key) {
                     print("Found QValue \(qValue)")
                     dataDictionary[key.stringValue] = qValue
