@@ -115,14 +115,14 @@ public struct MASTJsonPayload:Decodable {
         fields = try container.decode([MASTJsonField].self, forKey: .fields)
         
         // Decode data
-        print("Decode data")
-        // Decode data
         var dataContainer = try container.nestedUnkeyedContainer(forKey: .data)
         var dataArray: [[String: QValue]] = []
         
         while !dataContainer.isAtEnd {
-            let dictionary = try dataContainer.decode([String: QValue].self)
-            dataArray.append(dictionary)
+            let dictionary = try dataContainer.decodeIfPresent([String: QValue].self)
+            if let existingValue = dictionary {
+                dataArray.append(existingValue)
+            }
         }
         
         data = dataArray
