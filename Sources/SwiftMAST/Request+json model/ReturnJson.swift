@@ -41,7 +41,7 @@ extension QValue:Codable {
         self = .string("")
     }
 
-    init(value: String) {
+    public init(value: String) {
         if let int = Int(value) {
             self = .int(int)
             return
