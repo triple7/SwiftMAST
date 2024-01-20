@@ -113,12 +113,13 @@ public struct MASTJsonPayload:Decodable {
         paging = try container.decode(MASTJsonPaging.self, forKey: .paging)
         percent_complete = try container.decodeIfPresent(Int.self, forKey: .percent_complete)
         fields = try container.decode([MASTJsonField].self, forKey: .fields)
-        
+
+        print("Fields\n\(fields)")
         // Decode data
         print("Decode data")
         var dataContainer = try container.nestedUnkeyedContainer(forKey: .data)
         var dataArray: [[String: QValue]] = []
-        print("got nested container")
+        print("got nested container \(dataContainer)")
         while !dataContainer.isAtEnd {
             let valueContainer = try dataContainer.nestedContainer(keyedBy: QValueCodingKeys.self)
             var dataDictionary: [String: QValue] = [:]
