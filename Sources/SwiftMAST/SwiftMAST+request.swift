@@ -29,7 +29,8 @@ extension SwiftMAST {
         let json = service.jsonData(json: params)
 
         let url = MASTRequest(searchType: .apiRequest).getApiUrl(json: json)
-        
+        print("Getting URL")
+        print(url.absoluteString)
         let configuration = URLSessionConfiguration.ephemeral
     let queue = OperationQueue.main
         let session = URLSession(configuration: configuration, delegate: self, delegateQueue: queue)
