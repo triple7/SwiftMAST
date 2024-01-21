@@ -17,7 +17,7 @@ public class MASTTable:NSObject {
      * fields: the header of the table
      * values: rows of values mapped to the fields
      */
-    internal var fields:[String]
+    public var fields:[String]
     internal var values:[[QValue]]
     
     /* XML parsing related objects */
@@ -76,7 +76,7 @@ public class MASTTable:NSObject {
         populateTable()
     }
 
-    internal func populateTable() {
+    public func populateTable() {
         self.fields = self.xmlDict.keys.map{$0}
         self.values.append(self.xmlDict.keys.map{QValue(value: self.xmlDict[$0]! as! String)})
     }

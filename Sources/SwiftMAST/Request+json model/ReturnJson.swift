@@ -13,6 +13,17 @@ public enum QValue {
     case string(String)
     case float(Float)
     case bool(Bool)
+    
+    public func type() -> String {
+        switch self {
+        case .string(let string): return "String"
+                     case .int(let int): return
+                     "int"
+                     case .float(let float): return
+                     "float"
+                     case .bool(let bool): return "bool"
+        }
+    }
 }
 extension QValue:Codable {
 

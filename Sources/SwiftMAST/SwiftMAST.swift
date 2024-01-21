@@ -53,7 +53,6 @@ public class SwiftMAST:NSObject {
           closure: whether request was successful
           */
          let request = MASTRequest(target: target, searchType: .mission)
-         print(request.getURL(dataSet: mission).absoluteString)
          let configuration = URLSessionConfiguration.ephemeral
      let queue = OperationQueue.main
          let session = URLSession(configuration: configuration, delegate: self, delegateQueue: queue)

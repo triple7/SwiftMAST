@@ -7,7 +7,7 @@
 
 import Foundation
 
-extension SwiftMAST {
+public extension SwiftMAST {
     /** Extends the MAST network requests to the API
      refer to [MAST API](https://mast.stsci.edu/api/v0/md_result_formats.html)
      
@@ -29,8 +29,6 @@ extension SwiftMAST {
         let json = service.jsonData(json: params)
 
         let url = MASTRequest(searchType: .apiRequest).getApiUrl(json: json)
-        print("Getting URL")
-        print(url.absoluteString)
         let configuration = URLSessionConfiguration.ephemeral
     let queue = OperationQueue.main
         let session = URLSession(configuration: configuration, delegate: self, delegateQueue: queue)
