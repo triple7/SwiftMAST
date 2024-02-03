@@ -54,6 +54,7 @@ extension QValue:Codable {
 
     public init(value: String) {
         if let int = Int(value) {
+            print("converted string to int \(value)")
             self = .int(int)
             return
         }
