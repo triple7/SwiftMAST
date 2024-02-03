@@ -16,13 +16,13 @@ import Foundation
  * Download 3D star mappings from the SDSS (Sloan Digital Sky Survey) in CUBE format
  * Download GAIA point crossMatch parameters for conversion to 3D point cloud mapping
  */
-public extension SwiftMAST {
+extension SwiftMAST {
     
     /** Lookup a target by its name
      Parameters:
      * name: String
      */
-    public func lookupTargetByName(targetName: String, result: @escaping ([NameLookupJson]) -> Void) {
+func lookupTargetByName(targetName: String, result: @escaping ([NameLookupJson]) -> Void) {
         print("lookupTargetByName: \(targetName)")
         var output:[NameLookupJson] = []
         let service = Service.Mast_Name_Lookup
@@ -58,7 +58,7 @@ public extension SwiftMAST {
     /** Make a cone search for data products in the MAST archives
      
      */
-    public func getConeSearch(ra: Float, dec: Float, radius: Float=0.2, filters:[ResultField] = [.filters, .wavelength_region, .instrument_name, .obs_collection, .dataURL], filterParams: [MASTJsonFilter]? = nil, result: @escaping ([ResultField: [String]]) -> Void) {
+func getConeSearch(ra: Float, dec: Float, radius: Float=0.2, filters:[ResultField] = [.filters, .wavelength_region, .instrument_name, .obs_collection, .dataURL], filterParams: [MASTJsonFilter]? = nil, result: @escaping ([ResultField: [String]]) -> Void) {
         print("getConeSearch: ra: \(ra) dec: \(dec)")
         
         var output = [ResultField: [String]]()
@@ -84,7 +84,7 @@ public extension SwiftMAST {
      * radius: Float
      * returnFilters:[FilterResult]
      */
-    public func getScienceImageProducts(ra: Float, dec: Float, radius: Float, filters:[ResultField] = [.filters, .wavelength_region, .instrument_name, .obs_collection, .dataURL], result: @escaping ([ResultField: [String]]) -> Void) {
+func getScienceImageProducts(ra: Float, dec: Float, radius: Float, filters:[ResultField] = [.filters, .wavelength_region, .instrument_name, .obs_collection, .dataURL], result: @escaping ([ResultField: [String]]) -> Void) {
         print("getScienceImageProducts ra \(ra) dec \(dec) radius \(radius)")
         
         let service = Service.Mast_Caom_Filtered
@@ -117,7 +117,7 @@ public extension SwiftMAST {
      dec: Float
      radius: Float
      */
-    public func getGaiaCrossmatch(ra: Float, dec: Float, radius: Float, result: @escaping ([[Float]]) -> Void) {
+func getGaiaCrossmatch(ra: Float, dec: Float, radius: Float, result: @escaping ([[Float]]) -> Void) {
         print("getGaiaCrossmatch:  at radius \(radius)")
         
         let service = Service.Mast_GaiaDR3_Crossmatch
@@ -146,7 +146,7 @@ public extension SwiftMAST {
      dec: Float
      radius: Float
      */
-    public func getTicCrossmatch(ra: Float, dec: Float, radius: Float, result: @escaping ([[Float]]) -> Void) {
+func getTicCrossmatch(ra: Float, dec: Float, radius: Float, result: @escaping ([[Float]]) -> Void) {
         print("getTicCrossmatch:  at radius \(radius)")
         
         let service = Service.Mast_Tic_Crossmatch

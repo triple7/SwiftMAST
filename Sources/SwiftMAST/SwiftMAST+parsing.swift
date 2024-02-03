@@ -11,7 +11,7 @@ import Foundation
 /** MAST request return type parsing functions
  */
      
-     public func parseXml(data: Data)->MASTTable {
+func parseXml(data: Data)->MASTTable {
          let table = MASTTable()
          let parser = XMLParser(data: data)
          parser.delegate = table
@@ -19,8 +19,8 @@ import Foundation
 return table
      }
 
-public func parseJson(data: Data)->MASTTable {
-         let text = String(decoding: data, as: UTF8.self)
+func parseJson(data: Data)->MASTTable {
+         let _ = String(decoding: data, as: UTF8.self)
          let payload = try! JSONDecoder().decode(ReturnJson.self, from: data)
          let fields = payload.fields.map{$0.name}
          var values = [[QValue]]()
@@ -30,7 +30,7 @@ public func parseJson(data: Data)->MASTTable {
          return MASTTable(fields: fields, values: values)
      }
 
-     public func parseCsvTable(text: String)->MASTTable {
+func parseCsvTable(text: String)->MASTTable {
          var table = text.components(separatedBy: "\n")
          let fields = table.removeFirst().components(separatedBy: ",")
          let rows = table.map{$0.components(separatedBy: ",")}

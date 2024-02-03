@@ -16,12 +16,12 @@ public enum QValue {
     
     public func type() -> String {
         switch self {
-        case .string(let string): return "String"
-                     case .int(let int): return
+        case .string(_): return "String"
+                     case .int(_): return
                      "int"
-                     case .float(let float): return
+                     case .float(_): return
                      "float"
-                     case .bool(let bool): return "bool"
+                     case .bool(_): return "bool"
         }
     }
 }
