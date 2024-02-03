@@ -39,7 +39,7 @@ public enum MASTServiceRequest:String, CaseIterable, Identifiable {
         case .coneSearch:
                                     return MAJP(params: [MAP.ra: 0.0, MAP.dec: 0.0, MAP.radius: 0.0])
         case .advancedSearch:
-return MAJP(params: [MAP.columns: "*"])
+            return MAJP(params: [:])
         case .hscSpectra:
 return MAJP(params: [MAP: String]())
         case .hscMatches:
