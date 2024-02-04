@@ -243,6 +243,7 @@ public struct CoamResult:Codable, Comparable {
 
 extension CoamResult {
     public init(data: [QValue]) {
+        print(data)
         self.calib_level = data[0]
         self.dataRights = data[1]
         self.dataURL = data[2]
