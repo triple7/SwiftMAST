@@ -43,6 +43,16 @@ public class MASTTable:NSObject {
         let idx = self.fields.firstIndex(of: field)!
         return self.values.map{$0[idx]}
     }
+    
+    public func getRows( for fields: [String]) -> [[QValue]] {
+        var output:[[QValue]] = []
+        let reference = getValues(for: fields.first!)
+        for i in 0...reference.count {
+            output.append(fields.flatMap{getValues(for: $0)[i]})
+        }
+        return output
+    }
+    
 }
 
                         extension MASTTable:XMLParserDelegate {
