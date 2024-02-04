@@ -228,15 +228,15 @@ public struct CoamResult:Codable, Comparable {
         let rFilters = rhs.filters.value as! String
         let lInstrument = lhs.instrument_name.value as! String
         let rInstrument = rhs.instrument_name.value as! String
-        let lTMin = lhs.t_min.value as! Int
-        let rTMin = rhs.t_min.value as! Int
-        let lTMax = lhs.t_max.value as! Int
-        let rtMax = rhs.t_max.value as! Int
+        let lTMin = lhs.t_min.value as! Float
+        let rTMin = rhs.t_min.value as! Float
+        let lTMax = lhs.t_max.value as! Float
+        let rtMax = rhs.t_max.value as! Float
         return lObsId == rObsId && lFilters == rFilters && lInstrument == rInstrument && lTMin == rTMin && lTMax == rtMax
     }
 
     public static func <(lhs: CoamResult, rhs: CoamResult) -> Bool {
-        return (lhs.t_min.value as! Int) < (rhs.t_min.value as! Int)
+        return (lhs.t_min.value as! Float) < (rhs.t_min.value as! Float)
     }
     
 }
