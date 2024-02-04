@@ -46,11 +46,23 @@ public class MASTTable:NSObject {
     
     public func getRows( for fields: [String]) -> [[QValue]] {
         var output:[[QValue]] = []
-        let reference = getValues(for: fields.first!)
-        for i in 0..<reference.count {
-            output.append(fields.flatMap{getValues(for: $0)[i]})
+        let rowCount = values.count
+        for i in 0..<rowCount {
+            output.append(fields.compactMap{getValues(for: $0)[i]})
         }
         return output
+    }
+    
+/** Get MAST json results
+ using the default returned properties
+ https://mast.stsci.edu/api/v0/_c_a_o_mfields.html
+ The MASTResult format can be sorted
+ by its t_min value which is a temporally
+ increasing sort
+ */
+    public func getMastResults() -> [MASTResult] {
+        let rows = getRows(for: getFields())
+        return rows.map{MASTResult(data: $0)}
     }
     
 }
