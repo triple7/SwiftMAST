@@ -216,7 +216,7 @@ public struct CoamResult:Codable, Comparable {
     let t_exptime:Float
     let t_max:Float
     let t_min:Float
-    let t_obs_release:String
+    let t_obs_release:Float
     let target_classification:String
     let target_name:String
     let wavelength_region:String
@@ -307,7 +307,11 @@ extension CoamResult {
         } else {
             self.t_min = 0
         }
-        self.t_obs_release = data[30].value as! String
+        if let t_obs_release = data[30].value as? Float {
+                    self.t_obs_release = t_obs_release
+        } else {
+            self.t_obs_release = 0
+        }
         self.target_classification = data[31].value as! String
         self.target_name = data[32].value as! String
         self.wavelength_region = data[33].value as! String
