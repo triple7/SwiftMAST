@@ -243,6 +243,10 @@ public struct CoamResult:Codable, Comparable {
 
 extension CoamResult {
     public init(data: [QValue]) {
+        let fields = Coam.allCases.map{$0.id}
+        for (i, f) in fields.enumerated() {
+            print("\(f) \(data[i])")
+        }
         self.calib_level = data[0]
         self.dataRights = data[1]
         self.dataURL = data[2]
