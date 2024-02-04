@@ -197,7 +197,7 @@ public struct CoamResult:Codable, Comparable {
     let instrument_name:String
     let intentType:String
     let jpegURL:String
-    let mtFlag:String
+    let mtFlag:Bool
     let objID:Int
     let obs_collection:String
     let obs_id:String
@@ -256,7 +256,11 @@ extension CoamResult {
         self.instrument_name = data[8].value as! String
         self.intentType = data[9].value as! String
         self.jpegURL = data[10].value as! String
-        self.mtFlag = data[11].value as! String
+        if let mtFlag = data[11].value as? Bool {
+                    self.mtFlag = mtFlag
+        } else {
+            self.mtFlag = false
+        }
         if let objID = data[10].value as? Int {
             self.objID = objID
         } else {
