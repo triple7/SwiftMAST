@@ -228,10 +228,10 @@ public struct CoamResult:Codable, Comparable {
         let rFilters = rhs.filters.value as! String
         let lInstrument = lhs.instrument_name.value as! String
         let rInstrument = rhs.instrument_name.value as! String
-        let lTMin = lhs.t_min.value as! Float
-        let rTMin = rhs.t_min.value as! Float
-        let lTMax = lhs.t_max.value as! Float
-        let rtMax = rhs.t_max.value as! Float
+        let lTMin = lhs.t_min.value as! Float ?? 0
+        let rTMin = rhs.t_min.value as! Float ?? 0
+        let lTMax = lhs.t_max.value as! Float ?? 0
+        let rtMax = rhs.t_max.value as! Float ?? 0
         return lObsId == rObsId && lFilters == rFilters && lInstrument == rInstrument && lTMin == rTMin && lTMax == rtMax
     }
 
@@ -243,7 +243,6 @@ public struct CoamResult:Codable, Comparable {
 
 extension CoamResult {
     public init(data: [QValue]) {
-        print(data)
         self.calib_level = data[0]
         self.dataRights = data[1]
         self.dataURL = data[2]
