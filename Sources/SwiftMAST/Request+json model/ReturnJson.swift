@@ -186,103 +186,127 @@ public struct NameLookupJson:Codable {
 // Mark: Equatable MAST return Json for time adjustments
 
 public struct CoamResult:Codable, Comparable {
-    let calib_level:QValue
-    let dataRights:QValue
-    let dataURL:QValue
-    let dataproduct_type:QValue
-    let distance:QValue
-    let em_max:QValue
-    let em_min:QValue
-    let filters:QValue
-    let instrument_name:QValue
-    let intentType:QValue
-    let jpegURL:QValue
-    let mtFlag:QValue
-    let objID:QValue
-    let obs_collection:QValue
-    let obs_id:QValue
-    let obs_title:QValue
-    let obsid:QValue
-    let project:QValue
-    let proposal_id:QValue
-    let proposal_pi:QValue
-    let proposal_type:QValue
-    let provenance_name:QValue
-    let s_dec:QValue
-    let s_ra:QValue
-    let s_region:QValue
-    let sequence_number:QValue
-    let srcDen:QValue
-    let t_exptime:QValue
-    let t_max:QValue
-    let t_min:QValue
-    let t_obs_release:QValue
-    let target_classification:QValue
-    let target_name:QValue
-    let wavelength_region:QValue
+    let calib_level:Int
+    let dataRights:String
+    let dataURL:String
+    let dataproduct_type:String
+    let distance:Int
+    let em_max:Int
+    let em_min:Int
+    let filters:String
+    let instrument_name:String
+    let intentType:String
+    let jpegURL:String
+    let mtFlag:String
+    let objID:Int
+    let obs_collection:String
+    let obs_id:String
+    let obs_title:String
+    let obsid:Int
+    let project:String
+    let proposal_id:String
+    let proposal_pi:String
+    let proposal_type:String
+    let provenance_name:String
+    let s_dec:Float
+    let s_ra:Float
+    let s_region:String
+    let sequence_number:Int
+    let srcDen:Int
+    let t_exptime:Float
+    let t_max:Float
+    let t_min:Float
+    let t_obs_release:String
+    let target_classification:String
+    let target_name:String
+    let wavelength_region:String
 
     public static func ==(lhs: CoamResult, rhs: CoamResult) -> Bool {
-        let lObsId = lhs.obs_id.value as! String
-        let rObsId = rhs.obs_id.value as! String
-        let lFilters = lhs.filters.value as! String
-        let rFilters = rhs.filters.value as! String
-        let lInstrument = lhs.instrument_name.value as! String
-        let rInstrument = rhs.instrument_name.value as! String
-        let lTMin = lhs.t_min.value as! Float ?? 0
-        let rTMin = rhs.t_min.value as! Float ?? 0
-        let lTMax = lhs.t_max.value as! Float ?? 0
-        let rtMax = rhs.t_max.value as! Float ?? 0
-        return lObsId == rObsId && lFilters == rFilters && lInstrument == rInstrument && lTMin == rTMin && lTMax == rtMax
+        return lhs.obs_id == rhs.obs_id && lhs.filters == rhs.filters && lhs.instrument_name == rhs.instrument_name && lhs.t_min == rhs.t_min && lhs.t_max == rhs.t_max
     }
 
     public static func <(lhs: CoamResult, rhs: CoamResult) -> Bool {
-        print(lhs.t_min)
-        print(rhs.t_min)
-        return (lhs.t_min.value as! Float ?? 0) < (rhs.t_min.value as! Float ?? 0)
+        return lhs.t_min < rhs.t_min
     }
     
 }
 
 extension CoamResult {
     public init(data: [QValue]) {
-        let fields = Coam.allCases.map{$0.id}
-        for (i, f) in fields.enumerated() {
-            print("\(f) \(data[i])")
+        self.calib_level = data[0].value as! Int
+        self.dataRights = data[1].value as! String
+        self.dataURL = data[2].value as! String
+        self.dataproduct_type = data[3].value as! String
+        if let distance = data[4].value as? Int {
+            self.distance = distance
+        } else {
+            self.distance = 0
         }
-        self.calib_level = data[0]
-        self.dataRights = data[1]
-        self.dataURL = data[2]
-        self.dataproduct_type = data[3]
-        self.distance = data[4]
-        self.em_max = data[5]
-        self.em_min = data[6]
-        self.filters = data[7]
-        self.instrument_name = data[8]
-        self.intentType = data[9]
-        self.jpegURL = data[10]
-        self.mtFlag = data[11]
-        self.objID = data[12]
-        self.obs_collection = data[13]
-        self.obs_id = data[14]
-        self.obs_title = data[15]
-        self.obsid = data[16]
-        self.project = data[17]
-        self.proposal_id = data[18]
-        self.proposal_pi = data[19]
-        self.proposal_type = data[20]
-        self.provenance_name = data[21]
-        self.s_dec = data[22]
-        self.s_ra = data[23]
-        self.s_region = data[24]
-        self.sequence_number = data[25]
-        self.srcDen = data[26]
-        self.t_exptime = data[27]
-        self.t_max = data[28]
-        self.t_min = data[29]
-        self.t_obs_release = data[30]
-        self.target_classification = data[31]
-        self.target_name = data[32]
-        self.wavelength_region = data[33]
+        if let em_max = data[5].value as? Int {
+            self.em_max = em_max
+        } else {
+            self.em_max = 0
+        }
+        if let em_min = data[6].value as? Int {
+            self.em_min = em_min
+        } else {
+            self.em_min = 0
+        }
+        self.filters = data[7].value as! String
+        self.instrument_name = data[8].value as! String
+        self.intentType = data[9].value as! String
+        self.jpegURL = data[10].value as! String
+        self.mtFlag = data[11].value as! String
+        if let objID = data[10].value as? Int {
+            self.objID = objID
+        } else {
+            self.objID = 0
+        }
+        self.obs_collection = data[13].value as! String
+        self.obs_id = data[14].value as! String
+        self.obs_title = data[15].value as! String
+        if let obsid = data[16].value as? Int {
+            self.obsid = obsid
+        } else {
+            self.obsid = 0
+        }
+        self.project = data[17].value as! String
+        self.proposal_id = data[18].value as! String
+        self.proposal_pi = data[19].value as! String
+        self.proposal_type = data[20].value as! String
+        self.provenance_name = data[21].value as! String
+        self.s_dec = data[22].value as! Float
+        self.s_ra = data[23].value as! Float
+        self.s_region = data[24].value as! String
+        if let sequence_number = data[25].value as? Int {
+            self.sequence_number = sequence_number
+        } else {
+            self.sequence_number = 0
+        }
+        if let srcDen = data[26].value as? Int {
+                    self.srcDen = srcDen
+        } else {
+            self.srcDen = 0
+        }
+        if let t_exptime = data[27].value as? Float {
+                    self.t_exptime = t_exptime
+        } else {
+            self.t_exptime = 0
+        }
+        if let t_max = data[28].value as? Float {
+                    self.t_max = t_max
+        } else {
+            self.t_max = 0
+        }
+        if let t_min = data[29].value as? Float {
+                    self.t_min = t_min
+        } else {
+            self.t_min = 0
+        }
+        self.t_obs_release = data[30].value as! String
+        self.target_classification = data[31].value as! String
+        self.target_name = data[32].value as! String
+        self.wavelength_region = data[33].value as! String
     }
     
 }
