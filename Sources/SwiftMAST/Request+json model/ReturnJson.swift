@@ -185,41 +185,43 @@ public struct NameLookupJson:Codable {
 
 // Mark: Equatable MAST return Json for time adjustments
 
-public struct MASTResult:Codable, Comparable {
-    let obs_collection:QValue
-    let provenance_name:QValue
-    let instrument_name:QValue
-    let project:QValue
-    let filters:QValue
-    let wavelength_region:QValue
-    let target_name:QValue
-    let target_classification:QValue
-    let obs_id:QValue
-    let s_ra:QValue
-    let s_dec:QValue
-    let dataproduct_type:QValue
-    let proposal_pi:QValue
+public struct CoamResult:Codable, Comparable {
     let calib_level:QValue
-    let t_min:QValue
-    let t_max:QValue
-    let t_exptime:QValue
-    let em_min:QValue
-    let em_max:QValue
-    let obs_title:QValue
-    let t_obs_release:QValue
-    let proposal_id:QValue
-    let proposal_type:QValue
-    let sequence_number:QValue
-    let s_region:QValue
-    let jpegURL:QValue
-    let dataURL:QValue
     let dataRights:QValue
-    let mtFlag:QValue
-    let srcDen:QValue
-    let obsid:QValue
+    let dataURL:QValue
+    let dataproduct_type:QValue
     let distance:QValue
+    let em_max:QValue
+    let em_min:QValue
+    let filters:QValue
+    let instrument_name:QValue
+    let intentType:QValue
+    let jpegURL:QValue
+    let mtFlag:QValue
+    let objID:QValue
+    let obs_collection:QValue
+    let obs_id:QValue
+    let obs_title:QValue
+    let obsid:QValue
+    let project:QValue
+    let proposal_id:QValue
+    let proposal_pi:QValue
+    let proposal_type:QValue
+    let provenance_name:QValue
+    let s_dec:QValue
+    let s_ra:QValue
+    let s_region:QValue
+    let sequence_number:QValue
+    let srcDen:QValue
+    let t_exptime:QValue
+    let t_max:QValue
+    let t_min:QValue
+    let t_obs_release:QValue
+    let target_classification:QValue
+    let target_name:QValue
+    let wavelength_region:QValue
 
-    public static func ==(lhs: MASTResult, rhs: MASTResult) -> Bool {
+    public static func ==(lhs: CoamResult, rhs: CoamResult) -> Bool {
         let lObsId = lhs.obs_id.value as! String
         let rObsId = rhs.obs_id.value as! String
         let lFilters = lhs.filters.value as! String
@@ -233,47 +235,48 @@ public struct MASTResult:Codable, Comparable {
         return lObsId == rObsId && lFilters == rFilters && lInstrument == rInstrument && lTMin == rTMin && lTMax == rtMax
     }
 
-    public static func <(lhs: MASTResult, rhs: MASTResult) -> Bool {
+    public static func <(lhs: CoamResult, rhs: CoamResult) -> Bool {
         return (lhs.t_min.value as! Int) < (rhs.t_min.value as! Int)
     }
     
 }
 
-
-extension MASTResult {
+extension CoamResult {
     public init(data: [QValue]) {
-        self.obs_collection = data[0]
-        self.provenance_name = data[1]
-        self.instrument_name = data[2]
-        self.project = data[3]
-        self.filters = data[4]
-        self.wavelength_region = data[5]
-        self.target_name = data[6]
-        self.target_classification = data[7]
-        self.obs_id = data[8]
-        self.s_ra = data[9]
-        self.s_dec = data[10]
-        self.dataproduct_type = data[11]
-        self.proposal_pi = data[12]
-        self.calib_level = data[13]
-        self.t_min = data[14]
-        self.t_max = data[15]
-        self.t_exptime = data[16]
-        self.em_min = data[17]
-        self.em_max = data[18]
-        self.obs_title = data[19]
-        self.t_obs_release = data[20]
-        self.proposal_id = data[21]
-        self.proposal_type = data[22]
-        self.sequence_number = data[23]
+        self.calib_level = data[0]
+        self.dataRights = data[1]
+        self.dataURL = data[2]
+        self.dataproduct_type = data[3]
+        self.distance = data[4]
+        self.em_max = data[5]
+        self.em_min = data[6]
+        self.filters = data[7]
+        self.instrument_name = data[8]
+        self.intentType = data[9]
+        self.jpegURL = data[10]
+        self.mtFlag = data[11]
+        self.objID = data[12]
+        self.obs_collection = data[13]
+        self.obs_id = data[14]
+        self.obs_title = data[15]
+        self.obsid = data[16]
+        self.project = data[17]
+        self.proposal_id = data[18]
+        self.proposal_pi = data[19]
+        self.proposal_type = data[20]
+        self.provenance_name = data[21]
+        self.s_dec = data[22]
+        self.s_ra = data[23]
         self.s_region = data[24]
-        self.jpegURL = data[25]
-        self.dataURL = data[26]
-        self.dataRights = data[27]
-        self.mtFlag = data[28]
-        self.srcDen = data[29]
-        self.obsid = data[30]
-        self.distance = data[31]
+        self.sequence_number = data[25]
+        self.srcDen = data[26]
+        self.t_exptime = data[27]
+        self.t_max = data[28]
+        self.t_min = data[29]
+        self.t_obs_release = data[30]
+        self.target_classification = data[31]
+        self.target_name = data[32]
+        self.wavelength_region = data[33]
     }
     
 }

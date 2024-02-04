@@ -53,16 +53,16 @@ public class MASTTable:NSObject {
         return output
     }
     
-/** Get MAST json results
+/** Get MAST json Coam results
  using the default returned properties
  https://mast.stsci.edu/api/v0/_c_a_o_mfields.html
- The MASTResult format can be sorted
+ The CoamResult format can be sorted
  by its t_min value which is a temporally
  increasing sort
  */
-    public func getMastResults() -> [MASTResult] {
-        let rows = getRows(for: getFields())
-        return rows.map{MASTResult(data: $0)}
+    public func getCoamResults() -> [CoamResult] {
+        let rows = getRows(for: Coam.allCases.map{$0.id})
+        return rows.map{CoamResult(data: $0)}
     }
     
 }
