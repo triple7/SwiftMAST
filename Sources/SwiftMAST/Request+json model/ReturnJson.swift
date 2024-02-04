@@ -236,6 +236,8 @@ public struct CoamResult:Codable, Comparable {
     }
 
     public static func <(lhs: CoamResult, rhs: CoamResult) -> Bool {
+        print(lhs.t_min)
+        print(rhs.t_min)
         return (lhs.t_min.value as! Float ?? 0) < (rhs.t_min.value as! Float ?? 0)
     }
     
