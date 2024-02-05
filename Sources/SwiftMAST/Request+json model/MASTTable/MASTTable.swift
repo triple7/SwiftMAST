@@ -35,15 +35,89 @@ public class MASTTable:NSObject {
         self.values = [[QValue]]()
     }
     
+    /** Returns all fields from the payload
+     */
     public func getFields() -> [String] {
         return self.fields
     }
     
+    /** Gets the column of values specified by field
+     Parameters
+     field: String
+     */
     public func getValues( for field: String) -> [QValue] {
         let idx = self.fields.firstIndex(of: field)!
         return self.values.map{$0[idx]}
     }
     
+    /** Gets string values for a given field
+     Parameters
+     field: String
+     */
+    public func getStringValues(for field: String) -> [String] {
+        return getValues(for: field).map{$0.value as! String}
+    }
+
+    /** Gets Int values for a given field
+     Parameters
+     field: String
+     */
+    public func getIntValues(for field: String) -> [Int] {
+        return getValues(for: field).map{$0.value as! Int}
+    }
+
+    /** Gets Float values for a given field
+     Parameters
+     field: String
+     */
+    public func getFloatValues(for field: String) -> [Float] {
+        return getValues(for: field).map{$0.value as! Float}
+    }
+
+    /** Gets Bool values for a given field
+     Parameters
+     field: String
+     */
+    public func getBoolValues(for field: String) -> [Bool] {
+        return getValues(for: field).map{$0.value as! Bool}
+    }
+
+    /** get unique values for a given field column
+     Parameter
+     field: String
+     */
+    public func getUniqueValues(for field: String) -> [QValue] {
+        return Array(Set(getValues(for: field)))
+    }
+    
+    /** Returns unique string values for a field
+     Parameters
+     field: String
+     */
+    public func getUniqueString(for field: String) -> [String] {
+        return getUniqueValues(for: field).map{$0.value as! String}
+    }
+    
+    /** Returns unique Int values for a field
+     Parameters
+     field: String
+     */
+    public func getUniqueInt(for field: String) -> [Int] {
+        return getUniqueValues(for: field).map{$0.value as! Int}
+    }
+
+    /** Returns unique Float values for a field
+     Parameters
+     field: String
+     */
+    public func getUniqueInt(for field: String) -> [Float] {
+        return getUniqueValues(for: field).map{$0.value as! Float}
+    }
+
+    /** Gets all values for a given set of fields
+     Parameters
+     fields: [String]
+     */
     public func getRows( for fields: [String]) -> [[QValue]] {
         var output:[[QValue]] = []
         let rowCount = values.count
@@ -54,11 +128,11 @@ public class MASTTable:NSObject {
     }
     
 /** Get MAST json Coam results
- using the default returned properties
+ using the default returned fields and associated values
  https://mast.stsci.edu/api/v0/_c_a_o_mfields.html
  The CoamResult format can be sorted
  by its t_min value which is a temporally
- increasing sort
+ increasing decimal JD measure.
  */
     public func getCoamResults() -> [CoamResult] {
         let rows = getRows(for: Coam.allCases.map{$0.id})

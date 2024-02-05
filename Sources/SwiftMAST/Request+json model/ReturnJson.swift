@@ -5,7 +5,7 @@
 //  Created by Yuma decaux on 30/12/2022.
 //
 
-public enum QValue {
+public enum QValue: Hashable, Identifiable {
     /** Quantum value which collapses to a working type
      for codable Json structs
      */
@@ -13,6 +13,10 @@ public enum QValue {
     case string(String)
     case float(Float)
     case bool(Bool)
+    
+    public var id: Self {
+        return self
+    }
     
     public func type() -> String {
         switch self {
@@ -54,7 +58,6 @@ extension QValue:Codable {
 
     public init(value: String) {
         if let int = Int(value) {
-            print("converted string to int \(value)")
             self = .int(int)
             return
         }

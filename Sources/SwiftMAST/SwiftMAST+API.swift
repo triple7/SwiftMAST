@@ -58,7 +58,7 @@ func lookupTargetByName(targetName: String, result: @escaping ([NameLookupJson])
     /** Make a cone search for data products in the MAST archives
      
      */
-func getConeSearch(ra: Float, dec: Float, radius: Float=0.2, filters:[ResultField] = [.filters, .wavelength_region, .instrument_name, .obs_collection, .dataURL], filterParams: [MASTJsonFilter]? = nil, result: @escaping ([ResultField: [String]]) -> Void) {
+public func getConeSearch(ra: Float, dec: Float, radius: Float=0.2, filters:[ResultField] = [.filters, .wavelength_region, .instrument_name, .obs_collection, .dataURL], filterParams: [MASTJsonFilter]? = nil, result: @escaping ([ResultField: [String]]) -> Void) {
         print("getConeSearch: ra: \(ra) dec: \(dec)")
         
         var output = [ResultField: [String]]()
@@ -84,31 +84,25 @@ func getConeSearch(ra: Float, dec: Float, radius: Float=0.2, filters:[ResultFiel
      * radius: Float
      * returnFilters:[FilterResult]
      */
-func getScienceImageProducts(ra: Float, dec: Float, radius: Float, filters:[ResultField] = [.filters, .wavelength_region, .instrument_name, .obs_collection, .dataURL], result: @escaping ([ResultField: [String]]) -> Void) {
+func getScienceImageProducts(ra: Float, dec: Float, radius: Float, result: @escaping ([CoamResult]) -> Void) {
         print("getScienceImageProducts ra \(ra) dec \(dec) radius \(radius)")
         
-        let service = Service.Mast_Caom_Filtered
-        var params = service.serviceRequest(requestType: .advancedSearch)
-        params.setParameters(params: [MAP.ra: ra, MAP.dec: dec, MAP.radius: radius, MAP.columns: "*"])
-        params.setGeneralParameter(params: MAP.values.defaultGeneralParameters())
-        var filterParams = params.scienceImageFilters()
-        let raS = QValue(value: "\(ra)")
-                         let decS = QValue(value: "\(dec)")
-        let raPos = MASTJsonFilter(paramName: Coam.s_ra.id, values: FilterValues(values: [raS] as Any))
-        let decPos = MASTJsonFilter(paramName: Coam.s_dec.id, values: FilterValues(values: [decS] as Any))
-        filterParams.append(contentsOf: [raPos, decPos])
-        params.setFilterParameters(params: filterParams)
-        var output = [ResultField: [String]]()
-        self.queryMast(service: service, params: params, returnType: .json, { success in
-            for target in self.targets.keys {
-                let table = self.targets[target]
-                let resolved = table!.getRows(filters: filters)
-                for key in resolved.keys {
-                    output[key] = resolved[key]!.map{$0.value as! String}
-                }
-            }
-            result(output)
-        })
+    let service = Service.Mast_Caom_Filtered_Position
+    var params = service.serviceRequest(requestType: .advancedSearch)
+    params.setGeneralParameter(params: MAP.values.defaultGeneralParameters())
+    let filterParams = params.scienceImageFilters()
+    params.setFilterParameters(params: filterParams)
+    params.setParameters(params: [MAP.columns: "*", MAP.position: "\(ra), \(dec), \(radius)"])
+    self.queryMast(service: service, params: params, returnType: .json, { success in
+        // we are looping through 1 key
+        for target in self.targets.keys {
+            let table = self.targets[target]
+            var results = table!.getCoamResults()
+            results.sort()
+            print("Returned \(results.count) image products")
+            print(results.first!)
+        }
+    })
     }
 
     /** Get GAIA crossmatch
@@ -117,7 +111,7 @@ func getScienceImageProducts(ra: Float, dec: Float, radius: Float, filters:[Resu
      dec: Float
      radius: Float
      */
-func getGaiaCrossmatch(ra: Float, dec: Float, radius: Float, result: @escaping ([[Float]]) -> Void) {
+public func getGaiaCrossmatch(ra: Float, dec: Float, radius: Float, result: @escaping ([[Float]]) -> Void) {
         print("getGaiaCrossmatch:  at radius \(radius)")
         
         let service = Service.Mast_GaiaDR3_Crossmatch
