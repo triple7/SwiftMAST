@@ -77,6 +77,12 @@ public func getConeSearch(ra: Float, dec: Float, radius: Float=0.2, filters:[Res
         })
     }
 
+    /** Returns the downloaded data products bundle
+     */
+    func downloadDataproduct(results: [CoamResult]) {
+        
+    }
+    
     /** Make a Science image only cone search
      Parameters:
      * ra: Float

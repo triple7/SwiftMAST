@@ -71,4 +71,47 @@ closure(false)
     task.resume()
     }
 
+    /** Downloads a product bundle from MAST
+     Parameters:
+     service: MAST service domain path
+     params: pre-formed parameter json object
+     closure: whether request was successful
+     */
+    func requestProductBundle(service: Service, coamResults: [CoamResult],_ closure: @escaping (Bool) -> Void) {
+            
+        
+        let urls = coamResults.map{["uri", $0.dataURL]}
+        let jsonData = try! JSONEncoder().encode(urls)
+        var request = URLRequest(url: MASTRequest(searchType: .image).getDownloadUrl(service: service))
+        request.httpMethod = "POST"
+        request.httpBody = jsonData
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+
+            let configuration = URLSessionConfiguration.ephemeral
+        let queue = OperationQueue.main
+            let session = URLSession(configuration: configuration, delegate: self, delegateQueue: queue)
+
+        let task = session.dataTask(with: request) { [weak self] data, response, error in
+                guard error == nil else {
+                    self?.sysLog.append(MASTSyslog(log: .RequestError, message: error!.localizedDescription))
+    closure(false)
+                    return
+                }
+                guard let response = response as? HTTPURLResponse else {
+                    self?.sysLog.append(MASTSyslog(log: .RequestError, message: "response timed out"))
+                    closure(false)
+                    return
+                }
+                if response.statusCode != 200 {
+                    let error = NSError(domain: "com.error", code: response.statusCode)
+                    self?.sysLog.append(MASTSyslog(log: .RequestError, message: error.localizedDescription))
+                    closure(false)
+                    return
+                }
+
+            
+        }
+        task.resume()
+        }
+
 }

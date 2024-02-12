@@ -26,6 +26,15 @@
         "branch" : "main",
         "revision" : "0111e791a16a08f577078e2e39b5f68918bf29b0"
       }
+    },
+    {
+      "identity" : "zip",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/marmelroy/Zip.git",
+      "state" : {
+        "branch" : "master",
+        "revision" : "67fa55813b9e7b3b9acee9c0ae501def28746d76"
+      }
     }
   ],
   "version" : 2

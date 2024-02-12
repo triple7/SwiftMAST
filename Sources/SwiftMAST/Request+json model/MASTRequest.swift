@@ -45,11 +45,12 @@ public struct MASTRequest {
         self.parameters = [String:String]()
     }
     
+    
+    /** Returns a formatted request Url
+     Parameters:
+     dataSet: The MAST data set subfolder
+     */
     public func getURL(dataSet: MASTDataSet)->URL {
-        /** Returns a formatted request Url
-         Parameters:
-         dataSet: The MAST data set subfolder
-         */
         var path = (self.searchType == .mission) ? APIUrl : scsAPIUrl
         path = path.replacingOccurrences(of: "dataSet", with: dataSet.id)
         var url = URLComponents(string: path)
@@ -57,6 +58,10 @@ public struct MASTRequest {
             return url!.url!
         }
 
+    func getDownloadUrl(service: Service) -> URL {
+        return Foundation.URL(fileURLWithPath: "\(apiDownloadUrl)\(service.id)")
+    }
+    
     func getApiUrl(json: Data)->URL {
 
         let text = String(decoding: json, as: UTF8.self)

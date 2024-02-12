@@ -189,40 +189,40 @@ public struct NameLookupJson:Codable {
 // Mark: Equatable MAST return Json for time adjustments
 
 public struct CoamResult:Codable, Comparable {
-    let calib_level:Int
-    let dataRights:String
-    let dataURL:String
-    let dataproduct_type:String
-    let distance:Int
-    let em_max:Int
-    let em_min:Int
-    let filters:String
-    let instrument_name:String
-    let intentType:String
-    let jpegURL:String
-    let mtFlag:Bool
-    let objID:Int
-    let obs_collection:String
-    let obs_id:String
-    let obs_title:String
-    let obsid:Int
-    let project:String
-    let proposal_id:String
-    let proposal_pi:String
-    let proposal_type:String
-    let provenance_name:String
-    let s_dec:Float
-    let s_ra:Float
-    let s_region:String
-    let sequence_number:Int
-    let srcDen:Int
-    let t_exptime:Float
-    let t_max:Float
-    let t_min:Float
-    let t_obs_release:Float
-    let target_classification:String
-    let target_name:String
-    let wavelength_region:String
+    public let calib_level:Int
+    public let dataRights:String
+    public let dataURL:String
+    public let dataproduct_type:String
+    public let distance:Int
+    public let em_max:Int
+    public let em_min:Int
+    public let filters:String
+    public let instrument_name:String
+    public let intentType:String
+    public let jpegURL:String
+    public let mtFlag:Bool
+    public let objID:Int
+    public let obs_collection:String
+    public let obs_id:String
+    public let obs_title:String
+    public let obsid:Int
+    public let project:String
+    public let proposal_id:String
+    public let proposal_pi:String
+    public let proposal_type:String
+    public let provenance_name:String
+    public let s_dec:Float
+    public let s_ra:Float
+    public let s_region:String
+    public let sequence_number:Int
+    public let srcDen:Int
+    public let t_exptime:Float
+    public let t_max:Float
+    public let t_min:Float
+    public let t_obs_release:Float
+    public let target_classification:String
+    public let target_name:String
+    publiclet wavelength_region:String
 
     public static func ==(lhs: CoamResult, rhs: CoamResult) -> Bool {
         return lhs.obs_id == rhs.obs_id && lhs.filters == rhs.filters && lhs.instrument_name == rhs.instrument_name && lhs.t_min == rhs.t_min && lhs.t_max == rhs.t_max

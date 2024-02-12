@@ -66,9 +66,15 @@ public enum MASTService:String, CaseIterable, Identifiable {
     case Mast_Jwst_Filtered_Fgs
     case Mast_Jwst_Filtered_GuideStar
     case Mast_Jwst_Filtered_Wss
+    case Download_bundle
     
     public var id:String {
-        return self.rawValue.replacingOccurrences(of: "_", with: ".")
+        switch self {
+        case .Download_bundle:
+            return self.rawValue.replacingOccurrences(of: "_", with: "/")
+        default:
+            return self.rawValue.replacingOccurrences(of: "_", with: "/")
+        }
     }
 
     public var description:String {
@@ -256,8 +262,9 @@ public enum MASTService:String, CaseIterable, Identifiable {
         """
         case .Mast_Jwst_Filtered_Wss: return """
         Get JWST Science Instrument Keyword entries for WSS by filtering based on column (as in Advanced Search).
-
         """
+        case .Download_bundle:
+            return "Get the product bundle from a list of returned data Url strings"
         }
     }
     
