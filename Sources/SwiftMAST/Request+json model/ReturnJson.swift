@@ -222,7 +222,7 @@ public struct CoamResult:Codable, Comparable {
     public let t_obs_release:Float
     public let target_classification:String
     public let target_name:String
-    publiclet wavelength_region:String
+    public let wavelength_region:String
 
     public static func ==(lhs: CoamResult, rhs: CoamResult) -> Bool {
         return lhs.obs_id == rhs.obs_id && lhs.filters == rhs.filters && lhs.instrument_name == rhs.instrument_name && lhs.t_min == rhs.t_min && lhs.t_max == rhs.t_max
