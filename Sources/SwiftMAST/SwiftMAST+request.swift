@@ -77,7 +77,7 @@ closure(false)
      params: pre-formed parameter json object
      closure: whether request was successful
      */
-    func requestProductBundle(service: Service, coamResults: [CoamResult],_ closure: @escaping (Bool) -> Void) {
+    func requestProductBundle(service: Service, coamResults: [CoamResult],_ closure: @escaping (Bool, [URL]) -> Void) {
             
         
         let urls = coamResults.map{["uri", $0.dataURL]}
@@ -94,21 +94,26 @@ closure(false)
         let task = session.dataTask(with: request) { [weak self] data, response, error in
                 guard error == nil else {
                     self?.sysLog.append(MASTSyslog(log: .RequestError, message: error!.localizedDescription))
-    closure(false)
+    closure(false, [])
                     return
                 }
                 guard let response = response as? HTTPURLResponse else {
                     self?.sysLog.append(MASTSyslog(log: .RequestError, message: "response timed out"))
-                    closure(false)
+                    closure(false, [])
                     return
                 }
                 if response.statusCode != 200 {
                     let error = NSError(domain: "com.error", code: response.statusCode)
                     self?.sysLog.append(MASTSyslog(log: .RequestError, message: error.localizedDescription))
-                    closure(false)
+                    closure(false, [])
                     return
                 }
 
+            // Unzip the data in documents and return
+            // The available urls
+            self!.unzipResponseData(data!, completion: { urls in
+                closure(true, urls)
+            })
             
         }
         task.resume()

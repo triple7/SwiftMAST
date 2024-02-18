@@ -77,12 +77,6 @@ public func getConeSearch(ra: Float, dec: Float, radius: Float=0.2, filters:[Res
         })
     }
 
-    /** Returns the downloaded data products bundle
-     */
-    func downloadDataproduct(results: [CoamResult]) {
-        
-    }
-    
     /** Make a Science image only cone search
      Parameters:
      * ra: Float
@@ -105,8 +99,32 @@ func getScienceImageProducts(ra: Float, dec: Float, radius: Float, result: @esca
             let table = self.targets[target]
             var results = table!.getCoamResults()
             results.sort()
-            print("Returned \(results.count) image products")
-            print(results.first!)
+            let uniqueFilters = table!.getUniqueString(for: Coam.filters.id)
+            // dictionary of products by filter
+            var products = [String:[CoamResult]]()
+            let coamResults = table!.getCoamResults()
+            for result in coamResults {
+                let filter = result.filters
+                if let filterList = products[filter] {
+                    products[filter] = filterList + [result]
+                } else {
+                    products[filter] = [result]
+                }
+            }
+            // Download the first image of each filter
+            var allFilterProducts = [CoamResult]()
+            for filter in uniqueFilters {
+                let coamResult = products[filter]!.first!
+                allFilterProducts.append(coamResult)
+            }
+                                     
+                                     // Finally get the URLS to the files and return them
+            self.requestProductBundle(service: .Download_bundle, coamResults: results) { (success, urls) in
+                for url in urls {
+                    print(url.absoluteString)
+                }
+                                 }
+
         }
     })
     }
