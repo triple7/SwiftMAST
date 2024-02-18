@@ -86,7 +86,7 @@ closure(false)
         request.httpBody = jsonData
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
 
-            let configuration = URLSessionConfiguration.background(withIdentifier: "com.mast.download_bundle")
+            let configuration = URLSessionConfiguration.ephemeral
         let queue = OperationQueue.main
             let session = URLSession(configuration: configuration, delegate: self, delegateQueue: queue)
 
