@@ -40,6 +40,9 @@ public class SwiftMAST:NSObject {
         self.sysLog = [MASTSyslog]()
     }
     
+    public func clearTargets() {
+        self.targets.removeAll()
+    }
 }
 
  extension SwiftMAST: URLSessionDelegate {
