@@ -159,16 +159,16 @@ public struct MASTJsonField:Decodable {
 }
 
 public struct NameLookupJson:Codable {
-    let ra:Float
-    let cached:Bool
-    let resolverTime:Int
-    let dec:Float
-    let resolver:String
-    let canonicalName:String
-    let radius:Float
-    let objectType:String
-    let searchRadius:Float
-    let searchString:String
+    public let ra:Float
+    public let cached:Bool
+    public let resolverTime:Int
+    public let dec:Float
+    public let resolver:String
+    public let canonicalName:String
+    public let radius:Float
+    public let objectType:String
+    public let searchRadius:Float
+    public let searchString:String
 
     public init(data: [QValue], fields: [String]) {
         ra = data[fields.firstIndex(of: "ra")!].value as! Float
