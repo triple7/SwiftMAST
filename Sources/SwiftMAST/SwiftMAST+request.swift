@@ -93,6 +93,7 @@ closure(false)
 
         let task = session.dataTask(with: request) { [weak self] data, response, error in
                 guard error == nil else {
+                    print("Found an error \(error?.localizedDescription)")
                     self?.sysLog.append(MASTSyslog(log: .RequestError, message: error!.localizedDescription))
     closure(false, [])
                     return
