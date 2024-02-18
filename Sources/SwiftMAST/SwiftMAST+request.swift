@@ -82,6 +82,7 @@ closure(false)
         let urls = coamResults.map{["uri", $0.dataURL]}
         let jsonData = try! JSONEncoder().encode(urls)
         var request = URLRequest(url: MASTRequest(searchType: .image).getDownloadUrl(service: service))
+        print("requestProductBundle: \(request.url!.absoluteString)")
         request.httpMethod = "POST"
         request.httpBody = jsonData
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
