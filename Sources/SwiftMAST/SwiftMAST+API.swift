@@ -97,13 +97,12 @@ public func getConeSearch(ra: Float, dec: Float, radius: Float=0.2, filters:[Res
         // we are looping through 1 key
         for target in self.targets.keys {
             let table = self.targets[target]
-            var results = table!.getCoamResults()
-            results.sort()
+            var coamResults = table!.getCoamResults()
+            coamResults.sort()
             let uniqueFilters = table!.getUniqueString(for: Coam.filters.id)
             print("Got \(uniqueFilters.count) unique filters")
             // dictionary of products by filter
             var products = [String:[CoamResult]]()
-            let coamResults = table!.getCoamResults()
             for result in coamResults {
                 let filter = result.filters
                 if let filterList = products[filter] {
