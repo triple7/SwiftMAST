@@ -84,7 +84,7 @@ public func getConeSearch(ra: Float, dec: Float, radius: Float=0.2, filters:[Res
      * radius: Float
      * returnFilters:[FilterResult]
      */
-    func getScienceImageProducts(ra: Float, dec: Float, radius: Float, result: @escaping ([URL]) -> Void) {
+    public func getScienceImageProducts(ra: Float, dec: Float, radius: Float, result: @escaping ([URL]) -> Void) {
         print("getScienceImageProducts ra \(ra) dec \(dec) radius \(radius)")
         
     let service = Service.Mast_Caom_Filtered_Position
