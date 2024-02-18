@@ -100,9 +100,11 @@ public func getConeSearch(ra: Float, dec: Float, radius: Float=0.2, filters:[Res
             var results = table!.getCoamResults()
             results.sort()
             let uniqueFilters = table!.getUniqueString(for: Coam.filters.id)
+            print("Got unique filters")
             // dictionary of products by filter
             var products = [String:[CoamResult]]()
             let coamResults = table!.getCoamResults()
+            print("Got Coam results")
             for result in coamResults {
                 let filter = result.filters
                 if let filterList = products[filter] {
@@ -114,6 +116,7 @@ public func getConeSearch(ra: Float, dec: Float, radius: Float=0.2, filters:[Res
             // Download the first image of each filter
             var allFilterProducts = [CoamResult]()
             for filter in uniqueFilters {
+                print("getting \(filter) data URL")
                 let coamResult = products[filter]!.first!
                 allFilterProducts.append(coamResult)
             }
