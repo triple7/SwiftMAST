@@ -14,7 +14,7 @@ public struct MASTRequest {
     private let APIUrl = "https://archive.stsci.edu/dataSet/search.php?action=Search"
     private let scsAPIUrl =  "https://archive.stsci.edu/dataSet/search.php?"
     private let apiRequestUrl = "https://mast.stsci.edu/api/v0/invoke"
-    private let apiDownloadUrl = "https://mast.stsci.edu/api/v0.1/Download/"
+    private let apiDownloadUrl = "https://mast.stsci.edu/api/v0.1/"
     private(set) var parameters:[String: String]
     let searchType:MASTSearchType
     
