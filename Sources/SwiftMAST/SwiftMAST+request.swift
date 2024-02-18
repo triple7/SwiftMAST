@@ -80,6 +80,7 @@ closure(false)
     func requestProductBundle(service: Service, coamResults: [CoamResult],_ closure: @escaping (Bool, [URL]) -> Void) {
             
         
+        print("requestProductBundle: getting \(coamResults.count) URLs in tar.gz bundle")
         let urls = coamResults.map{["uri", $0.dataURL]}
         let jsonData = try! JSONEncoder().encode(urls)
         var request = URLRequest(url: MASTRequest(searchType: .image).getDownloadUrl(service: service))
