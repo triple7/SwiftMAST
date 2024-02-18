@@ -84,7 +84,7 @@ public func getConeSearch(ra: Float, dec: Float, radius: Float=0.2, filters:[Res
      * radius: Float
      * returnFilters:[FilterResult]
      */
-func getScienceImageProducts(ra: Float, dec: Float, radius: Float, result: @escaping ([CoamResult]) -> Void) {
+    func getScienceImageProducts(ra: Float, dec: Float, radius: Float, result: @escaping ([URL]) -> Void) {
         print("getScienceImageProducts ra \(ra) dec \(dec) radius \(radius)")
         
     let service = Service.Mast_Caom_Filtered_Position
@@ -120,11 +120,8 @@ func getScienceImageProducts(ra: Float, dec: Float, radius: Float, result: @esca
                                      
                                      // Finally get the URLS to the files and return them
             self.requestProductBundle(service: .Download_bundle, coamResults: results) { (success, urls) in
-                for url in urls {
-                    print(url.absoluteString)
-                }
+                result(urls)
                                  }
-
         }
     })
     }
