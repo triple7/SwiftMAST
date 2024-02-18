@@ -123,7 +123,7 @@ public func getConeSearch(ra: Float, dec: Float, radius: Float=0.2, filters:[Res
             }
                                      
                                      // Finally get the URLS to the files and return them
-            self.requestProductBundle(service: .Download_bundle, coamResults: results) { (success, urls) in
+            self.requestProductBundle(service: .Download_bundle, coamResults: allFilterProducts) { (success, urls) in
                 result(urls)
                                  }
         }
