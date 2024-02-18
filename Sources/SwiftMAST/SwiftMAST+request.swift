@@ -103,6 +103,7 @@ closure(false)
                     return
                 }
                 if response.statusCode != 200 {
+                    print("not 200")
                     let error = NSError(domain: "com.error", code: response.statusCode)
                     self?.sysLog.append(MASTSyslog(log: .RequestError, message: error.localizedDescription))
                     closure(false, [])
