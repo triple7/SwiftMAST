@@ -73,7 +73,7 @@ public enum MASTService:String, CaseIterable, Identifiable {
         case .Download_bundle:
             return self.rawValue.replacingOccurrences(of: "_", with: "/")
         default:
-            return self.rawValue.replacingOccurrences(of: "_", with: "/")
+            return self.rawValue.replacingOccurrences(of: "_", with: ".")
         }
     }
 
