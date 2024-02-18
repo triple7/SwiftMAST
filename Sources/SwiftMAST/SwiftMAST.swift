@@ -136,7 +136,7 @@ public class SwiftMAST:NSObject {
          buffer += data.count
          let percentageDownloaded = Float(buffer) / Float(expectedContentLength!)
             progress =  percentageDownloaded
-         print(progress)
+         print(percentageDownloaded)
      }
 
 }
