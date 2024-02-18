@@ -75,11 +75,9 @@ closure(false)
      Parameters:
      service: MAST service domain path
      params: pre-formed parameter json object
-     closure: whether request was successful
+     closure: (Bool, [URL])
      */
     func requestProductBundle(service: Service, coamResults: [CoamResult],_ closure: @escaping (Bool, [URL]) -> Void) {
-            
-        
         print("requestProductBundle: getting \(coamResults.count) URLs in tar.gz bundle")
         let urls = coamResults.map{["uri", $0.dataURL]}
         let jsonData = try! JSONEncoder().encode(urls)

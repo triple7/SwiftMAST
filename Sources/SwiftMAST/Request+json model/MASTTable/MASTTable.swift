@@ -139,11 +139,6 @@ public class MASTTable:NSObject {
         return rows.map{CoamResult(data: $0)}
     }
     
-    public func clearTable() {
-        self.fields = [String]()
-        self.values = [[QValue]]()
-    }
-    
 }
 
                         extension MASTTable:XMLParserDelegate {

@@ -59,7 +59,7 @@ public struct MASTRequest {
         }
 
     func getDownloadUrl(service: Service) -> URL {
-        return Foundation.URL(fileURLWithPath: "\(apiDownloadUrl)\(service.id)")
+        return URL(string: "\(apiDownloadUrl)\(service.id)")!
     }
     
     func getApiUrl(json: Data)->URL {
