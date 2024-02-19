@@ -88,7 +88,7 @@ closure(false)
         print("requestProductBundle: \(request.url!.absoluteString)")
         request.httpMethod = "POST"
         request.httpBody = jsonData
-//        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
 
             let configuration = URLSessionConfiguration.default
         let queue = OperationQueue.main
