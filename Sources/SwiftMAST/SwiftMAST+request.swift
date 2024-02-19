@@ -165,6 +165,10 @@ closure(false)
                             downloadNextproduct()
                         }
                     })
+                } else {
+                    serialQueue.async {
+                        downloadNextproduct()
+                    }
                 }
                 
             })

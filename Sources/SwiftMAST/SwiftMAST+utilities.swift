@@ -64,7 +64,8 @@ extension SwiftMAST {
                 return
             }
 
-        let MASTDirectory = documentsDirectory.appendingPathExtension("MAST/\(product.obs_collection)/\(product.obs_id)")
+        var MASTDirectory = documentsDirectory.appendingPathComponent("MAST", isDirectory: true)
+        MASTDirectory = MASTDirectory.appendingPathComponent(product.obs_collection, isDirectory: true)
 
         let fileName = product.dataURL.components(separatedBy: "/").last!
             do {
