@@ -35,11 +35,11 @@ class MASTDownloadOperation : Operation {
     override var isExecuting: Bool { return state == .executing }
     override var isFinished: Bool { return state == .finished }
   
-    init(session: URLSession, dataTaskURL: URL, completionHandler: ((URL?, URLResponse?, Error?) -> Void)?) {
+    init(session: URLSession, request: URLRequest, completionHandler: ((URL?, URLResponse?, Error?) -> Void)?) {
         super.init()
         
         // use weak self to prevent retain cycle
-        task = session.downloadTask(with: dataTaskURL, completionHandler: { [weak self] (destinationUrl, response, error) in
+        task = session.downloadTask(with: request, completionHandler: { [weak self] (destinationUrl, response, error) in
             
             /*
             if there is a custom completionHandler defined,

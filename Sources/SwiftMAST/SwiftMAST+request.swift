@@ -81,7 +81,7 @@ closure(false)
         print("requestProductBundle: getting \(coamResults.count) URLs in tar.gz bundle")
         let urls = coamResults.map{["uri", $0.dataURL]}.filter {$0[1] != ""}
         let jsonData = try! JSONEncoder().encode(urls)
-        var request = URLRequest(url: MASTRequest(searchType: .image).getDownloadUrl(service: service))
+        var request = URLRequest(url: MASTRequest(searchType: .image).getBundleDownloadUrl(service: service))
         request.httpMethod = "POST"
         request.httpBody = jsonData
 
@@ -117,24 +117,29 @@ closure(false)
         task.resume()
         }
 
-         func getDataproducts( products: [CoamResult], completion: @escaping (Bool, [URL])->Void ) {
+    func getDataproducts(service: Service,  products: [CoamResult], completion: @escaping (Bool, [URL])->Void ) {
         let serialQueue = DispatchQueue(label: "MASTDataproductsQueue")
         
         var remainingProducts = products
              var urls = [URL]()
-        
+
+        var request = URLRequest(url: MASTRequest(searchType: .image).getFileDownloadUrl(service: service))
+        request.httpMethod = "GET"
+
         // Create a recursive function to handle the download
         func downloadNextproduct() {
             guard !remainingProducts.isEmpty else {
                 // All products have been downloaded, call the completion handler
-                completion(true, [URL]())
+                completion(true, urls)
                 return
             }
         }
             
             let product = remainingProducts.removeFirst()
-            
-        let operation = MASTDownloadOperation(session: URLSession.shared, dataTaskURL: URL(string: product.dataURL)!, completionHandler: { (data, response, error) in
+        let jsonData = try! JSONEncoder().encode(["uri": product.dataURL])
+        request.httpBody = jsonData
+
+        let operation = MASTDownloadOperation(session: URLSession.shared, request: request, completionHandler: { (destUrl, response, error) in
                 var gotError = false
                 if error != nil {
                     self.sysLog.append(MASTSyslog(log: .RequestError, message: error!.localizedDescription))
@@ -154,6 +159,7 @@ closure(false)
                     self.sysLog.append(MASTSyslog(log: .OK, message: "ephemerus downloaded"))
                 }
                 
+            urls.append(destUrl!)
                 // Call the recursive function to download the next object
                 serialQueue.async {
                                 downloadNextproduct()

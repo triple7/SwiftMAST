@@ -67,10 +67,10 @@ public enum MASTService:String, CaseIterable, Identifiable {
     case Mast_Jwst_Filtered_GuideStar
     case Mast_Jwst_Filtered_Wss
     case Download_bundle
-    
+    case Download_file
     public var id:String {
         switch self {
-        case .Download_bundle:
+        case .Download_bundle, .Download_file:
             return self.rawValue.replacingOccurrences(of: "_", with: "/")
         default:
             return self.rawValue.replacingOccurrences(of: "_", with: ".")
@@ -265,6 +265,8 @@ public enum MASTService:String, CaseIterable, Identifiable {
         """
         case .Download_bundle:
             return "Get the product bundle from a list of returned data Url strings"
+        case .Download_file:
+            return "Get a single product file"
         }
     }
     

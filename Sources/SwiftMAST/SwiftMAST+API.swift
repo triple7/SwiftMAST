@@ -121,7 +121,7 @@ public func getConeSearch(ra: Float, dec: Float, radius: Float=0.2, filters:[Res
             }
                                      
                                      // Finally get the URLS to the files and return them
-            self.getDataproducts(products: allFilterProducts) { (success, urls) in
+            self.getDataproducts(service: .Download_file, products: allFilterProducts) { (success, urls) in
                 result(urls)
                                  }
         }
