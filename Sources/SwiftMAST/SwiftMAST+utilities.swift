@@ -26,10 +26,12 @@ extension SwiftMAST {
 
                 let temporaryZipFileURL = temporaryDirectory.appendingPathComponent("temp.tar.gz")
                 try data.write(to: temporaryZipFileURL)
-                print("zip temporarily added")
+                print("tar temporarily added")
 
-                let unzipDirectory = try Zip.quickUnzipFile(temporaryZipFileURL)
-                let unzippedFiles = try FileManager.default.contentsOfDirectory(atPath: unzipDirectory.path)
+                try FileManager.default.createFilesAndDirectories(url: temporaryDirectory, tarData: data)
+                
+//                let unzipDirectory = try Zip.quickUnzipFile(temporaryZipFileURL)
+                let unzippedFiles = try FileManager.default.contentsOfDirectory(atPath: temporaryDirectory.path)
 
                 // Clean up: remove the temporary directory and file
                 try FileManager.default.removeItem(at: temporaryZipFileURL)
