@@ -142,6 +142,7 @@ closure(false)
         let operation = MASTDownloadOperation(session: URLSession.shared, request: request, completionHandler: { (destUrl, response, error) in
                 var gotError = false
                 if error != nil {
+                    print(error?.localizedDescription)
                     self.sysLog.append(MASTSyslog(log: .RequestError, message: error!.localizedDescription))
                     gotError = true
                 }
@@ -151,6 +152,7 @@ closure(false)
                 }
                 let urlResponse = (response as! HTTPURLResponse)
                 if urlResponse.statusCode != 200 {
+                    print(urlResponse.statusCode)
                     let error = NSError(domain: "com.error", code: urlResponse.statusCode)
                     self.sysLog.append(MASTSyslog(log: .RequestError, message: error.localizedDescription))
                     gotError = true
