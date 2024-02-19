@@ -55,4 +55,35 @@ extension SwiftMAST {
         }
     }
 
+    func saveFile( product: CoamResult, data: Data, completion: @escaping ([URL]) -> Void) {
+        print("saveFile: \(product.dataURL)")
+            // Get the Documents directory
+            guard let documentsDirectory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first else {
+                self.sysLog.append(MASTSyslog(log: .RequestError, message: "Unable to open Documents folder"))
+                completion([])
+                return
+            }
+
+        let MASTDirectory = documentsDirectory.appendingPathExtension("MAST/\(product.obs_collection)/\(product.obs_id)")
+
+            do {
+                try FileManager.default.createDirectory(at: MASTDirectory, withIntermediateDirectories: true, attributes: nil)
+
+                let fileUrl = MASTDirectory.appendingPathComponent(product.dataURL)
+                
+                try data.write(to: fileUrl)
+                print("file added")
+                print("Data size: \(data.count) bytes")
+
+                DispatchQueue.main.async {
+                    completion([fileUrl])
+                }
+            } catch let error {
+                self.sysLog.append(MASTSyslog(log: .RequestError, message: error.localizedDescription))
+                DispatchQueue.main.async {
+                    completion([])
+                }
+            }
+    }
+
 }

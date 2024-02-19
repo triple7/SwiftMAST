@@ -139,7 +139,7 @@ closure(false)
         let jsonData = try! JSONEncoder().encode(["uri": product.dataURL])
         request.httpBody = jsonData
 
-        let operation = MASTDownloadOperation(session: URLSession.shared, request: request, completionHandler: { (destUrl, response, error) in
+        let operation = MASTDownloadOperation(session: URLSession.shared, request: request, completionHandler: { (data, response, error) in
                 var gotError = false
                 if error != nil {
                     print(error?.localizedDescription)
@@ -161,7 +161,9 @@ closure(false)
                     self.sysLog.append(MASTSyslog(log: .OK, message: "ephemerus downloaded"))
                 }
                 
-            urls.append(destUrl!)
+            self.saveFile(product: product, data: data!, completion: { url in
+                urls += url
+            })
                 // Call the recursive function to download the next object
                 serialQueue.async {
                                 downloadNextproduct()

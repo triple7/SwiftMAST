@@ -10,7 +10,7 @@ import Foundation
 
 class MASTDownloadOperation : Operation {
     
-    private var task : URLSessionDownloadTask!
+    private var task : URLSessionDataTask!
     
     enum OperationState : Int {
         case ready
@@ -35,11 +35,12 @@ class MASTDownloadOperation : Operation {
     override var isExecuting: Bool { return state == .executing }
     override var isFinished: Bool { return state == .finished }
   
-    init(session: URLSession, request: URLRequest, completionHandler: ((URL?, URLResponse?, Error?) -> Void)?) {
+    init(session: URLSession, request: URLRequest, completionHandler: ((Data?, URLResponse?, Error?) -> Void)?) {
         super.init()
+        print("URL: \(request.url!.absoluteString)")
         
         // use weak self to prevent retain cycle
-        task = session.downloadTask(with: request, completionHandler: { [weak self] (destinationUrl, response, error) in
+        task = session.dataTask(with: request, completionHandler: { [weak self] (data, response, error) in
             
             /*
             if there is a custom completionHandler defined,
@@ -47,7 +48,7 @@ class MASTDownloadOperation : Operation {
             custom completionHandler
             */
             if let completionHandler = completionHandler {
-                completionHandler(destinationUrl, response, error)
+                completionHandler(data, response, error)
             }
             
            /*
