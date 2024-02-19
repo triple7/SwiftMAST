@@ -80,42 +80,36 @@ closure(false)
     func requestProductBundle(service: Service, coamResults: [CoamResult],_ closure: @escaping (Bool, [URL]) -> Void) {
         print("requestProductBundle: getting \(coamResults.count) URLs in tar.gz bundle")
         let urls = coamResults.map{["uri", $0.dataURL]}.filter {$0[1] != ""}
-        for u in urls {
-            print("url: \(u)")
-        }
         let jsonData = try! JSONEncoder().encode(urls)
         var request = URLRequest(url: MASTRequest(searchType: .image).getDownloadUrl(service: service))
-        print("requestProductBundle: \(request.url!.absoluteString)")
         request.httpMethod = "POST"
         request.httpBody = jsonData
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
 
             let configuration = URLSessionConfiguration.default
         let queue = OperationQueue.main
             let session = URLSession(configuration: configuration, delegate: self, delegateQueue: queue)
 
-        let task = session.dataTask(with: request) { [weak self] data, response, error in
+        let task = session.dataTask(with: request) { data, response, error in
                 guard error == nil else {
-                    self?.sysLog.append(MASTSyslog(log: .RequestError, message: error!.localizedDescription))
+                    self.sysLog.append(MASTSyslog(log: .RequestError, message: error!.localizedDescription))
     closure(false, [])
                     return
                 }
                 guard let response = response as? HTTPURLResponse else {
-                    self?.sysLog.append(MASTSyslog(log: .RequestError, message: "response timed out"))
+                    self.sysLog.append(MASTSyslog(log: .RequestError, message: "response timed out"))
                     closure(false, [])
                     return
                 }
                 if response.statusCode != 200 {
                     let error = NSError(domain: "com.error", code: response.statusCode)
-                    self?.sysLog.append(MASTSyslog(log: .RequestError, message: error.localizedDescription))
+                    self.sysLog.append(MASTSyslog(log: .RequestError, message: error.localizedDescription))
                     closure(false, [])
                     return
                 }
 
-            print(response.mimeType)
             // Unzip the data in documents and return
             // The available urls
-            self!.unzipResponseData(data!, completion: { urls in
+            self.unzipResponseData(data!, completion: { urls in
                 closure(true, urls)
             })
             
