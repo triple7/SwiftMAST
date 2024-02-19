@@ -120,9 +120,9 @@ closure(false)
     func getDataproducts(service: Service,  products: [CoamResult], completion: @escaping (Bool, [URL])->Void ) {
         let serialQueue = DispatchQueue(label: "MASTDataproductsQueue")
         
-        var remainingProducts = products
-             var urls = [URL]()
-
+        var remainingProducts = products.filter { $0.jpegURL != ""}
+        var urls = [URL]()
+        
         
         // Create a recursive function to handle the download
         func downloadNextproduct() {
@@ -131,13 +131,12 @@ closure(false)
                 completion(true, urls)
                 return
             }
-        }
             
             let product = remainingProducts.removeFirst()
-        var request = URLRequest(url: MASTRequest(searchType: .image).getFileDownloadUrl(service: service, parameters: ["uri": product.jpegURL]))
-        request.httpMethod = "GET"
-
-        let operation = MASTDownloadOperation(session: URLSession.shared, request: request, completionHandler: { (data, response, error) in
+            var request = URLRequest(url: MASTRequest(searchType: .image).getFileDownloadUrl(service: service, parameters: ["uri": product.jpegURL]))
+            request.httpMethod = "GET"
+            
+            let operation = MASTDownloadOperation(session: URLSession.shared, request: request, completionHandler: { (data, response, error) in
                 var gotError = false
                 if error != nil {
                     print(error?.localizedDescription)
@@ -155,30 +154,32 @@ closure(false)
                     self.sysLog.append(MASTSyslog(log: .RequestError, message: error.localizedDescription))
                     gotError = true
                 }
+                
                 if !gotError {
-                    self.sysLog.append(MASTSyslog(log: .OK, message: "ephemerus downloaded"))
+                    self.sysLog.append(MASTSyslog(log: .OK, message: "\(product.jpegURL) downloaded"))
+                    
+                    self.saveFile(product: product, data: data!, completion: { url in
+                        urls += url
+                        // Call the recursive function to download the next object
+                        serialQueue.async {
+                            downloadNextproduct()
+                        }
+                    })
                 }
                 
-            self.saveFile(product: product, data: data!, completion: { url in
-                urls += url
-                // Call the recursive function to download the next object
-                serialQueue.async {
-                                downloadNextproduct()
-                }
-
             })
-            })
-
-                    // Add the operation to the serial queue to execute it serially
-                    serialQueue.async {
-                        operation.start()
-                    }
-
-        // Start the download process by calling the recursive function
-        serialQueue.async {
-            downloadNextproduct()
+            
+            // Add the operation to the serial queue to execute it serially
+            serialQueue.async {
+                operation.start()
+            }
         }
-    }
 
+            // Start the download process by calling the recursive function
+            serialQueue.async {
+                downloadNextproduct()
+            }
+        }
+        
     
 }
