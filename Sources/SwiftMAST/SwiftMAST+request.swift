@@ -123,9 +123,7 @@ closure(false)
         var remainingProducts = products
              var urls = [URL]()
 
-        var request = URLRequest(url: MASTRequest(searchType: .image).getFileDownloadUrl(service: service))
-        request.httpMethod = "GET"
-
+        
         // Create a recursive function to handle the download
         func downloadNextproduct() {
             guard !remainingProducts.isEmpty else {
@@ -136,8 +134,8 @@ closure(false)
         }
             
             let product = remainingProducts.removeFirst()
-        let jsonData = try! JSONEncoder().encode(["uri": product.dataURL])
-        request.httpBody = jsonData
+        var request = URLRequest(url: MASTRequest(searchType: .image).getFileDownloadUrl(service: service, parameters: ["obs_collection": product.obs_collection, "obs_id": product.obs_id]))
+        request.httpMethod = "GET"
 
         let operation = MASTDownloadOperation(session: URLSession.shared, request: request, completionHandler: { (data, response, error) in
                 var gotError = false

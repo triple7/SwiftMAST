@@ -62,9 +62,14 @@ public struct MASTRequest {
         return URL(string: "\(apiDownloadUrl)\(service.id).tar.gz")!
     }
     
-    func getFileDownloadUrl(service: Service) -> URL {
-        return URL(string: "\(apiDownloadUrl)\(service.id)?")!
+    func getFileDownloadUrl(service: Service, parameters: [String: String]) -> URL {
+        let baseUrl = "\(apiDownloadUrl)\(service.id)?"
+        var urlComponents = URLComponents(string: baseUrl)
+        let queryItems = parameters.map { URLQueryItem(name: $0.key, value: $0.value) }
+        urlComponents!.queryItems = queryItems
+        return urlComponents!.url!
     }
+    
     func getApiUrl(json: Data)->URL {
 
         let text = String(decoding: json, as: UTF8.self)
