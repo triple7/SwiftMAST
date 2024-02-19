@@ -8,6 +8,7 @@
 import Foundation
 import Zip
 
+
 extension SwiftMAST {
     
     func unzipResponseData(_ data: Data, completion: @escaping ([URL]) -> Void) {
@@ -26,7 +27,8 @@ extension SwiftMAST {
 
                 let temporaryZipFileURL = temporaryDirectory.appendingPathComponent("temp.tar.gz")
                 try data.write(to: temporaryZipFileURL)
-                print("tar temporarily added to: \(temporaryZipFileURL.absoluteString)")
+                print("tar temporarily added")
+                print("Data size: \(data.count) bytes")
 
                 try FileManager.default.createFilesAndDirectories(path: temporaryDirectory.path, tarPath: temporaryZipFileURL.path)
                 
