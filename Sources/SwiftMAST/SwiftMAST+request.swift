@@ -79,7 +79,7 @@ closure(false)
      */
     func requestProductBundle(service: Service, coamResults: [CoamResult],_ closure: @escaping (Bool, [URL]) -> Void) {
         print("requestProductBundle: getting \(coamResults.count) URLs in tar.gz bundle")
-        let urls = coamResults.map{["uri", $0.jpegURL]}
+        let urls = coamResults.map{["uri", $0.dataURL]}
         for u in urls {
             print("url: \(u)")
         }
