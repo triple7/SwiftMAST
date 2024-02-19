@@ -13,6 +13,6 @@ public enum MASTError:LocalizedError {
     case RequestError
     case DataCorrupted
     case Timeout
-    case Ok
+    case OK
 }
 

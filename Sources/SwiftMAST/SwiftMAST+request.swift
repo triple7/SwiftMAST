@@ -64,7 +64,7 @@ closure(false)
             }
 
             self?.targets[service.id] = table
-            self?.sysLog.append(MASTSyslog(log: .Ok, message: "request successful"))
+            self?.sysLog.append(MASTSyslog(log: .OK, message: "request successful"))
         closure(true)
             return
     }
@@ -116,5 +116,54 @@ closure(false)
         }
         task.resume()
         }
+
+         func getDataproducts( products: [CoamResult], completion: @escaping (Bool, [URL])->Void ) {
+        let serialQueue = DispatchQueue(label: "MASTDataproductsQueue")
+        
+        var remainingProducts = products
+             var urls = [URL]()
+        
+        // Create a recursive function to handle the download
+        func downloadNextproduct() {
+            guard !remainingProducts.isEmpty else {
+                // All products have been downloaded, call the completion handler
+                completion(true, [URL]())
+                return
+            }
+        }
+            
+            let product = remainingProducts.removeFirst()
+            
+        let operation = MASTDownloadOperation(session: URLSession.shared, dataTaskURL: URL(string: product.dataURL)!, completionHandler: { (data, response, error) in
+                var gotError = false
+                if error != nil {
+                    self.sysLog.append(MASTSyslog(log: .RequestError, message: error!.localizedDescription))
+                    gotError = true
+                }
+                if (response as? HTTPURLResponse) == nil {
+                    self.sysLog.append(MASTSyslog(log: .RequestError, message: "response timed out"))
+                    gotError = true
+                }
+                let urlResponse = (response as! HTTPURLResponse)
+                if urlResponse.statusCode != 200 {
+                    let error = NSError(domain: "com.error", code: urlResponse.statusCode)
+                    self.sysLog.append(MASTSyslog(log: .RequestError, message: error.localizedDescription))
+                    gotError = true
+                }
+                if !gotError {
+                    self.sysLog.append(MASTSyslog(log: .OK, message: "ephemerus downloaded"))
+                }
+                
+                // Call the recursive function to download the next object
+                serialQueue.async {
+                                downloadNextproduct()
+                }
+            })
+
+                    // Add the operation to the serial queue to execute it serially
+                    serialQueue.async {
+                        operation.start()
+                    }
+                }
 
 }

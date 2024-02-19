@@ -111,7 +111,7 @@ public func getConeSearch(ra: Float, dec: Float, radius: Float=0.2, filters:[Res
                     products[filter] = [result]
                 }
             }
-            // Download the first image of each filter
+            // Append the first image of each filter
             var allFilterProducts = [CoamResult]()
             for filter in uniqueFilters {
                 let coamResult = products[filter]!
@@ -121,7 +121,7 @@ public func getConeSearch(ra: Float, dec: Float, radius: Float=0.2, filters:[Res
             }
                                      
                                      // Finally get the URLS to the files and return them
-            self.requestProductBundle(service: .Download_bundle, coamResults: allFilterProducts) { (success, urls) in
+            self.getDataproducts(products: allFilterProducts) { (success, urls) in
                 result(urls)
                                  }
         }

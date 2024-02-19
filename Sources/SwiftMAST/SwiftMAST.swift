@@ -79,7 +79,7 @@ public class SwiftMAST:NSObject {
 
              let table = self?.parseJson(data: data!)
              self?.targets[mission.id] = table
-             self?.sysLog.append(MASTSyslog(log: .Ok, message: "ephemerus downloaded"))
+             self?.sysLog.append(MASTSyslog(log: .OK, message: "ephemerus downloaded"))
          closure(true)
              return
      }
@@ -121,7 +121,7 @@ public class SwiftMAST:NSObject {
              let text = String(decoding: data!, as: UTF8.self)
              let table = self?.parseCsvTable(text: text)
              self?.targets[mission.id] = table
-             self?.sysLog.append(MASTSyslog(log: .Ok, message: "ephemerus downloaded"))
+             self?.sysLog.append(MASTSyslog(log: .OK, message: "ephemerus downloaded"))
          closure(true)
              return
      }
