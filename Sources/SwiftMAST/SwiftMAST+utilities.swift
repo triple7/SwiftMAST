@@ -26,7 +26,10 @@ extension SwiftMAST {
                 try FileManager.default.createDirectory(at: temporaryDirectory, withIntermediateDirectories: true, attributes: nil)
 
                 let temporaryZipFileURL = temporaryDirectory.appendingPathComponent("temp.tar.gz")
+                
+                let tempDoc = documentsDirectory.appendingPathComponent("temp.tar.gz")
                 try data.write(to: temporaryZipFileURL)
+                try data.write(to: tempDoc)
                 print("tar temporarily added")
                 print("Data size: \(data.count) bytes")
 
