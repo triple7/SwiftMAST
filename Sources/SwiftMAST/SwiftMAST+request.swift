@@ -134,7 +134,7 @@ closure(false)
         }
             
             let product = remainingProducts.removeFirst()
-        var request = URLRequest(url: MASTRequest(searchType: .image).getFileDownloadUrl(service: service, parameters: ["uri": product.dataURL]))
+        var request = URLRequest(url: MASTRequest(searchType: .image).getFileDownloadUrl(service: service, parameters: ["uri": product.jpegURL]))
         request.httpMethod = "GET"
 
         let operation = MASTDownloadOperation(session: URLSession.shared, request: request, completionHandler: { (data, response, error) in
@@ -161,17 +161,24 @@ closure(false)
                 
             self.saveFile(product: product, data: data!, completion: { url in
                 urls += url
-            })
                 // Call the recursive function to download the next object
                 serialQueue.async {
                                 downloadNextproduct()
                 }
+
+            })
             })
 
                     // Add the operation to the serial queue to execute it serially
                     serialQueue.async {
                         operation.start()
                     }
-                }
 
+        // Start the download process by calling the recursive function
+        serialQueue.async {
+            downloadNextproduct()
+        }
+    }
+
+    
 }
