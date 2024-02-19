@@ -134,7 +134,7 @@ closure(false)
         }
             
             let product = remainingProducts.removeFirst()
-        var request = URLRequest(url: MASTRequest(searchType: .image).getFileDownloadUrl(service: service, parameters: ["obs_collection": product.obs_collection, "obs_id": product.obs_id]))
+        var request = URLRequest(url: MASTRequest(searchType: .image).getFileDownloadUrl(service: service, parameters: ["uri": product.dataURL]))
         request.httpMethod = "GET"
 
         let operation = MASTDownloadOperation(session: URLSession.shared, request: request, completionHandler: { (data, response, error) in

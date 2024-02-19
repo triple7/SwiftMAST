@@ -66,10 +66,11 @@ extension SwiftMAST {
 
         let MASTDirectory = documentsDirectory.appendingPathExtension("MAST/\(product.obs_collection)/\(product.obs_id)")
 
+        let fileName = product.dataURL.components(separatedBy: "/").last!
             do {
                 try FileManager.default.createDirectory(at: MASTDirectory, withIntermediateDirectories: true, attributes: nil)
 
-                let fileUrl = MASTDirectory.appendingPathComponent(product.dataURL)
+                let fileUrl = MASTDirectory.appendingPathComponent(fileName)
                 
                 try data.write(to: fileUrl)
                 print("file added")
