@@ -96,7 +96,6 @@ closure(false)
 
         let task = session.dataTask(with: request) { [weak self] data, response, error in
                 guard error == nil else {
-                    print("Found an error \(error?.localizedDescription)")
                     self?.sysLog.append(MASTSyslog(log: .RequestError, message: error!.localizedDescription))
     closure(false, [])
                     return
@@ -107,13 +106,13 @@ closure(false)
                     return
                 }
                 if response.statusCode != 200 {
-                    print("not 200")
                     let error = NSError(domain: "com.error", code: response.statusCode)
                     self?.sysLog.append(MASTSyslog(log: .RequestError, message: error.localizedDescription))
                     closure(false, [])
                     return
                 }
 
+            print(response.mimeType)
             // Unzip the data in documents and return
             // The available urls
             self!.unzipResponseData(data!, completion: { urls in
