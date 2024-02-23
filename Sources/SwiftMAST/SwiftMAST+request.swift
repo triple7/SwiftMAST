@@ -151,6 +151,7 @@ closure(false)
                 let urlResponse = (response as! HTTPURLResponse)
                 if urlResponse.statusCode != 200 {
                     print(urlResponse.statusCode)
+                    print(urlResponse)
                     let error = NSError(domain: "com.error", code: urlResponse.statusCode)
                     self.sysLog.append(MASTSyslog(log: .RequestError, message: error.localizedDescription))
                     gotError = true
