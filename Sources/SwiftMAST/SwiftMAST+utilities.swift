@@ -55,8 +55,8 @@ extension SwiftMAST {
         }
     }
 
-    func saveFile( product: CoamResult, data: Data, completion: @escaping ([URL]) -> Void) {
-        print("saveFile: \(product.dataURL)")
+    func saveFile( product: CoamResult, urlString: String, data: Data, completion: @escaping ([URL]) -> Void) {
+        print("saveFile: \(urlString)")
             // Get the Documents directory
             guard let documentsDirectory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first else {
                 self.sysLog.append(MASTSyslog(log: .RequestError, message: "Unable to open Documents folder"))
@@ -67,7 +67,7 @@ extension SwiftMAST {
         var MASTDirectory = documentsDirectory.appendingPathComponent("MAST", isDirectory: true)
         MASTDirectory = MASTDirectory.appendingPathComponent(product.obs_collection, isDirectory: true)
 
-        let fileName = product.dataURL.components(separatedBy: "/").last!
+        let fileName = urlString.components(separatedBy: "/").last!
             do {
                 try FileManager.default.createDirectory(at: MASTDirectory, withIntermediateDirectories: true, attributes: nil)
 

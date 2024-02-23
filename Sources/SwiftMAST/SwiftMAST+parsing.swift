@@ -40,3 +40,15 @@ func parseCsvTable(text: String)->MASTTable {
      }
 
 }
+
+
+public enum ProductType:String, Identifiable {
+    case Fits
+    case Jpeg
+
+    public var id:String {
+        return self.rawValue
+    }
+    
+}
+
