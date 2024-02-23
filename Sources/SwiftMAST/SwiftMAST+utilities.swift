@@ -55,7 +55,7 @@ extension SwiftMAST {
         }
     }
 
-    func saveFile( product: CoamResult, urlString: String, data: Data, completion: @escaping ([URL]) -> Void) {
+    func saveFile(targetName: String, product: CoamResult, urlString: String, data: Data, completion: @escaping ([URL]) -> Void) {
         print("saveFile: \(urlString)")
             // Get the Documents directory
             guard let documentsDirectory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first else {
@@ -66,8 +66,8 @@ extension SwiftMAST {
 
         var MASTDirectory = documentsDirectory.appendingPathComponent("MAST", isDirectory: true)
         MASTDirectory = MASTDirectory.appendingPathComponent(product.obs_collection, isDirectory: true)
-        MASTDirectory = MASTDirectory.appendingPathComponent(product.obs_id, isDirectory: true)
-
+        
+        MASTDirectory = MASTDirectory.appendingPathComponent(targetName, isDirectory: true)
         let fileName = urlString.components(separatedBy: "/").last!
         let fileExtension = fileName.components(separatedBy: ".").last!
         MASTDirectory = MASTDirectory.appendingPathComponent(fileExtension, isDirectory: true)

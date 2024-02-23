@@ -159,7 +159,7 @@ closure(false)
                 if !gotError {
                     self.sysLog.append(MASTSyslog(log: .OK, message: "\(productUrl) downloaded"))
                     
-                    self.saveFile(product: product, urlString: productUrl, data: data!, completion: { url in
+                    self.saveFile(targetName: product.target_name, product: product, urlString: productUrl, data: data!, completion: { url in
                         urls += url
                         // Call the recursive function to download the next object
                         serialQueue.async {
