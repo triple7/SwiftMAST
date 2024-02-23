@@ -66,8 +66,13 @@ extension SwiftMAST {
 
         var MASTDirectory = documentsDirectory.appendingPathComponent("MAST", isDirectory: true)
         MASTDirectory = MASTDirectory.appendingPathComponent(product.obs_collection, isDirectory: true)
+        MASTDirectory = MASTDirectory.appendingPathComponent(product.obs_id, isDirectory: true)
 
         let fileName = urlString.components(separatedBy: "/").last!
+        let fileExtension = fileName.components(separatedBy: ".").last!
+        MASTDirectory = MASTDirectory.appendingPathComponent(fileExtension, isDirectory: true)
+
+
             do {
                 try FileManager.default.createDirectory(at: MASTDirectory, withIntermediateDirectories: true, attributes: nil)
 
