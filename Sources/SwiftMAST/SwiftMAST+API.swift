@@ -84,7 +84,7 @@ public func getConeSearch(ra: Float, dec: Float, radius: Float=0.2, filters:[Res
      * radius: Float
      * returnFilters:[FilterResult]
      */
-    public func getScienceImageProducts(ra: Float, dec: Float, radius: Float, productType: ProductType = .Fits, result: @escaping ([URL]) -> Void) {
+    public func getScienceImageProducts(targetName: String, ra: Float, dec: Float, radius: Float, productType: ProductType = .Fits, result: @escaping ([URL]) -> Void) {
         print("getScienceImageProducts ra \(ra) dec \(dec) radius \(radius)")
         
     let service = Service.Mast_Caom_Filtered_Position
@@ -121,7 +121,7 @@ public func getConeSearch(ra: Float, dec: Float, radius: Float=0.2, filters:[Res
             }
                                      
                                      // Finally get the URLS to the files and return them
-            self.getDataproducts(service: .Download_file, products: allFilterProducts, productType: productType) { (success, urls) in
+            self.getDataproducts(targetName: targetName,service: .Download_file, products: allFilterProducts, productType: productType) { (success, urls) in
                 result(urls)
                                  }
         }

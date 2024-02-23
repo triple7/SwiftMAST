@@ -117,7 +117,7 @@ closure(false)
         task.resume()
         }
 
-    func getDataproducts(service: Service,  products: [CoamResult], productType: ProductType, completion: @escaping (Bool, [URL])->Void ) {
+    func getDataproducts( targetName: String, service: Service,  products: [CoamResult], productType: ProductType, completion: @escaping (Bool, [URL])->Void ) {
         let serialQueue = DispatchQueue(label: "MASTDataproductsQueue")
         
         var remainingProducts = products.filter { (productType == .Fits ?  $0.dataURL : $0.jpegURL) != ""}
@@ -159,7 +159,7 @@ closure(false)
                 if !gotError {
                     self.sysLog.append(MASTSyslog(log: .OK, message: "\(productUrl) downloaded"))
                     
-                    self.saveFile(targetName: product.target_name, product: product, urlString: productUrl, data: data!, completion: { url in
+                    self.saveFile(targetName: targetName, product: product, urlString: productUrl, data: data!, completion: { url in
                         urls += url
                         // Call the recursive function to download the next object
                         serialQueue.async {
