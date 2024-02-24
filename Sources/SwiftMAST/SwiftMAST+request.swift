@@ -117,7 +117,7 @@ closure(false)
         task.resume()
         }
 
-    func getDataproducts( targetName: String, service: Service,  products: [CoamResult], productType: ProductType, completion: @escaping (Bool, [URL])->Void ) {
+    func getDataproducts( targetName: String, service: Service,  products: [CoamResult], productType: ProductType, token: String?, completion: @escaping (Bool, [URL])->Void ) {
         let serialQueue = DispatchQueue(label: "MASTDataproductsQueue")
         
         var remainingProducts = products.filter { (productType == .Fits ?  $0.dataURL : $0.jpegURL) != ""}
@@ -136,6 +136,11 @@ closure(false)
             let productUrl = productType == .Fits ? product.dataURL : product.jpegURL
             var request = URLRequest(url: MASTRequest(searchType: .image).getFileDownloadUrl(service: service, parameters: ["uri": productUrl]))
             request.httpMethod = "GET"
+            if let token = token {
+                request.allHTTPHeaderFields = [
+                    "Authorization":"token \(token)"
+                ]
+            }
             
             let operation = MASTDownloadOperation(session: URLSession.shared, request: request, completionHandler: { (data, response, error) in
                 var gotError = false
