@@ -101,6 +101,11 @@ public func getConeSearch(ra: Float, dec: Float, radius: Float=0.2, filters:[Res
             coamResults.sort()
             let uniqueFilters = table!.getUniqueString(for: Coam.filters.id)
             print("getScienceImageProducts: \(uniqueFilters.count) unique filters")
+            let collections = table!.getUniqueString(for: Coam.obs_collection.id)
+            print("Unique observation collections")
+            for c in collections {
+                print(c)
+            }
             // dictionary of products by filter
             var products = [String:[CoamResult]]()
             for result in coamResults {
@@ -120,8 +125,11 @@ public func getConeSearch(ra: Float, dec: Float, radius: Float=0.2, filters:[Res
                 }
             }
                                      
+            // Some products are meant to be ddirect downloads
+            let directDownloadproducts = allFilterProducts.filter{(productType == .Fits ? $0.dataURL : $0.jpegURL).contains("http")}
+            let mastDownloadProducts = allFilterProducts.filter{!(productType == .Fits ? $0.dataURL : $0.jpegURL).contains("http")}
                                      // Finally get the URLS to the files and return them
-            self.getDataproducts(targetName: targetName,service: .Download_file, products: allFilterProducts, productType: productType, token: token) { (success, urls) in
+            self.getDataproducts(targetName: targetName,service: .Download_file, products: mastDownloadProducts, productType: productType, token: token) { (success, urls) in
                 result(urls)
                                  }
         }

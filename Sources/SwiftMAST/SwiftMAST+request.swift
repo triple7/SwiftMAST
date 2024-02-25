@@ -192,5 +192,80 @@ closure(false)
             }
         }
         
-    
+
+    func getDirectDataproducts( targetName: String, service: Service,  products: [CoamResult], productType: ProductType, token: String?, completion: @escaping (Bool, [URL])->Void ) {
+        let serialQueue = DispatchQueue(label: "DirectDownloadDataproductsQueue")
+        
+        var remainingProducts = products.filter { (productType == .Fits ?  $0.dataURL : $0.jpegURL) != ""}
+        var urls = [URL]()
+        
+        
+        // Create a recursive function to handle the download
+        func downloadNextproduct() {
+            guard !remainingProducts.isEmpty else {
+                // All products have been downloaded, call the completion handler
+                completion(true, urls)
+                return
+            }
+            
+            let product = remainingProducts.removeFirst()
+            let productUrl = productType == .Fits ? product.dataURL : product.jpegURL
+            var request = URLRequest(url: MASTRequest(searchType: .image).getFileDownloadUrl(service: service, parameters: ["uri": productUrl]))
+            request.httpMethod = "GET"
+            if let token = token {
+                request.allHTTPHeaderFields = [
+                    "Authorization":"token \(token)"
+                ]
+            }
+            
+            let operation = MASTDownloadOperation(session: URLSession.shared, request: request, completionHandler: { (data, response, error) in
+                var gotError = false
+                if error != nil {
+                    print(error!.localizedDescription)
+                    self.sysLog.append(MASTSyslog(log: .RequestError, message: error!.localizedDescription))
+                    gotError = true
+                }
+                if (response as? HTTPURLResponse) == nil {
+                    self.sysLog.append(MASTSyslog(log: .RequestError, message: "response timed out"))
+                    gotError = true
+                }
+                let urlResponse = (response as! HTTPURLResponse)
+                if urlResponse.statusCode != 200 {
+                    print(urlResponse.statusCode)
+                    print(urlResponse)
+                    let error = NSError(domain: "com.error", code: urlResponse.statusCode)
+                    self.sysLog.append(MASTSyslog(log: .RequestError, message: error.localizedDescription))
+                    gotError = true
+                }
+                
+                if !gotError {
+                    self.sysLog.append(MASTSyslog(log: .OK, message: "\(productUrl) downloaded"))
+                    
+                    self.saveFile(targetName: targetName, product: product, urlString: productUrl, data: data!, completion: { url in
+                        urls += url
+                        // Call the recursive function to download the next object
+                        serialQueue.async {
+                            downloadNextproduct()
+                        }
+                    })
+                } else {
+                    serialQueue.async {
+                        downloadNextproduct()
+                    }
+                }
+                
+            })
+            
+            // Add the operation to the serial queue to execute it serially
+            serialQueue.async {
+                operation.start()
+            }
+        }
+
+            // Start the download process by calling the recursive function
+            serialQueue.async {
+                downloadNextproduct()
+            }
+        }
+
 }
