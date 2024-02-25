@@ -211,8 +211,8 @@ public struct CoamResult:Codable, Comparable {
     public let proposal_pi:String
     public let proposal_type:String
     public let provenance_name:String
-    public let s_dec:Float
-    public let s_ra:Float
+    public let s_dec:QValue
+    public let s_ra:QValue
     public let s_region:String
     public let sequence_number:Int
     public let srcDen:Int
@@ -282,8 +282,8 @@ extension CoamResult {
         self.proposal_pi = data[19].value as! String
         self.proposal_type = data[20].value as! String
         self.provenance_name = data[21].value as! String
-        self.s_dec = data[22].value as! Float
-        self.s_ra = data[23].value as! Float
+        self.s_dec = data[22]
+        self.s_ra = data[23]
         self.s_region = data[24].value as! String
         if let sequence_number = data[25].value as? Int {
             self.sequence_number = sequence_number
