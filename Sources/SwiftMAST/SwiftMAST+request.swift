@@ -137,9 +137,10 @@ closure(false)
             var request = URLRequest(url: MASTRequest(searchType: .image).getFileDownloadUrl(service: service, parameters: ["uri": productUrl]))
             request.httpMethod = "GET"
             if let token = token {
-                request.allHTTPHeaderFields = [
-                    "Authorization":"mast_token \(token)"
-                ]
+                request.addValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+//                request.allHTTPHeaderFields = [
+//                    "Authorization":"mas\(token)"
+//                ]
             }
             print( "request with token: \(request)")
             let operation = MASTDownloadOperation(session: URLSession.shared, request: request, completionHandler: { (data, response, error) in
