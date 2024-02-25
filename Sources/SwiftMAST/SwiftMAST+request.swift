@@ -137,7 +137,7 @@ closure(false)
             var request = URLRequest(url: MASTRequest(searchType: .image).getFileDownloadUrl(service: service, parameters: ["uri": productUrl]))
             request.httpMethod = "GET"
             if let token = token {
-                request.addValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+                request.addValue("\(token)", forHTTPHeaderField: "Authorization")
 //                request.allHTTPHeaderFields = [
 //                    "Authorization":"mas\(token)"
 //                ]
