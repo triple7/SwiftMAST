@@ -130,7 +130,10 @@ public func getConeSearch(ra: Float, dec: Float, radius: Float=0.2, filters:[Res
             let mastDownloadProducts = allFilterProducts.filter{!(productType == .Fits ? $0.dataURL : $0.jpegURL).contains("http")}
                                      // Finally get the URLS to the files and return them
             self.getDataproducts(targetName: targetName,service: .Download_file, products: mastDownloadProducts, productType: productType, token: token) { (success, urls) in
-                result(urls)
+                // Secondary direct downloads
+                self.getDirectDataproducts(targetName: targetName,service: .Download_file, products: directDownloadproducts, productType: productType, token: token) { (success, directUrls) in
+                    result(urls + directUrls)
+                }
                                  }
         }
     })
