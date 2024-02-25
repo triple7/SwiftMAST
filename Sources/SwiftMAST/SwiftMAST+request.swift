@@ -138,7 +138,7 @@ closure(false)
             request.httpMethod = "GET"
             if let token = token {
                 request.allHTTPHeaderFields = [
-                    "Authorization":"token=\(token)"
+                    "Authorization":"mast_token \(token)"
                 ]
             }
             print( "request with token: \(request)")
