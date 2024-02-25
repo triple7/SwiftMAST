@@ -210,15 +210,14 @@ closure(false)
             
             let product = remainingProducts.removeFirst()
             let productUrl = productType == .Fits ? product.dataURL : product.jpegURL
-            var request = URLRequest(url: MASTRequest(searchType: .image).getFileDownloadUrl(service: service, parameters: ["uri": productUrl]))
-            request.httpMethod = "GET"
+            var request = URLRequest(url: URL(string: productUrl)!)
             if let token = token {
                 request.allHTTPHeaderFields = [
                     "Authorization":"token \(token)"
                 ]
             }
             
-            let operation = MASTDownloadOperation(session: URLSession.shared, request: request, completionHandler: { (data, response, error) in
+            let operation = MASTDirectDownloadOperation(session: URLSession.shared, request: request, completionHandler: { (tempUrl, response, error) in
                 var gotError = false
                 if error != nil {
                     print(error!.localizedDescription)
@@ -241,7 +240,7 @@ closure(false)
                 if !gotError {
                     self.sysLog.append(MASTSyslog(log: .OK, message: "\(productUrl) downloaded"))
                     
-                    self.saveFile(targetName: targetName, product: product, urlString: productUrl, data: data!, completion: { url in
+                    self.saveTempUrlToFile(targetName: targetName, product: product, urlString: productUrl, tempUrl: tempUrl!, completion: { url in
                         urls += url
                         // Call the recursive function to download the next object
                         serialQueue.async {

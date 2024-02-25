@@ -93,4 +93,42 @@ extension SwiftMAST {
             }
     }
 
+
+    
+    func saveTempUrlToFile(targetName: String, product: CoamResult, urlString: String, tempUrl: URL, completion: @escaping ([URL]) -> Void) {
+        print("saveFile: \(urlString)")
+            // Get the Documents directory
+            guard let documentsDirectory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first else {
+                self.sysLog.append(MASTSyslog(log: .RequestError, message: "Unable to open Documents folder"))
+                completion([])
+                return
+            }
+
+        var MASTDirectory = documentsDirectory.appendingPathComponent("MAST", isDirectory: true)
+        MASTDirectory = MASTDirectory.appendingPathComponent(targetName, isDirectory: true)
+        
+        MASTDirectory = MASTDirectory.appendingPathComponent(product.obs_collection, isDirectory: true)
+        let fileName = urlString.components(separatedBy: "/").last!
+        let fileExtension = fileName.components(separatedBy: ".").last!
+        MASTDirectory = MASTDirectory.appendingPathComponent(fileExtension, isDirectory: true)
+
+            do {
+                try FileManager.default.createDirectory(at: MASTDirectory, withIntermediateDirectories: true, attributes: nil)
+
+                let saveUrl = MASTDirectory.appendingPathComponent(tempUrl.lastPathComponent)
+                
+
+                try FileManager.default.moveItem(at: tempUrl, to: saveUrl)
+                                completion([])
+                DispatchQueue.main.async {
+                    completion([saveUrl])
+                }
+            } catch let error {
+                self.sysLog.append(MASTSyslog(log: .RequestError, message: error.localizedDescription))
+                DispatchQueue.main.async {
+                    completion([])
+                }
+            }
+    }
+
 }
