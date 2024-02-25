@@ -18,11 +18,11 @@ extension MASTJson {
     public func scienceImageFilters() -> [MASTJsonFilter] {
         return [
 //            MASTJsonFilter(paramName: Coam.filters.id, values: FilterValues(values: [QValue(value: "NUV"), QValue(value: "FUV")] as Any), separator: ";"),
-//            MASTJsonFilter(paramName: Coam.calib_level.id, values: FilterValues(values: [QValue(value: "3"), QValue(value: "4")] as Any)),
+            MASTJsonFilter(paramName: Coam.calib_level.id, values: FilterValues(values: [QValue(value: "3"), QValue(value: "4")] as Any)),
             MASTJsonFilter(paramName: Coam.dataRights.id, values: FilterValues(values: [QValue(value: "public")] as Any)),
-//                           MASTJsonFilter(paramName: Coam.dataproduct_type.id, values: FilterValues(values: [QValue(value: "IMAGE")] as Any)),
-//                           MASTJsonFilter(paramName: Coam.intentType.id, values: FilterValues(values: [QValue(value: "science")] as Any)),
-            MASTJsonFilter(paramName: Coam.obs_collection.id, values: FilterValues(values: [QValue(value: "JWST")] as Any))
+                           MASTJsonFilter(paramName: Coam.dataproduct_type.id, values: FilterValues(values: [QValue(value: "IMAGE")] as Any)),
+                           MASTJsonFilter(paramName: Coam.intentType.id, values: FilterValues(values: [QValue(value: "science")] as Any)),
+//            MASTJsonFilter(paramName: Coam.obs_collection.id, values: FilterValues(values: [QValue(value: "JWST")] as Any))
         ]
     }
     
