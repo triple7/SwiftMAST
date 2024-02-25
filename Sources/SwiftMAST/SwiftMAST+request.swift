@@ -138,10 +138,10 @@ closure(false)
             request.httpMethod = "GET"
             if let token = token {
                 request.allHTTPHeaderFields = [
-                    "Authorization":"token \(token)"
+                    "Authorization":"token=\(token)"
                 ]
             }
-            
+            print( "request with token: \(request)")
             let operation = MASTDownloadOperation(session: URLSession.shared, request: request, completionHandler: { (data, response, error) in
                 var gotError = false
                 if error != nil {
