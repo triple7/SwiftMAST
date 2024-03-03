@@ -210,7 +210,10 @@ closure(false)
             }
             
             let product = remainingProducts.removeFirst()
-            let productUrl = productType == .Fits ? product.dataURL : product.jpegURL
+            var productUrl = productType == .Fits ? product.dataURL : product.jpegURL
+            if !productUrl.contains("https") {
+                productUrl = productUrl.replacingOccurrences(of: "http", with: "https")
+            }
             var request = URLRequest(url: URL(string: productUrl)!)
             if let token = token {
                 request.allHTTPHeaderFields = [

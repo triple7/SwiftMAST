@@ -16,6 +16,7 @@ import Foundation
 extension MASTJson {
     
     public func scienceImageFilters() -> [MASTJsonFilter] {
+        print("scienceImageFilters: testing")
         return [
             MASTJsonFilter(paramName: Coam.filters.id, values: FilterValues(values: [QValue(value: "NUV"), QValue(value: "FUV")] as Any), separator: ";"),
             MASTJsonFilter(paramName: Coam.calib_level.id, values: FilterValues(values: [QValue(value: "3"), QValue(value: "4")] as Any)),
