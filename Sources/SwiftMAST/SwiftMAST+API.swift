@@ -93,9 +93,12 @@ public func getConeSearch(ra: Float, dec: Float, radius: Float=0.2, filters:[Res
     let filterParams = params.scienceImageFilters()
     params.setFilterParameters(params: filterParams)
     params.setParameters(params: [MAP.columns: "*", MAP.position: "\(ra), \(dec), \(radius)"])
-    self.queryMast(service: service, params: params, returnType: .json, { success in
-        // we are looping through 1 key
+
+        self.queryMast(service: service, params: params, returnType: .json, { success in
+
+            // we are looping through 1 key
         for target in self.targets.keys {
+
             let table = self.targets[target]
             var coamResults = table!.getCoamResults()
             coamResults.sort()
@@ -106,6 +109,7 @@ public func getConeSearch(ra: Float, dec: Float, radius: Float=0.2, filters:[Res
             for c in collections {
                 print(c)
             }
+            
             // dictionary of products by filter
             var products = [String:[CoamResult]]()
             for result in coamResults {
@@ -116,6 +120,7 @@ public func getConeSearch(ra: Float, dec: Float, radius: Float=0.2, filters:[Res
                     products[filter] = [result]
                 }
             }
+            
             // Append the first image of each filter
             var allFilterProducts = [CoamResult]()
             for filter in uniqueFilters {
@@ -126,12 +131,16 @@ public func getConeSearch(ra: Float, dec: Float, radius: Float=0.2, filters:[Res
             }
                                      
             // Some products are meant to be ddirect downloads
-            let directDownloadproducts = allFilterProducts.filter{(productType == .Fits ? $0.dataURL : $0.jpegURL).contains("http")}
+            var directDownloadproducts = allFilterProducts.filter{(productType == .Fits ? $0.dataURL : $0.jpegURL).contains("http")}
+
             let mastDownloadProducts = allFilterProducts.filter{!(productType == .Fits ? $0.dataURL : $0.jpegURL).contains("http")}
-                                     // Finally get the URLS to the files and return them
+
+            // Get the MAST query url downloads and return the URLs
             self.getDataproducts(targetName: targetName,service: .Download_file, products: mastDownloadProducts, productType: productType, token: token) { (success, urls) in
-                // Secondary direct downloads
+
+                // Secondary non MAST direct downloads
                 self.getDirectDataproducts(targetName: targetName,service: .Download_file, products: directDownloadproducts, productType: productType, token: token) { (success, directUrls) in
+                    
                     result(urls + directUrls)
                 }
                                  }
