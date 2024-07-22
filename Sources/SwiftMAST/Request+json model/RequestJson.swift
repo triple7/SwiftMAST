@@ -21,6 +21,15 @@ public struct MASTJson:Encodable {
     var timeout:Int?
     var removenullcolumns:Bool?
 
+    // Getters
+    public func getTargetInput() -> String {
+        guard let parameters = params else {
+            print("Warning: missing input parameters")
+            return ""
+        }
+        return parameters.input!
+    }
+    
     // Mark: Json request general parameters
     
     public mutating func setGeneralParameter( params: [MAP: Any]) {

@@ -131,7 +131,7 @@ public func getConeSearch(ra: Float, dec: Float, radius: Float=0.2, filters:[Res
             }
                                      
             // Some products are meant to be ddirect downloads
-            var directDownloadproducts = allFilterProducts.filter{(productType == .Fits ? $0.dataURL : $0.jpegURL).contains("http")}
+            let directDownloadproducts = allFilterProducts.filter{(productType == .Fits ? $0.dataURL : $0.jpegURL).contains("http")}
 
             let mastDownloadProducts = allFilterProducts.filter{!(productType == .Fits ? $0.dataURL : $0.jpegURL).contains("http")}
 
