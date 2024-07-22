@@ -205,4 +205,11 @@ func getTicCrossmatch(ra: Float, dec: Float, radius: Float, result: @escaping ([
         })
     }
 
+    /** Select a target by name and download all filtered images
+     to the documents folder (IOS)
+     */
+    public func downloadImagery(URLS: [URL]) {
+        
+    }
+    
 }
