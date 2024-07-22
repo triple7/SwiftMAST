@@ -64,7 +64,7 @@ closure(false)
                 return
             }
 
-            self?.targets[params.getTargetInput()] = table
+            self?.targets[params.getTargetId()] = table
             self?.sysLog.append(MASTSyslog(log: .OK, message: "request successful"))
         closure(true)
             return

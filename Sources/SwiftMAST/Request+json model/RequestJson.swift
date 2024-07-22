@@ -20,14 +20,17 @@ public struct MASTJson:Encodable {
     var removecache:Bool?
     var timeout:Int?
     var removenullcolumns:Bool?
+    // Custom properties
+    var targetId:String?
 
     // Getters
-    public func getTargetInput() -> String {
-        guard let parameters = params else {
-            print("Warning: missing input parameters")
-            return ""
-        }
-        return parameters.input!
+    public func getTargetId() -> String {
+        return self.targetId!
+    }
+    
+    // Mark: custom targetId for returning key
+    public mutating func setTargetId(targetId: String) {
+        self.targetId = targetId
     }
     
     // Mark: Json request general parameters
