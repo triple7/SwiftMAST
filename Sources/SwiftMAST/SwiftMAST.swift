@@ -29,6 +29,7 @@ public class SwiftMAST:NSObject {
      * expectedContentLength: size in kbytes of data
      */
     public var targets:[String: MASTTable]
+    private var targetLookups:[String: MASTTable]
     private var buffer:Int!
     public var progress:Float?
     private var expectedContentLength:Int?
@@ -36,12 +37,15 @@ public class SwiftMAST:NSObject {
     
     public override init() {
         self.targets = [String: MASTTable]()
+        self.targetLookups = [String: MASTTable]()
         self.buffer = 0
         self.sysLog = [MASTSyslog]()
     }
     
-    public func clearTargets() {
-        self.targets.removeAll()
+/** Moves the target lookup to a historical location
+ */
+    public func clearTargetLookup(target: String) {
+        self.targetLookups[target] = self.targets.removeValue(forKey: target)!
     }
 }
 

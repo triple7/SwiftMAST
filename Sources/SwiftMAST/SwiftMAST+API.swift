@@ -22,7 +22,7 @@ extension SwiftMAST {
      Parameters:
      * name: String
      */
-func lookupTargetByName(targetName: String, result: @escaping ([NameLookupJson]) -> Void) {
+public func lookupTargetByName(targetName: String, result: @escaping ([NameLookupJson]) -> Void) {
         print("lookupTargetByName: \(targetName)")
         var output:[NameLookupJson] = []
         let service = Service.Mast_Name_Lookup
