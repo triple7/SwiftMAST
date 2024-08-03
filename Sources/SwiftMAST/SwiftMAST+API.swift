@@ -92,6 +92,7 @@ public func getConeSearch(ra: Float, dec: Float, radius: Float=0.2, filters:[Res
     let filterParams = params.scienceImageFilters(wavelengthRegions: waveLengths)
     params.setFilterParameters(params: filterParams)
     params.setParameters(params: [MAP.columns: "*", MAP.position: "\(ra), \(dec), \(radius)"])
+        params.setTargetId(targetId: targetName)
 
         self.queryMast(service: service, params: params, returnType: .json, { success in
 
@@ -227,6 +228,7 @@ func getTicCrossmatch(ra: Float, dec: Float, radius: Float, result: @escaping ([
         var params = service.serviceRequest(requestType: .lookup)
         params.setParameter(param: .input, value: targetName)
         params.setTargetId(targetId: targetName)
+        print("targetId set to \(params.getTargetId())")
         self.queryMast(service: service, params: params, returnType: .xml, { success in
             guard let target = self.targets.keys.first, let table = self.targets[target] else {
                 completion([])
