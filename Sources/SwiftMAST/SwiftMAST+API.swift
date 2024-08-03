@@ -101,64 +101,66 @@ public func getConeSearch(ra: Float, dec: Float, radius: Float=0.2, filters:[Res
             if let target = self.targets.keys.first {
                 let table = self.targets[target]!
                 var coamResults = table.getCoamResults()
-            coamResults.sort()
-//            let collections = table!.getUniqueString(for: Coam.obs_collection.id)
-//            print("Unique observation collections")
-//            for c in collections {
-//                print(c)
-//            }
-            
+                coamResults.sort()
+                //            let collections = table!.getUniqueString(for: Coam.obs_collection.id)
+                //            print("Unique observation collections")
+                //            for c in collections {
+                //                print(c)
+                //            }
+                
                 if preview {
                     // Just save the first image
-            
+                    
                     let mastDownloadProducts = coamResults.filter{!(productType == .Fits ? $0.dataURL : $0.jpegURL).contains("http")}
-
+                    
                     self.getDataproducts(targetName: targetName,service: .Download_file, products: mastDownloadProducts, productType: productType, token: token) { (success, urls) in
                         
+                        print("Downloaded URLs")
                         result(urls)
                     }
                     
-                }
-                
-                // non preview, get everything
-                let uniqueFilters = table.getUniqueString(for: Coam.filters.id)
-                print("getScienceImageProducts: \(uniqueFilters.count) unique filters")
-
-            // dictionary of products by filter
-            var products = [String:[CoamResult]]()
-            for result in coamResults {
-                let filter = result.filters
-                if let filterList = products[filter] {
-                    products[filter] = filterList + [result]
                 } else {
-                    products[filter] = [result]
-                }
-            }
-            
-            // Append the first image of each filter
-            var allFilterProducts = [CoamResult]()
-            for filter in uniqueFilters {
-                let coamResult = products[filter]!
-                if coamResult.count > 0 {
-                    allFilterProducts.append(coamResult.first!)
-                }
-            }
-                                     
-            // Some products are meant to be ddirect downloads
-            let directDownloadproducts = allFilterProducts.filter{(productType == .Fits ? $0.dataURL : $0.jpegURL).contains("http")}
-
-            let mastDownloadProducts = allFilterProducts.filter{!(productType == .Fits ? $0.dataURL : $0.jpegURL).contains("http")}
-
-            // Get the MAST query url downloads and return the URLs
-            self.getDataproducts(targetName: targetName,service: .Download_file, products: mastDownloadProducts, productType: productType, token: token) { (success, urls) in
-
-                // Secondary non MAST direct downloads
-                self.getDirectDataproducts(targetName: targetName,service: .Download_file, products: directDownloadproducts, productType: productType, token: token) { (success, directUrls) in
                     
-                    result(urls + directUrls)
+                    // non preview, get everything
+                    let uniqueFilters = table.getUniqueString(for: Coam.filters.id)
+                    print("getScienceImageProducts: \(uniqueFilters.count) unique filters")
+                    
+                    // dictionary of products by filter
+                    var products = [String:[CoamResult]]()
+                    for result in coamResults {
+                        let filter = result.filters
+                        if let filterList = products[filter] {
+                            products[filter] = filterList + [result]
+                        } else {
+                            products[filter] = [result]
+                        }
+                    }
+                    
+                    // Append the first image of each filter
+                    var allFilterProducts = [CoamResult]()
+                    for filter in uniqueFilters {
+                        let coamResult = products[filter]!
+                        if coamResult.count > 0 {
+                            allFilterProducts.append(coamResult.first!)
+                        }
+                    }
+                    
+                    // Some products are meant to be ddirect downloads
+                    let directDownloadproducts = allFilterProducts.filter{(productType == .Fits ? $0.dataURL : $0.jpegURL).contains("http")}
+                    
+                    let mastDownloadProducts = allFilterProducts.filter{!(productType == .Fits ? $0.dataURL : $0.jpegURL).contains("http")}
+                    
+                    // Get the MAST query url downloads and return the URLs
+                    self.getDataproducts(targetName: targetName,service: .Download_file, products: mastDownloadProducts, productType: productType, token: token) { (success, urls) in
+                        
+                        // Secondary non MAST direct downloads
+                        self.getDirectDataproducts(targetName: targetName,service: .Download_file, products: directDownloadproducts, productType: productType, token: token) { (success, directUrls) in
+                            
+                            result(urls + directUrls)
+                        }
+                    }
                 }
-                                 }
-        }
+            }
     })
     }
 
