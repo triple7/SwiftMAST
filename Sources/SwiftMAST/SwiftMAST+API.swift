@@ -84,32 +84,45 @@ public func getConeSearch(ra: Float, dec: Float, radius: Float=0.2, filters:[Res
      * radius: Float
      * returnFilters:[FilterResult]
      */
-    public func getScienceImageProducts(targetName: String, ra: Float, dec: Float, radius: Float, productType: ProductType = .Fits, token: String?, result: @escaping ([URL]) -> Void) {
-        print("getScienceImageProducts ra \(ra) dec \(dec) radius \(radius)")
+    public func getScienceImageProducts(targetName: String, ra: Float, dec: Float, radius: Float, productType: ProductType = .Fits, waveLengths: [String], preview: Bool = true, token: String?, result: @escaping ([URL]) -> Void) {
         
     let service = Service.Mast_Caom_Filtered_Position
     var params = service.serviceRequest(requestType: .advancedSearch)
     params.setGeneralParameter(params: MAP.values.defaultGeneralParameters())
-    let filterParams = params.scienceImageFilters()
+    let filterParams = params.scienceImageFilters(wavelengthRegions: waveLengths)
     params.setFilterParameters(params: filterParams)
     params.setParameters(params: [MAP.columns: "*", MAP.position: "\(ra), \(dec), \(radius)"])
 
         self.queryMast(service: service, params: params, returnType: .json, { success in
 
-            // we are looping through 1 key
-        for target in self.targets.keys {
-
-            let table = self.targets[target]
-            var coamResults = table!.getCoamResults()
-            coamResults.sort()
-            let uniqueFilters = table!.getUniqueString(for: Coam.filters.id)
-            print("getScienceImageProducts: \(uniqueFilters.count) unique filters")
-            let collections = table!.getUniqueString(for: Coam.obs_collection.id)
-            print("Unique observation collections")
-            for c in collections {
-                print(c)
-            }
+            // we are looking for one key
             
+            if let target = self.targets.keys.first {
+                let table = self.targets[target]!
+                var coamResults = table.getCoamResults()
+            coamResults.sort()
+//            let collections = table!.getUniqueString(for: Coam.obs_collection.id)
+//            print("Unique observation collections")
+//            for c in collections {
+//                print(c)
+//            }
+            
+                if preview {
+                    // Just save the first image
+            
+                    let mastDownloadProducts = coamResults.filter{!(productType == .Fits ? $0.dataURL : $0.jpegURL).contains("http")}
+
+                    self.getDataproducts(targetName: targetName,service: .Download_file, products: mastDownloadProducts, productType: productType, token: token) { (success, urls) in
+                        
+                        result(urls)
+                    }
+                    
+                }
+                
+                // non preview, get everything
+                let uniqueFilters = table.getUniqueString(for: Coam.filters.id)
+                print("getScienceImageProducts: \(uniqueFilters.count) unique filters")
+
             // dictionary of products by filter
             var products = [String:[CoamResult]]()
             for result in coamResults {
@@ -205,11 +218,32 @@ func getTicCrossmatch(ra: Float, dec: Float, radius: Float, result: @escaping ([
         })
     }
 
-    /** Select a target by name and download all filtered images
-     to the documents folder (IOS)
+    /** Select a target by name and download all selectively filtered images
+     to the documents folder under MAST/target_name/instrument_name/
      */
-    public func downloadImagery(URLS: [URL]) {
+    public func downloadImagery(targetName: String, waveLengths: [String] = ["optical"], token: String?, completion: @escaping ([URL]) -> Void ) {
         
-    }
+        let service = Service.Mast_Name_Lookup
+        var params = service.serviceRequest(requestType: .lookup)
+        params.setParameter(param: .input, value: targetName)
+        params.setTargetId(targetId: targetName)
+        self.queryMast(service: service, params: params, returnType: .xml, { success in
+            guard let target = self.targets.keys.first, let table = self.targets[target] else {
+                completion([])
+                return
+            }
+      
+            let resolved = table.getNameLookupResults().first!
+            // stash the MAST lookup dictionary as record
+            self.moveTargetToLookupHistory(target: target)
+            
+            // Get the images
+            // And save them in the targets dictionary for future downloads if required
+            self.getScienceImageProducts(targetName: targetName, ra: resolved.ra, dec: resolved.dec, radius: resolved.radius, productType: .Jpeg, waveLengths: waveLengths, token: token) { urls in
+                completion(urls)
+            }
+            
+    })
+                       }
     
 }

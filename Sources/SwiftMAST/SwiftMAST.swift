@@ -44,7 +44,7 @@ public class SwiftMAST:NSObject {
     
 /** Moves the target lookup to a historical location
  */
-    public func clearTargetLookup(target: String) {
+    public func moveTargetToLookupHistory(target: String) {
         self.targetLookups[target] = self.targets.removeValue(forKey: target)!
     }
 }

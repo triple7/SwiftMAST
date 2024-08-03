@@ -24,7 +24,7 @@ public extension SwiftMAST {
      returnType: expected response format [json/xml]
      closure: whether request was successful
      */
-func queryMast(service: Service, params: MASTJson, returnType: APIReturnType,_ closure: @escaping (Bool) -> Void) {
+func queryMast(service: Service, params: MASTJson, returnType: APIReturnType, _ closure: @escaping (Bool) -> Void) {
         
         let json = service.jsonData(json: params)
 
