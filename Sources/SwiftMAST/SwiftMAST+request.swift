@@ -134,6 +134,7 @@ closure(false)
             }
             
             let product = remainingProducts.removeFirst()
+            print("Got first product to download")
             let productUrl = productType == .Fits ? product.dataURL : product.jpegURL
             var request = URLRequest(url: MASTRequest(searchType: .image).getFileDownloadUrl(service: service, parameters: ["uri": productUrl]))
             request.httpMethod = "GET"
