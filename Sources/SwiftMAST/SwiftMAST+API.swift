@@ -109,11 +109,13 @@ public func getConeSearch(ra: Float, dec: Float, radius: Float=0.2, filters:[Res
                 //            }
                 
                 if preview {
+                    print("Getting first image for preview")
                     // Just save the first image
                     
-                    let mastDownloadProducts = coamResults.filter{!(productType == .Fits ? $0.dataURL : $0.jpegURL).contains("http")}.first!
+                    let mastDownloadProducts = coamResults.filter{!(productType == .Fits ? $0.dataURL : $0.jpegURL).contains("http")}
                     
-                    self.getDataproducts(targetName: targetName,service: .Download_file, products: [mastDownloadProducts], productType: productType, token: token) { (success, urls) in
+                    print("coam Result count: \(mastDownloadProducts.count)")
+                    self.getDataproducts(targetName: targetName,service: .Download_file, products: [mastDownloadProducts.first!], productType: productType, token: token) { (success, urls) in
                         
                         print("Downloaded URLs")
                         result(urls)
@@ -230,9 +232,9 @@ func getTicCrossmatch(ra: Float, dec: Float, radius: Float, result: @escaping ([
         var params = service.serviceRequest(requestType: .lookup)
         params.setParameter(param: .input, value: targetName)
         params.setTargetId(targetId: targetName)
-        print("targetId set to \(params.getTargetId())")
         self.queryMast(service: service, params: params, returnType: .xml, { success in
             guard let target = self.targets.keys.first, let table = self.targets[target] else {
+                print("Unable to find target")
                 completion([])
                 return
             }
