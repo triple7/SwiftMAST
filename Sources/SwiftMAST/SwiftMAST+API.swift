@@ -114,7 +114,7 @@ public func getConeSearch(ra: Float, dec: Float, radius: Float=0.2, filters:[Res
                     
                     let mastDownloadProducts = coamResults.filter{!(productType == .Fits ? $0.dataURL : $0.jpegURL).contains("http")}
                     
-                    print("coam Result count: \(mastDownloadProducts.count)")
+                    print("coam Result count: \(mastDownloadProducts.first!)")
                     self.getDataproducts(targetName: targetName,service: .Download_file, products: [mastDownloadProducts.first!], productType: productType, token: token) { (success, urls) in
                         
                         print("Downloaded URLs")
