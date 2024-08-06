@@ -93,7 +93,7 @@ public func getConeSearch(ra: Float, dec: Float, radius: Float=0.2, filters:[Res
         print(params)
     let filterParams = params.scienceImageFilters(wavelengthRegions: waveLengths)
     params.setFilterParameters(params: filterParams)
-    params.setParameters(params: [MAP.columns: "*", MAP.position: "\(ra), \(dec), \(radius)"])
+        params.setParameters(params: [MAP.columns: "*", MAP.position: "\(ra), \(dec), \(radius)", MAP.maxrecords: 10])
         params.setTargetId(targetId: targetName)
 
         let start = CACurrentMediaTime()
