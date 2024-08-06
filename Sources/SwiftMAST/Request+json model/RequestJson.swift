@@ -20,6 +20,7 @@ public struct MASTJson:Encodable {
     var removecache:Bool?
     var timeout:Int?
     var removenullcolumns:Bool?
+    var maxrecords:Int?
     // Custom properties
     var targetId:String?
 
@@ -48,6 +49,7 @@ public struct MASTJson:Encodable {
         case .removecache: self.removecache = value as? Bool
         case .timeout: self.timeout = value as? Int
         case .removenullcolumns: self.removenullcolumns = value as? Bool
+        case .maxrecords: self.maxrecords = value as? Int
         default: break
         }
     }
