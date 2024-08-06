@@ -171,18 +171,66 @@ public struct NameLookupJson:Codable {
     public let searchString:String
 
     public init(data: [QValue], fields: [String]) {
-        ra = data[fields.firstIndex(of: "ra")!].value as! Float
-        cached = data[fields.firstIndex(of: "cached")!].value as! Bool
-        resolverTime = data[fields.firstIndex(of: "resolverTime")!].value as! Int
-        dec = data[fields.firstIndex(of: "dec")!].value as! Float
-        resolver = data[fields.firstIndex(of: "resolver")!].value as! String
-        canonicalName = data[fields.firstIndex(of: "canonicalName")!].value as! String
-        radius = data[fields.firstIndex(of: "radius")!].value as! Float
-        objectType = data[fields.firstIndex(of: "objectType")!].value as! String
-        searchRadius = data[fields.firstIndex(of: "searchRadius")!].value as! Float
-        searchString = data[fields.firstIndex(of: "searchString")!].value as! String
+        if let raIndex = fields.firstIndex(of: "ra"), let raValue = data[raIndex].value as? Float {
+            ra = raValue
+        } else {
+            ra = 0.0
+        }
+        
+        if let cachedIndex = fields.firstIndex(of: "cached"), let cachedValue = data[cachedIndex].value as? Bool {
+            cached = cachedValue
+        } else {
+            cached = false
+        }
+        
+        if let resolverTimeIndex = fields.firstIndex(of: "resolverTime"), let resolverTimeValue = data[resolverTimeIndex].value as? Int {
+            resolverTime = resolverTimeValue
+        } else {
+            resolverTime = 0
+        }
+        
+        if let decIndex = fields.firstIndex(of: "dec"), let decValue = data[decIndex].value as? Float {
+            dec = decValue
+        } else {
+            dec = 0.0
+        }
+        
+        if let resolverIndex = fields.firstIndex(of: "resolver"), let resolverValue = data[resolverIndex].value as? String {
+            resolver = resolverValue
+        } else {
+            resolver = ""
+        }
+        
+        if let canonicalNameIndex = fields.firstIndex(of: "canonicalName"), let canonicalNameValue = data[canonicalNameIndex].value as? String {
+            canonicalName = canonicalNameValue
+        } else {
+            canonicalName = ""
+        }
+        
+        if let radiusIndex = fields.firstIndex(of: "radius"), let radiusValue = data[radiusIndex].value as? Float {
+            radius = radiusValue
+        } else {
+            radius = 0.0
+        }
+        
+        if let objectTypeIndex = fields.firstIndex(of: "objectType"), let objectTypeValue = data[objectTypeIndex].value as? String {
+            objectType = objectTypeValue
+        } else {
+            objectType = ""
+        }
+        
+        if let searchRadiusIndex = fields.firstIndex(of: "searchRadius"), let searchRadiusValue = data[searchRadiusIndex].value as? Float {
+            searchRadius = searchRadiusValue
+        } else {
+            searchRadius = 0.0
+        }
+        
+        if let searchStringIndex = fields.firstIndex(of: "searchString"), let searchStringValue = data[searchStringIndex].value as? String {
+            searchString = searchStringValue
+        } else {
+            searchString = ""
+        }
     }
-    
 }
 
 
