@@ -90,11 +90,12 @@ public func getConeSearch(ra: Float, dec: Float, radius: Float=0.2, filters:[Res
     let service = Service.Mast_Caom_Filtered_Position
     var params = service.serviceRequest(requestType: .advancedSearch)
     params.setGeneralParameter(params: MAP.values.defaultGeneralParameters())
-        print(params)
     let filterParams = params.scienceImageFilters(wavelengthRegions: waveLengths)
     params.setFilterParameters(params: filterParams)
         params.setParameters(params: [MAP.columns: "*", MAP.position: "\(ra), \(dec), \(radius)", MAP.maxrecords: 10])
         params.setTargetId(targetId: targetName)
+
+        print(params)
 
         let start = CACurrentMediaTime()
         self.queryMast(service: service, params: params, returnType: .json, { success in
