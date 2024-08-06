@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import QuartzCore
 
 /** SwiftMAST common API calls
  These convenience functions allow quick access to some of the more interesting MAST API data requests.
@@ -94,8 +95,11 @@ public func getConeSearch(ra: Float, dec: Float, radius: Float=0.2, filters:[Res
     params.setParameters(params: [MAP.columns: "*", MAP.position: "\(ra), \(dec), \(radius)"])
         params.setTargetId(targetId: targetName)
 
+        let start = CACurrentMediaTime()
         self.queryMast(service: service, params: params, returnType: .json, { success in
 
+            let end = CACurrentMediaTime()
+            print("target products downloaded in \(end - start)")
             // we are looking for one key
             
             if let target = self.targets.keys.first {
@@ -232,13 +236,15 @@ func getTicCrossmatch(ra: Float, dec: Float, radius: Float, result: @escaping ([
         var params = service.serviceRequest(requestType: .lookup)
         params.setParameter(param: .input, value: targetName)
         params.setTargetId(targetId: targetName)
+        let targetStart = CACurrentMediaTime()
         self.queryMast(service: service, params: params, returnType: .xml, { success in
             guard let target = self.targets.keys.first, let table = self.targets[target] else {
                 print("Unable to find target")
                 completion([])
                 return
             }
-      
+      let targetEnd = CACurrentMediaTime()
+            print("target found in \(targetEnd - targetStart)")
             let resolved = table.getNameLookupResults().first!
             // stash the MAST lookup dictionary as record
             self.moveTargetToLookupHistory(target: target)
