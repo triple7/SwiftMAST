@@ -122,6 +122,7 @@ public struct MASTJsonParams:Encodable {
     }
     
     public mutating func setParameter(parameter: MAP, value: Any) {
+        print("setting param \(parameter) \(value)")
         switch parameter {
         case .columns: self.columns = value as? String
         case .filters: self.filters = value as? [MASTJsonFilter]
