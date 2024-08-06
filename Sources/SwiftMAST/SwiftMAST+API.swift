@@ -227,7 +227,7 @@ func getTicCrossmatch(ra: Float, dec: Float, radius: Float, result: @escaping ([
      to the documents folder under MAST/target_name/instrument_name/
      */
     public func downloadImagery(targetName: String, waveLengths: [String] = ["optical"], token: String? = nil, completion: @escaping ([URL]) -> Void ) {
-        
+        print("downloadImagery: \(targetName)")
         let service = Service.Mast_Name_Lookup
         var params = service.serviceRequest(requestType: .lookup)
         params.setParameter(param: .input, value: targetName)

@@ -17,7 +17,7 @@ extension MASTJson {
     
     public func scienceImageFilters(wavelengthRegions: [String] = ["OPTICAL", "optical"]) -> [MASTJsonFilter] {
         return [
-            MASTJsonFilter(paramName: Coam.filters.id, values: FilterValues(values: [QValue(value: "NUV"), QValue(value: "FUV")] as Any), separator: ";"),
+//            MASTJsonFilter(paramName: Coam.filters.id, values: FilterValues(values: [QValue(value: "NUV"), QValue(value: "FUV")] as Any), separator: ";"),
             MASTJsonFilter(paramName: Coam.calib_level.id, values: FilterValues(values: [QValue(value: "3"), QValue(value: "4")] as Any)),
             MASTJsonFilter(paramName: Coam.dataRights.id, values: FilterValues(values: [QValue(value: "PUBLIC")] as Any)),
             MASTJsonFilter(paramName: Coam.dataproduct_type.id, values: FilterValues(values: [QValue(value: "IMAGE")] as Any)),
