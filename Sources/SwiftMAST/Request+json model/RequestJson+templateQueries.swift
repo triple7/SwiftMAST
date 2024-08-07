@@ -15,25 +15,25 @@ import Foundation
  */
 extension MASTJson {
     
-    public func scienceImageFilters(wavelengthRegions: [String] = ["OPTICAL", "optical"]) -> [MASTJsonFilter] {
+    public func scienceImageFilters(waveBand: String = "OPTICAL") -> [MASTJsonFilter] {
         return [
 //            MASTJsonFilter(paramName: Coam.filters.id, values: FilterValues(values: [QValue(value: "NUV"), QValue(value: "FUV")] as Any), separator: ";"),
             MASTJsonFilter(paramName: Coam.calib_level.id, values: FilterValues(values: [QValue(value: "3"), QValue(value: "4")] as Any)),
             MASTJsonFilter(paramName: Coam.dataRights.id, values: FilterValues(values: [QValue(value: "PUBLIC")] as Any)),
             MASTJsonFilter(paramName: Coam.dataproduct_type.id, values: FilterValues(values: [QValue(value: "IMAGE")] as Any)),
             MASTJsonFilter(paramName: Coam.intentType.id, values: FilterValues(values: [QValue(value: "science")] as Any)),
-                        MASTJsonFilter(paramName: Coam.obs_collection.id, values: FilterValues(values: [QValue(value: "HST")] as Any)),
+            //                        MASTJsonFilter(paramName: Coam.obs_collection.id, values: FilterValues(values: [QValue(value: "HST")] as Any)),
         ]
     }
     
 
-    public func previewImage(wavelengthRegions: [String] = ["OPTICAL", "optical", "INFRARED", "UV"]) -> [MASTJsonFilter] {
+    public func previewImage(waveBand: String = "OPTICAL") -> [MASTJsonFilter] {
         return [
             MASTJsonFilter(paramName: Coam.calib_level.id, values: FilterValues(values: [QValue(value: "3"), QValue(value: "4")] as Any)),
             MASTJsonFilter(paramName: Coam.dataRights.id, values: FilterValues(values: [QValue(value: "PUBLIC")] as Any)),
             MASTJsonFilter(paramName: Coam.dataproduct_type.id, values: FilterValues(values: [QValue(value: "IMAGE")] as Any)),
             MASTJsonFilter(paramName: Coam.intentType.id, values: FilterValues(values: [QValue(value: "science")] as Any)),
-            MASTJsonFilter(paramName: Coam.wavelength_region.id, values: FilterValues(values: wavelengthRegions.map{QValue(value: $0)} as Any))
+            MASTJsonFilter(paramName: Coam.wavelength_region.id, values: FilterValues(values: QValue(value: waveBand) as Any))
         ]
     }
 

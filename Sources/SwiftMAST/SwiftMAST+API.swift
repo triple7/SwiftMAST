@@ -83,14 +83,15 @@ public func getConeSearch(ra: Float, dec: Float, radius: Float=0.2, filters:[Res
      * ra: Float
      * dec: Float
      * radius: Float
+     * waveband: String (comma separated single string
      * returnFilters:[FilterResult]
      */
-    public func getScienceImageProducts(targetName: String, ra: Float, dec: Float, radius: Float, productType: ProductType = .Fits, waveLengths: [String], preview: Bool = true, token: String?, result: @escaping ([URL]) -> Void) {
+    public func getScienceImageProducts(targetName: String, ra: Float, dec: Float, radius: Float, productType: ProductType = .Fits, waveBand: String, preview: Bool = true, token: String?, result: @escaping ([URL]) -> Void) {
         
     let service = Service.Mast_Caom_Filtered_Position
     var params = service.serviceRequest(requestType: .advancedSearch)
     params.setGeneralParameter(params: MAP.values.defaultGeneralParameters())
-    let filterParams = params.scienceImageFilters(wavelengthRegions: waveLengths)
+    let filterParams = params.scienceImageFilters(waveBand: waveBand)
     params.setFilterParameters(params: filterParams)
         params.setParameters(params: [MAP.columns: "*", MAP.position: "\(ra), \(dec), \(radius)", MAP.maxrecords: 10])
         params.setTargetId(targetId: targetName)
@@ -232,7 +233,7 @@ func getTicCrossmatch(ra: Float, dec: Float, radius: Float, result: @escaping ([
     /** Select a target by name and download all selectively filtered images
      to the documents folder under MAST/target_name/instrument_name/
      */
-    public func downloadImagery(targetName: String, waveLengths: [String] = ["optical"], token: String? = nil, completion: @escaping ([URL]) -> Void ) {
+    public func downloadImagery(targetName: String, waveBand: String = "optical", token: String? = nil, completion: @escaping ([URL]) -> Void ) {
         print("downloadImagery: \(targetName)")
         let service = Service.Mast_Name_Lookup
         var params = service.serviceRequest(requestType: .lookup)
@@ -253,7 +254,7 @@ func getTicCrossmatch(ra: Float, dec: Float, radius: Float, result: @escaping ([
             
             // Get the images
             // And save them in the targets dictionary for future downloads if required
-            self.getScienceImageProducts(targetName: targetName, ra: resolved.ra, dec: resolved.dec, radius: resolved.radius, productType: .Jpeg, waveLengths: waveLengths, token: token) { urls in
+            self.getScienceImageProducts(targetName: targetName, ra: resolved.ra, dec: resolved.dec, radius: resolved.radius, productType: .Jpeg, waveBand: waveBand, token: token) { urls in
                 completion(urls)
             }
             
