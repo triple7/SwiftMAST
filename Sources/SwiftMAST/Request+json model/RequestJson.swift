@@ -42,6 +42,7 @@ public struct MASTJson:Encodable {
     }
     
     public mutating func setGeneralParameter(param: MAP, value: Any) {
+        print("param \(param)")
         switch param {
         case .pagesize: self.pagesize = value as? Int
         case .page: self.page = value as? Int
