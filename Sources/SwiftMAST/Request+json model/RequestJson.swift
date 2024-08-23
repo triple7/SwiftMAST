@@ -218,6 +218,22 @@ public enum FilterValues:Codable {
 
 }
 
+
+extension FilterValues:CustomStringConvertible {
+    public var description: String {
+        switch self {
+        case .qValue(let qValue):
+            return qValue.description
+        case .qArr(let qArr):
+            let strArr = qArr.map{$0.description}.joined(separator: ", ")
+            return "[\(strArr)]"
+        case .qDict(let qDict):
+            return ""
+        case .qDictSingle(let qDictSingle):
+            return ""
+        }
+    }
+}
 // Mark: CrossMatch input
 
 public struct CrossmatchInput:Codable {
