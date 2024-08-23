@@ -29,7 +29,7 @@ public enum QValue: Hashable, Identifiable {
         }
     }
 }
-extension QValue:Codable, CustomStringConvertible {
+extension QValue:Codable {
 
     public init(from decoder: Decoder) throws {
         if let intValue = try? decoder.singleValueContainer().decode(Int.self) {
@@ -100,9 +100,9 @@ extension QValue:Codable, CustomStringConvertible {
         }
     }
     
-    public var description: String {
-        return "\(self.value)"
-    }
+//    public var description: String {
+//        return "\(self.value)"
+//    }
     
 }
 
