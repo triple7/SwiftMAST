@@ -232,9 +232,16 @@ extension FilterValues:CustomStringConvertible {
             let strArr = qArr.map{$0.description}.joined(separator: ", ")
             return "[\(strArr)]"
         case .qDict(let qDict):
-            return ""
+            var dictArray:[String] = []
+            for dict in qDict {
+                let inner = dict.keys.map{"\($0): \(dict[$0]!.description)"}.joined(separator: ", ")
+                dictArray.append(inner)
+            }
+            let output = dictArray.joined(separator: ", ")
+            return "[\(output)]"
         case .qDictSingle(let qDictSingle):
-            return ""
+            let output = qDictSingle.keys.map{"\($0): \(qDictSingle[$0]!.description)"}
+            return "{\(output)}"
         }
     }
 }
