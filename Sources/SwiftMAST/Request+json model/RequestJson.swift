@@ -150,17 +150,21 @@ public struct MASTJsonParams:Encodable {
     }
 }
 
-public struct MASTJsonFilter:Codable {
+public struct MASTJsonFilter:Codable, CustomStringConvertible {
     let paramName:String
     let values:FilterValues
     var separator:String?
     var freeText:String?
-
+    
     public init(paramName: String, values: FilterValues, separator: String? = nil, freeText: String? = nil) {
         self.paramName = paramName
         self.values = values
         self.separator = separator
         self.freeText = freeText
+    }
+
+    public var description: String {
+        return self.description
     }
 }
 
