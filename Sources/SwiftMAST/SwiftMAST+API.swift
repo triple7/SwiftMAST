@@ -253,6 +253,7 @@ func getTicCrossmatch(ra: Float, dec: Float, radius: Float, result: @escaping ([
             // stash the MAST lookup dictionary as record
             self.moveTargetToLookupHistory(target: target)
             
+            print("moved target record to historical")
             // Get the images
             // And save them in the targets dictionary for future downloads if required
             self.getScienceImageProducts(targetName: targetName, ra: resolved.ra, dec: resolved.dec, radius: resolved.radius, productType: .Jpeg, waveBand: waveBand, token: token) { urls in
