@@ -223,29 +223,29 @@ public enum FilterValues:Codable {
 
 }
 
-extension FilterValues:CustomStringConvertible {
-    public var description: String {
-        print("description called?")
-        switch self {
-        case .qValue(let qValue):
-            return qValue.description
-        case .qArr(let qArr):
-            let strArr = qArr.map{$0.description}.joined(separator: ", ")
-            return "[\(strArr)]"
-        case .qDict(let qDict):
-            var dictArray:[String] = []
-            for dict in qDict {
-                let inner = dict.keys.map{"\($0): \(dict[$0]!.description)"}.joined(separator: ", ")
-                dictArray.append(inner)
-            }
-            let output = dictArray.joined(separator: ", ")
-            return "[\(output)]"
-        case .qDictSingle(let qDictSingle):
-            let output = qDictSingle.keys.map{"\($0): \(qDictSingle[$0]!.description)"}
-            return "{\(output)}"
-        }
-    }
-}
+//extension FilterValues:CustomStringConvertible {
+//    public var description: String {
+//        print("description called?")
+//        switch self {
+//        case .qValue(let qValue):
+//            return qValue.description
+//        case .qArr(let qArr):
+//            let strArr = qArr.map{$0.description}.joined(separator: ", ")
+//            return "[\(strArr)]"
+//        case .qDict(let qDict):
+//            var dictArray:[String] = []
+//            for dict in qDict {
+//                let inner = dict.keys.map{"\($0): \(dict[$0]!.description)"}.joined(separator: ", ")
+//                dictArray.append(inner)
+//            }
+//            let output = dictArray.joined(separator: ", ")
+//            return "[\(output)]"
+//        case .qDictSingle(let qDictSingle):
+//            let output = qDictSingle.keys.map{"\($0): \(qDictSingle[$0]!.description)"}
+//            return "{\(output)}"
+//        }
+//    }
+//}
 // Mark: CrossMatch input
 
 public struct CrossmatchInput:Codable {
