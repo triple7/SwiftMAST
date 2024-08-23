@@ -153,7 +153,7 @@ public struct MASTJsonParams:Encodable {
     }
 }
 
-public struct MASTJsonFilter:Codable, CustomStringConvertible {
+public struct MASTJsonFilter:Codable {
     let paramName:String
     let values:FilterValues
     var separator:String?
@@ -166,9 +166,6 @@ public struct MASTJsonFilter:Codable, CustomStringConvertible {
         self.freeText = freeText
     }
 
-    public var description: String {
-        return self.description
-    }
 }
 
 public enum FilterValues:Codable {
