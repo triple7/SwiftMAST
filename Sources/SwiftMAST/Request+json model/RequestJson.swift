@@ -223,9 +223,9 @@ public enum FilterValues:Codable {
 
 }
 
-
 extension FilterValues:CustomStringConvertible {
     public var description: String {
+        print("description called?")
         switch self {
         case .qValue(let qValue):
             return qValue.description
