@@ -90,7 +90,9 @@ public func getConeSearch(ra: Float, dec: Float, radius: Float=0.2, filters:[Res
         
     let service = Service.Mast_Caom_Filtered_Position
     var params = service.serviceRequest(requestType: .advancedSearch)
+        
     params.setGeneralParameter(params: MAP.values.defaultGeneralParameters())
+        print("setting filter params")
     let filterParams = params.scienceImageFilters(waveBand: waveBand)
         print(filterParams)
     params.setFilterParameters(params: filterParams)
