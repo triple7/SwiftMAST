@@ -96,6 +96,7 @@ public func getConeSearch(ra: Float, dec: Float, radius: Float=0.2, filters:[Res
         params.setParameters(params: [MAP.columns: "*", MAP.position: "\(ra), \(dec), \(radius)", MAP.maxrecords: 10])
         params.setTargetId(targetId: targetName)
 
+        print("setting params")
         print(params)
 
         let start = CACurrentMediaTime()
