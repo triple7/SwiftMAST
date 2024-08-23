@@ -176,6 +176,7 @@ public enum FilterValues:Codable {
     case qDictSingle([String: QValue])
     
     public init(values: Any) {
+        print("init values \(values)")
         switch values {
         case let qValue as QValue:
             self = .qValue(qValue)
