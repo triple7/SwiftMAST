@@ -94,7 +94,7 @@ public func getConeSearch(ra: Float, dec: Float, radius: Float=0.2, filters:[Res
     params.setGeneralParameter(params: MAP.values.defaultGeneralParameters())
     let filterParams = params.scienceImageFilters(waveBand: waveBand)
     params.setFilterParameters(params: filterParams)
-        params.setParameters(params: [MAP.columns: "*", MAP.position: "\(ra), \(dec), \(radius)", MAP.maxrecords: 1])
+        params.setParameters(params: [MAP.columns: "filters,dataURL,dataproduct_type,jpegURL", MAP.position: "\(ra), \(dec), \(radius)", MAP.maxrecords: 1])
         params.setTargetId(targetId: targetName)
 
         print(params)
@@ -253,15 +253,9 @@ func getTicCrossmatch(ra: Float, dec: Float, radius: Float, result: @escaping ([
             // stash the MAST lookup dictionary as record
             self.moveTargetToLookupHistory(target: target)
             
-            print("Resolved target:\n\(resolved)")
             // Get the images
             // And save them in the targets dictionary for future downloads if required
-            var radius = resolved.radius
-            // Check that radius is not 0
-            if radius == 0.0 {
-                radius = 0.2
-            }
-            self.getScienceImageProducts(targetName: targetName, ra: resolved.ra, dec: resolved.dec, radius: radius, productType: .Jpeg, waveBand: waveBand, token: token) { urls in
+            self.getScienceImageProducts(targetName: targetName, ra: resolved.ra, dec: resolved.dec, radius: resolved.ra, productType: .Jpeg, waveBand: waveBand, token: token) { urls in
                 completion(urls)
             }
             
