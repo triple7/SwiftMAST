@@ -42,7 +42,7 @@ public struct MASTJson:Encodable {
     }
     
     public mutating func setGeneralParameter(param: MAP, value: Any) {
-        print("param \(param) value: \(value)")
+//        print("param \(param) value: \(value)")
         switch param {
         case .pagesize: self.pagesize = value as? Int
         case .page: self.page = value as? Int
@@ -62,14 +62,13 @@ public struct MASTJson:Encodable {
     }
 
     public mutating func setParameter( param: MAP, value: Any) {
-        print("set parameter \(param) value \(value)")
+//        print("set parameter \(param) value \(value)")
         self.params?.setParameter(parameter: param, value: value)
     }
     
     // Mark: request Json advanced filter parameters
     
     public mutating func setFilterParameters(params: [MASTJsonFilter]) {
-print("setting filter parameters: \(params) ")
         self.setParameters(params: [MAP.filters: params as Any])
     }
     
@@ -123,7 +122,6 @@ public struct MASTJsonParams:Encodable {
     }
     
     public mutating func setParameter(parameter: MAP, value: Any) {
-        print("setting param \(parameter) \(value)")
         switch parameter {
         case .columns: self.columns = value as? String
         case .filters: self.filters = value as? [MASTJsonFilter]
@@ -167,9 +165,16 @@ public struct MASTJsonFilter:Codable, CustomStringConvertible {
     }
     
     public var description: String {
-        let separator = separator ?? ""
-        let freeText =  freeText ?? ""
-        return "\(paramName): \(values.description), separator: \(separator), freeText: \(freeText)"
+        let separatorStr = (separator != nil) ? "separator: \(separator!)" : ""
+        let freeTextStr = (freeText != nil) ? "freeText: \(freeText!)" : ""
+        var output = "\(paramName): \(values.description)"
+        if !separatorStr.isEmpty {
+            output += ", \(separatorStr)"
+        }
+        if !freeTextStr.isEmpty {
+            output += ", \(freeTextStr)"
+        }
+        return output
     }
     
 }
@@ -181,7 +186,6 @@ public enum FilterValues:Codable {
     case qDictSingle([String: QValue])
     
     public init(values: Any) {
-        print("init values \(values)")
         switch values {
         case let qValue as QValue:
             self = .qValue(qValue)
