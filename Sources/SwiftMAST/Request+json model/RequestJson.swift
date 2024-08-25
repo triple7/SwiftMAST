@@ -8,7 +8,7 @@
 import Foundation
 
 
-public struct MASTJson:Encodable {
+public struct MASTJson:Encodable, CustomStringConvertible {
     /** json representation for a MAST Api json request object
      */
     let service:String
@@ -34,7 +34,7 @@ public struct MASTJson:Encodable {
     }
     
     // Mark: print helper
-    public func getJsonString() -> String {
+    public var description:String {
         do {
             let jsonData = try JSONEncoder().encode(self)
             if let jsonString = String(data: jsonData, encoding: .utf8) {
