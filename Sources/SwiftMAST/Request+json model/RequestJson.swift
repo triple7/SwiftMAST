@@ -33,6 +33,20 @@ public struct MASTJson:Encodable {
         self.targetId = targetId
     }
     
+    // Mark: print helper
+    public func getJsonString() -> String {
+        do {
+            let jsonData = try JSONEncoder().encode(self)
+            if let jsonString = String(data: jsonData, encoding: .utf8) {
+                return jsonString
+            } else {
+                return ""
+            }
+        } catch {
+            print("Failed to encode object to JSON: \(error)")
+        return ""
+        }
+    }
     // Mark: Json request general parameters
     
     public mutating func setGeneralParameter( params: [MAP: Any]) {
