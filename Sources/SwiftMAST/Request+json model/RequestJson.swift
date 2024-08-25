@@ -151,7 +151,7 @@ public struct MASTJsonParams:Encodable {
     }
 }
 
-public struct MASTJsonFilter:Codable, CustomStringConvertible {
+public struct MASTJsonFilter:Codable {
     let paramName:String
     let values:FilterValues
     var separator:String?
@@ -164,18 +164,6 @@ public struct MASTJsonFilter:Codable, CustomStringConvertible {
         self.freeText = freeText
     }
     
-    public var description: String {
-        let separatorStr = (separator != nil) ? "separator: \(separator!)" : ""
-        let freeTextStr = (freeText != nil) ? "freeText: \(freeText!)" : ""
-        var output = "\(paramName): \(values.description)"
-        if !separatorStr.isEmpty {
-            output += ", \(separatorStr)"
-        }
-        if !freeTextStr.isEmpty {
-            output += ", \(freeTextStr)"
-        }
-        return output
-    }
     
 }
 
@@ -231,29 +219,6 @@ public enum FilterValues:Codable {
         }
     }
 
-}
-
-extension FilterValues:CustomStringConvertible {
-    public var description: String {
-        switch self {
-        case .qValue(let qValue):
-            return qValue.description
-        case .qArr(let qArr):
-            let strArr = qArr.map{$0.description}.joined(separator: ", ")
-            return "[\(strArr)]"
-        case .qDict(let qDict):
-            var dictArray:[String] = []
-            for dict in qDict {
-                let inner = dict.keys.map{"\($0): \(dict[$0]!.description)"}.joined(separator: ", ")
-                dictArray.append(inner)
-            }
-            let output = dictArray.joined(separator: ", ")
-            return "[\(output)]"
-        case .qDictSingle(let qDictSingle):
-            let output = qDictSingle.keys.map{"\($0): \(qDictSingle[$0]!.description)"}
-            return "{\(output)}"
-        }
-    }
 }
 
 // Mark: CrossMatch input
