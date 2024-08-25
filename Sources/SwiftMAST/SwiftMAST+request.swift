@@ -30,6 +30,7 @@ func queryMast(service: Service, params: MASTJson, returnType: APIReturnType, _ 
 
         let url = MASTRequest(searchType: .apiRequest).getApiUrl(json: json)
 
+    print(url)
         let configuration = URLSessionConfiguration.ephemeral
     let queue = OperationQueue.main
         let session = URLSession(configuration: configuration, delegate: self, delegateQueue: queue)
