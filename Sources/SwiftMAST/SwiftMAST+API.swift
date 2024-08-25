@@ -94,6 +94,9 @@ public func getConeSearch(ra: Float, dec: Float, radius: Float=0.2, filters:[Res
     params.setGeneralParameter(params: MAP.values.defaultGeneralParameters())
     let filterParams = params.scienceImageFilters(waveBand: waveBand)
     params.setFilterParameters(params: filterParams)
+        params.setGeneralParameter(param: .ra, value: ra)
+        params.setGeneralParameter(param: .dec, value: dec)
+        params.setGeneralParameter(param: .radius, value: radius)
         params.setParameters(params: [MAP.columns: "*", MAP.position: "\(ra), \(dec), \(radius)", MAP.maxrecords: 1])
         params.setTargetId(targetId: targetName)
 
