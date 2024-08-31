@@ -74,6 +74,7 @@ public func lookupTargetByName(targetName: String, result: @escaping ([NameLooku
             params.setGeneralParameter(param: MAP.timeout, value: 3)
         }
         params.setTargetId(targetId: targetId)
+        print(params)
         self.queryMast(service: service, params: params, returnType: .json, { success in
             let end = CACurrentMediaTime()
             print("getConeSearch: search completed in \(end - start)")
