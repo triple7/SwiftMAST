@@ -304,7 +304,7 @@ func getTicCrossmatch(ra: Float, dec: Float, radius: Float, result: @escaping ([
     /** Select a target by name and download preview image
      to the documents folder under MAST/target_name/instrument_name/
      */
-    public func downloadpreview(targetName: String, token: String? = nil, completion: @escaping ([URL]) -> Void ) {
+    public func downloadPreview(targetName: String, token: String? = nil, completion: @escaping ([URL]) -> Void ) {
         print("downloadpreview: \(targetName)")
         let service = Service.Mast_Name_Lookup
         var params = service.serviceRequest(requestType: .lookup)
