@@ -237,7 +237,7 @@ public struct NameLookupJson:Codable {
 
 // Mark: Equatable MAST return Json for time adjustments
 
-public struct CoamResult:Codable, Comparable {
+public struct CoamResult:Codable, Comparable, Hashable {
     public let calib_level:Int
     public let dataRights:String
     public let dataURL:String

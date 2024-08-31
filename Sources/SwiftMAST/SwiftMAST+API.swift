@@ -59,21 +59,29 @@ public func lookupTargetByName(targetName: String, result: @escaping ([NameLooku
     /** Make a cone search for data products in the MAST archives
      
      */
-public func getConeSearch(ra: Float, dec: Float, radius: Float=0.2, result: @escaping ([ResultField: [String]]) -> Void) {
+    public func getConeSearch(targetId: String, ra: Float, dec: Float, radius: Float=0.2, preview: Bool=false, result: @escaping ([CoamResult]) -> Void) {
         print("getConeSearch: ra: \(ra) dec: \(dec)")
         
     let start = CACurrentMediaTime()
-        var output = [ResultField: [String]]()
         let service = Service.Mast_Caom_Cone
         var params = service.serviceRequest(requestType: .coneSearch)
         params.setParameters(params: [MAP.ra: ra, MAP.dec: dec, MAP.radius: radius])
+        params.setGeneralParameter(params: MAP.values.defaultGeneralParameters())
+        if preview {
+            params.setGeneralParameter(param: MAP.pagesize, value: 1)
+            params.setGeneralParameter(param: MAP.timeout, value: 3)
+        }
+        params.setTargetId(targetId: targetId)
         self.queryMast(service: service, params: params, returnType: .json, { success in
             let end = CACurrentMediaTime()
-            print("coam search completed in \(end - start)")
-            for target in self.targets.keys {
-                let table = self.targets[target]
-                }
-            result(output)
+            print("getConeSearch: search completed in \(end - start)")
+            let table = self.targets[targetId]!
+            let results = table.getCoamResults()
+            // Put the jpeg URL first as preview
+            let jpegURLs = results.filter{!$0.jpegURL.isEmpty}
+            let dataURLs = results.filter{!$0.dataURL.isEmpty}
+
+            result(jpegURLs + dataURLs)
         })
     }
 
@@ -99,6 +107,44 @@ public func getFilteredConeSearch(ra: Float, dec: Float, radius: Float=0.2, filt
             result(output)
         })
     }
+
+    
+    /** Make a preview image cone search
+     Parameters:
+     * ra: Float
+     * dec: Float
+     * radius: Float
+     */
+    public func getPreviewImage(targetName: String, ra: Float, dec: Float, radius: Float, token: String?, result: @escaping ([URL]) -> Void) {
+        print("getPreviewImage: \(targetName)")
+        
+        self.getConeSearch(targetId: targetName, ra: ra, dec: dec, radius: radius, preview: true, result: { coamResults in
+            
+            // Filter products which use MAST to download
+            let directDownloadproducts = coamResults.filter{($0.jpegURL.isEmpty ? $0.dataURL : $0.jpegURL).contains("http")}
+            let mastDownloadproducts = Array(Set(coamResults).subtracting(directDownloadproducts))
+            
+            // Prioritize mastDownload products
+            if !mastDownloadproducts.isEmpty {
+                let productType:ProductType = mastDownloadproducts.first!.jpegURL.isEmpty ? .Fits : .Jpeg
+                
+                let start = CACurrentMediaTime()
+                    self.getDataproducts(targetName: targetName,service: .Download_file, products: [mastDownloadproducts.first!], productType: productType, token: token) { (success, urls) in
+                        let end = CACurrentMediaTime()
+                        print("downloaded \(urls.count) in \(end - start)")
+                        result(urls)
+                    }
+            } else {
+                // Direct download
+                let productType:ProductType = directDownloadproducts.first!.jpegURL.isEmpty ? .Fits : .Jpeg
+                self.getDirectDataproducts(targetName: targetName,service: .Download_file, products: [directDownloadproducts.first!], productType: productType, token: token) { (success, directUrls) in
+                    
+                    result(directUrls)
+                }
+            }
+    })
+    }
+
 
     /** Make a Science image only cone search
      Parameters:
