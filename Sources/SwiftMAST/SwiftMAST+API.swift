@@ -59,7 +59,29 @@ public func lookupTargetByName(targetName: String, result: @escaping ([NameLooku
     /** Make a cone search for data products in the MAST archives
      
      */
-public func getConeSearch(ra: Float, dec: Float, radius: Float=0.2, filters:[ResultField] = [.filters, .wavelength_region, .instrument_name, .obs_collection, .dataURL], filterParams: [MASTJsonFilter]? = nil, result: @escaping ([ResultField: [String]]) -> Void) {
+public func getConeSearch(ra: Float, dec: Float, radius: Float=0.2, result: @escaping ([ResultField: [String]]) -> Void) {
+        print("getConeSearch: ra: \(ra) dec: \(dec)")
+        
+    let start = CACurrentMediaTime()
+        var output = [ResultField: [String]]()
+        let service = Service.Mast_Caom_Cone
+        var params = service.serviceRequest(requestType: .coneSearch)
+        params.setParameters(params: [MAP.ra: ra, MAP.dec: dec, MAP.radius: radius])
+        self.queryMast(service: service, params: params, returnType: .json, { success in
+            let end = CACurrentMediaTime()
+            print("coam search completed in \(end - start)")
+            for target in self.targets.keys {
+                let table = self.targets[target]
+                }
+            result(output)
+        })
+    }
+
+    
+    /** Make a filtered cone search for data products in the MAST archives
+     
+     */
+public func getFilteredConeSearch(ra: Float, dec: Float, radius: Float=0.2, filters:[ResultField] = [.filters, .wavelength_region, .instrument_name, .obs_collection, .dataURL], filterParams: [MASTJsonFilter]? = nil, result: @escaping ([ResultField: [String]]) -> Void) {
         print("getConeSearch: ra: \(ra) dec: \(dec)")
         
         var output = [ResultField: [String]]()
