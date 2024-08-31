@@ -71,7 +71,7 @@ public func lookupTargetByName(targetName: String, result: @escaping ([NameLooku
         params.setGeneralParameter(params: MAP.values.defaultGeneralParameters())
         if preview {
             params.setGeneralParameter(param: MAP.pagesize, value: 1)
-            params.setGeneralParameter(param: MAP.timeout, value: 3)
+            params.setGeneralParameter(param: MAP.timeout, value: 10)
         }
         params.setTargetId(targetId: targetId)
         print(params)
@@ -128,6 +128,7 @@ public func getFilteredConeSearch(ra: Float, dec: Float, radius: Float=0.2, filt
             let mastDownloadproducts = Array(Set(coamResults).subtracting(directDownloadproducts))
             
             // Prioritize mastDownload products
+            print("getPreviewImage: mastDownloadproducts: \(mastDownloadproducts.count) directDownloads: \(directDownloadproducts.count)")
             if !mastDownloadproducts.isEmpty {
                 let productType:ProductType = mastDownloadproducts.first!.jpegURL.isEmpty ? .Fits : .Jpeg
                 
