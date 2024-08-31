@@ -11,11 +11,13 @@ import QuartzCore
 /** SwiftMAST common API calls
  These convenience functions allow quick access to some of the more interesting MAST API data requests.
  The MAST portal can be very complex to navigate, however most users would be looking to do the following investigations:
+ * Download a preview of a given target object
  * download calibrated scientific images of a chosen object in full spectrum
  * Find TESS candidates within a given cone search and download time series for analysis
  * Download the spectra of a given object in one of the available missions
  * Download 3D star mappings from the SDSS (Sloan Digital Sky Survey) in CUBE format
  * Download GAIA point crossMatch parameters for conversion to 3D point cloud mapping
+ * Download TESS crossMatch parameters for investigating light curves
  */
 extension SwiftMAST {
     
@@ -299,6 +301,37 @@ func getTicCrossmatch(ra: Float, dec: Float, radius: Float, result: @escaping ([
         })
     }
 
+    /** Select a target by name and download preview image
+     to the documents folder under MAST/target_name/instrument_name/
+     */
+    public func downloadpreview(targetName: String, token: String? = nil, completion: @escaping ([URL]) -> Void ) {
+        print("downloadpreview: \(targetName)")
+        let service = Service.Mast_Name_Lookup
+        var params = service.serviceRequest(requestType: .lookup)
+        params.setParameter(param: .input, value: targetName)
+        params.setTargetId(targetId: targetName)
+        let targetStart = CACurrentMediaTime()
+        self.queryMast(service: service, params: params, returnType: .xml, { success in
+            guard let target = self.targets.keys.first, let table = self.targets[target] else {
+                print("downloadpreview: Unable to find target")
+                completion([])
+                return
+            }
+      let targetEnd = CACurrentMediaTime()
+            print("downloadpreview: target found in \(targetEnd - targetStart)")
+            let resolved = table.getNameLookupResults().first!
+            // stash the MAST lookup dictionary as record
+            self.moveTargetToLookupHistory(target: target)
+            
+            // Get the preview
+            self.getPreviewImage(targetName: targetName, ra: resolved.ra, dec: resolved.dec, radius: resolved.radius, token: token) { urls in
+                completion(urls)
+            }
+            
+    })
+                       }
+    
+
     /** Select a target by name and download all selectively filtered images
      to the documents folder under MAST/target_name/instrument_name/
      */
@@ -323,7 +356,7 @@ func getTicCrossmatch(ra: Float, dec: Float, radius: Float, result: @escaping ([
             
             // Get the images
             // And save them in the targets dictionary for future downloads if required
-            self.getScienceImageProducts(targetName: targetName, ra: resolved.ra, dec: resolved.dec, radius: resolved.ra, productType: .Jpeg, waveBand: waveBand, token: token) { urls in
+            self.getScienceImageProducts(targetName: targetName, ra: resolved.ra, dec: resolved.dec, radius: resolved.radius, productType: .Jpeg, waveBand: waveBand, token: token) { urls in
                 completion(urls)
             }
             
