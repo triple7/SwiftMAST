@@ -79,12 +79,11 @@ public func lookupTargetByName(targetName: String, result: @escaping ([NameLooku
             let end = CACurrentMediaTime()
             print("getConeSearch: search completed in \(end - start)")
             let table = self.targets[targetId]!
-            print(table.fields)
-            print(table.values)
             let results = table.getCoamResults()
+            print("got coam results")
             // Put the jpeg URL first as preview
-            let jpegURLs = results.filter{!$0.jpegURL.isEmpty}
-            let dataURLs = results.filter{!$0.dataURL.isEmpty}
+            let jpegURLs = results.filter{ $0.jpegURL != nil && !$0.jpegURL.isEmpty}
+            let dataURLs = results.filter{$0.dataURL != nil && !$0.dataURL.isEmpty}
 
             result(jpegURLs + dataURLs)
         })
