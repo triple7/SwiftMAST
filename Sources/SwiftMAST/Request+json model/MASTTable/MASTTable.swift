@@ -52,7 +52,7 @@ public class MASTTable:NSObject {
             return self.values.map{$0[idx]}
         } else {
             let lowercaseFields = self.fields.map{$0.lowercased()}
-            let idx = lowercaseFields.firstIndex(of: field)!
+            let idx = lowercaseFields.firstIndex(of: field.lowercased())!
                 return self.values.map{$0[idx]}
         }
     }
