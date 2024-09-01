@@ -122,7 +122,6 @@ closure(false)
     func getDataproducts( targetName: String, service: Service,  products: [CoamResult], productType: ProductType, token: String?, completion: @escaping (Bool, [URL])->Void ) {
         let serialQueue = DispatchQueue(label: "MASTDataproductsQueue")
         
-        print(products.first!)
         var remainingProducts = products.filter { (productType == .Fits ?  $0.dataURL : $0.jpegURL) != ""}
         var urls = [URL]()
         

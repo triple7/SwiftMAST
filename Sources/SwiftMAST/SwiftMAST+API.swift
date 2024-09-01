@@ -74,17 +74,16 @@ public func lookupTargetByName(targetName: String, result: @escaping ([NameLooku
             params.setGeneralParameter(param: MAP.timeout, value: 10)
         }
         params.setTargetId(targetId: targetId)
-        print(params)
         self.queryMast(service: service, params: params, returnType: .json, { success in
             let end = CACurrentMediaTime()
             print("getConeSearch: search completed in \(end - start)")
             let table = self.targets[targetId]!
             let results = table.getCoamResults()
-            print("got coam results")
             // Put the jpeg URL first as preview
             let jpegURLs = results.filter{!$0.jpegURL.isEmpty}
             let dataURLs = results.filter{!$0.dataURL.isEmpty}
 
+            print("getConeSearch: found \(jpegURLs.count) jpegs and \(dataURLs.count) fits")
             result(jpegURLs + dataURLs)
         })
     }
