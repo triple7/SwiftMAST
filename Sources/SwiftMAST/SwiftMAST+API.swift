@@ -70,8 +70,8 @@ public func lookupTargetByName(targetName: String, result: @escaping ([NameLooku
         params.setParameters(params: [MAP.ra: ra, MAP.dec: dec, MAP.radius: radius])
         params.setGeneralParameter(params: MAP.values.defaultGeneralParameters())
         if preview {
-            params.setGeneralParameter(param: MAP.pagesize, value: 30)
-            params.setGeneralParameter(param: MAP.timeout, value: 10)
+            params.setGeneralParameter(param: MAP.pagesize, value: 500)
+            params.setGeneralParameter(param: MAP.timeout, value: 30)
         }
         params.setTargetId(targetId: targetId)
         self.queryMast(service: service, params: params, returnType: .json, { success in
