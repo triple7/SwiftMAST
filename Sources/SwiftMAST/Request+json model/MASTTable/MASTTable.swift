@@ -52,10 +52,13 @@ public class MASTTable:NSObject {
             return self.values.map{$0[idx]}
         } else {
             let lowercaseFields = self.fields.map{$0.lowercased()}
-            print("field is \(field.lowercased())")
-            print(lowercaseFields.joined(separator: "\n"))
-            let idx = lowercaseFields.firstIndex(of: field.lowercased())!
+            if let idx = lowercaseFields.firstIndex(of: field.lowercased()) {
                 return self.values.map{$0[idx]}
+            } else {
+                // field is inconsistent from any existing ones
+                return [QValue](repeating: QValue(value: ""), count: self.values.count)
+                
+            }
         }
     }
     
