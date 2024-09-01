@@ -42,6 +42,7 @@ case srcDen
 case obsid
 case distance
 case _selected_
+    case objID
     
     public var id:String {
         return self.rawValue
