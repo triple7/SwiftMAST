@@ -46,10 +46,15 @@ public class MASTTable:NSObject {
      field: String
      */
     public func getValues( for field: String) -> [QValue] {
-        print("Field \(field)")
-        print("all fields \(fields)")
-        let idx = self.fields.firstIndex(of: field)!
-        return self.values.map{$0[idx]}
+//        print("Field \(field)")
+        // Sometimes fields are inconsistent with casing
+        if let idx = self.fields.firstIndex(of: field) {
+            return self.values.map{$0[idx]}
+        } else {
+            let lowercaseFields = self.fields.map{$0.lowercased()}
+            let idx = lowercaseFields.firstIndex(of: field)!
+                return self.values.map{$0[idx]}
+        }
     }
     
     /** Gets string values for a given field
