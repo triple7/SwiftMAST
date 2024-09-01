@@ -193,7 +193,14 @@ public func getFilteredConeSearch(ra: Float, dec: Float, radius: Float=0.2, filt
                     
                     print("coam Result count: fits \(mastDownloadProducts.count)")
                     let jpegUrls = coamResults.filter{$0.jpegURL != ""}
-                    print("jpegURL count \(jpegUrls.count)")
+                    var testJpeg:[CoamResult] = []
+                    for result in coamResults {
+                        if result.jpegURL != "" {
+                            print("got jpeg: \(result.jpegURL)")
+                            testJpeg.append(result)
+                        }
+                    }
+                    print("jpegURL count \(jpegUrls.count) testJpeg count \(testJpeg.count)")
                     self.getDataproducts(targetName: targetName,service: .Download_file, products: [mastDownloadProducts.first!], productType: productType, token: token) { (success, urls) in
                         
                         print("Downloaded URLs")
