@@ -165,6 +165,7 @@ public func getFilteredConeSearch(ra: Float, dec: Float, radius: Float=0.2, filt
     var params = service.serviceRequest(requestType: .advancedSearch)
         
     params.setGeneralParameter(params: MAP.values.defaultGeneralParameters())
+        params.setParameter(param: MAP.pagesize, value: 10)
     let filterParams = params.scienceImageFilters(waveBand: waveBand)
     params.setFilterParameters(params: filterParams)
         params.setParameters(params: [MAP.columns: "*", MAP.position: "\(ra), \(dec), \(radius)"])
