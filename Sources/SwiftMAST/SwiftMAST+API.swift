@@ -168,19 +168,15 @@ public func getFilteredConeSearch(ra: Float, dec: Float, radius: Float=0.2, filt
     let filterParams = params.scienceImageFilters(waveBand: waveBand)
     params.setFilterParameters(params: filterParams)
         params.setParameters(params: [MAP.columns: "*", MAP.position: "\(ra), \(dec), \(radius)"])
-//        params.setTargetId(targetId: targetName)
-
-        print(params)
+        params.setTargetId(targetId: targetName)
 
         let start = CACurrentMediaTime()
         self.queryMast(service: service, params: params, returnType: .json, { success in
 
             let end = CACurrentMediaTime()
             print("target products downloaded in \(end - start)")
-            // we are looking for one key
-            
-            if let target = self.targets.keys.first {
-                let table = self.targets[target]!
+            // we are looking for the targetId set previously
+                let table = self.targets[targetName]!
                 var coamResults = table.getCoamResults()
                 coamResults.sort()
                 //            let collections = table!.getUniqueString(for: Coam.obs_collection.id)
@@ -243,7 +239,6 @@ public func getFilteredConeSearch(ra: Float, dec: Float, radius: Float=0.2, filt
                         }
                     }
                 }
-            }
     })
     }
 
