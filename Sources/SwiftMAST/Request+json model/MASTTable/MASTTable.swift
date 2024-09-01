@@ -47,8 +47,11 @@ public class MASTTable:NSObject {
      */
     public func getValues( for field: String) -> [QValue] {
         print(field)
-let idx = self.fields.firstIndex(of: field)!
+        if let idx = self.fields.firstIndex(of: field) {
             return self.values.map{$0[idx]}
+        }
+        // field does not exist, return empty QValues
+        return [QValue](repeating: QValue(value: ""), count: self.values.count)
     }
     
     /** Gets string values for a given field
