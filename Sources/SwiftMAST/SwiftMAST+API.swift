@@ -70,7 +70,7 @@ public func lookupTargetByName(targetName: String, result: @escaping ([NameLooku
         params.setParameters(params: [MAP.ra: ra, MAP.dec: dec, MAP.radius: radius])
         params.setGeneralParameter(params: MAP.values.defaultGeneralParameters())
         if preview {
-            params.setGeneralParameter(param: MAP.pagesize, value: 1)
+            params.setGeneralParameter(param: MAP.pagesize, value: 30)
             params.setGeneralParameter(param: MAP.timeout, value: 10)
         }
         params.setTargetId(targetId: targetId)
