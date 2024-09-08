@@ -46,7 +46,7 @@ public class MASTTable:NSObject {
      field: String
      */
     public func getValues( for field: String) -> [QValue] {
-        print(field)
+//        print(field)
         if let idx = self.fields.firstIndex(of: field) {
             return self.values.map{$0[idx]}
         }
@@ -186,7 +186,7 @@ public class MASTTable:NSObject {
 extension MASTTable {
     
     public func getRows(filters: [ResultField])->[ResultField: [QValue]] {
-        print(fields)
+//        print(fields)
         var output = [ResultField: [QValue]]()
         for filter in filters {
             if let idx = fields.firstIndex(of: filter.id) {

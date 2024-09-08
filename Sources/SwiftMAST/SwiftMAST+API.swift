@@ -70,7 +70,7 @@ public func lookupTargetByName(targetName: String, result: @escaping ([NameLooku
         params.setParameters(params: [MAP.ra: ra, MAP.dec: dec, MAP.radius: radius])
         params.setGeneralParameter(params: MAP.values.defaultGeneralParameters())
         if preview {
-            params.setGeneralParameter(param: MAP.pagesize, value: 2000)
+            params.setGeneralParameter(param: MAP.pagesize, value: 10)
             params.setGeneralParameter(param: MAP.timeout, value: 30)
         }
         params.setTargetId(targetId: targetId)
@@ -83,7 +83,7 @@ public func lookupTargetByName(targetName: String, result: @escaping ([NameLooku
             let jpegURLs = results.filter{!$0.jpegURL.isEmpty}
             let dataURLs = results.filter{!$0.dataURL.isEmpty}
 
-            print("getConeSearch: found \(jpegURLs.count) jpegs and \(dataURLs.count) fits")
+            print("getConeSearch: found \(jpegURLs.count) jpegURLs and \(dataURLs.count) dataURLs")
             result(jpegURLs + dataURLs)
         })
     }
