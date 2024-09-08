@@ -310,7 +310,7 @@ func getTicCrossmatch(ra: Float, dec: Float, radius: Float, result: @escaping ([
     /** Select a target by name and download preview image
      to the documents folder under MAST/target_name/instrument_name/
      */
-    public func downloadPreview(targetName: String, token: String? = nil, completion: @escaping ([URL]) -> Void ) {
+    public func downloadPreview(targetName: String, pageSize: Int = 30, token: String? = nil, completion: @escaping ([URL]) -> Void ) {
         print("downloadpreview: \(targetName)")
         let service = Service.Mast_Name_Lookup
         var params = service.serviceRequest(requestType: .lookup)
@@ -330,7 +330,7 @@ func getTicCrossmatch(ra: Float, dec: Float, radius: Float, result: @escaping ([
             self.moveTargetToLookupHistory(target: target)
             
             // Get the preview
-            self.getPreviewImage(targetName: targetName, ra: resolved.ra, dec: resolved.dec, radius: resolved.radius, token: token) { urls in
+            self.getPreviewImage(targetName: targetName, ra: resolved.ra, dec: resolved.dec, radius: resolved.radius, pageSize: pageSize, token: token) { urls in
                 completion(urls)
             }
             
