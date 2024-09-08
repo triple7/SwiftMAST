@@ -61,7 +61,7 @@ public func lookupTargetByName(targetName: String, result: @escaping ([NameLooku
     /** Make a cone search for data products in the MAST archives
      
      */
-    public func getConeSearch(targetId: String, ra: Float, dec: Float, radius: Float=0.2, preview: Bool=false, result: @escaping ([CoamResult]) -> Void) {
+    public func getConeSearch(targetId: String, ra: Float, dec: Float, radius: Float=0.2, preview: Bool=false, pageSize: Int = 0, result: @escaping ([CoamResult]) -> Void) {
         print("getConeSearch: ra: \(ra) dec: \(dec)")
         
     let start = CACurrentMediaTime()
@@ -70,7 +70,7 @@ public func lookupTargetByName(targetName: String, result: @escaping ([NameLooku
         params.setParameters(params: [MAP.ra: ra, MAP.dec: dec, MAP.radius: radius])
         params.setGeneralParameter(params: MAP.values.defaultGeneralParameters())
         if preview {
-            params.setGeneralParameter(param: MAP.pagesize, value: 10)
+            params.setGeneralParameter(param: MAP.pagesize, value: pageSize)
             params.setGeneralParameter(param: MAP.timeout, value: 30)
         }
         params.setTargetId(targetId: targetId)
@@ -118,10 +118,10 @@ public func getFilteredConeSearch(ra: Float, dec: Float, radius: Float=0.2, filt
      * dec: Float
      * radius: Float
      */
-    public func getPreviewImage(targetName: String, ra: Float, dec: Float, radius: Float, token: String?, result: @escaping ([URL]) -> Void) {
+    public func getPreviewImage(targetName: String, ra: Float, dec: Float, radius: Float, pageSize: Int = 30, token: String?, result: @escaping ([URL]) -> Void) {
         print("getPreviewImage: \(targetName)")
         
-        self.getConeSearch(targetId: targetName, ra: ra, dec: dec, radius: radius, preview: true, result: { coamResults in
+        self.getConeSearch(targetId: targetName, ra: ra, dec: dec, radius: radius, preview: true, pageSize: pageSize, result: { coamResults in
             
             // Filter products which use MAST to download
             let directDownloadproducts = coamResults.filter{($0.jpegURL.isEmpty ? $0.dataURL : $0.jpegURL).contains("http")}
