@@ -66,6 +66,10 @@ public enum MASTService:String, CaseIterable, Identifiable {
     case Mast_Jwst_Filtered_Fgs
     case Mast_Jwst_Filtered_GuideStar
     case Mast_Jwst_Filtered_Wss
+    // panstarrs PS1 global telescope API
+    // uses the MAST API structure
+    
+    
     case Download_bundle
     case Download_file
     public var id:String {
