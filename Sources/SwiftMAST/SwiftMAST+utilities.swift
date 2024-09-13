@@ -7,6 +7,10 @@
 
 import Foundation
 import Zip
+import FITS
+import FITSKit
+import CoreGraphics
+import ImageIO
 
 
 extension SwiftMAST {
@@ -55,7 +59,7 @@ extension SwiftMAST {
         }
     }
 
-    func saveFile(targetName: String, product: CoamResult, urlString: String, data: Data, completion: @escaping ([URL]) -> Void) {
+    func saveFile(targetName: String, product: CoamResult, urlString: String, data: Data, fitsToJpeg: Bool = true, completion: @escaping ([URL]) -> Void) {
         print("saveFile: \(urlString)")
             // Get the Documents directory
             guard let documentsDirectory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first else {
@@ -76,12 +80,15 @@ extension SwiftMAST {
             do {
                 try FileManager.default.createDirectory(at: MASTDirectory, withIntermediateDirectories: true, attributes: nil)
 
-                let fileUrl = MASTDirectory.appendingPathComponent(fileName)
+                var fileUrl = MASTDirectory.appendingPathComponent(fileName)
                 
                 try data.write(to: fileUrl)
-                print("file added")
-                print("Data size: \(data.count) bytes")
+                print("saveFile:: file added with size(data.count) bytes")
 
+                if fitsToJpeg {
+                    let jpegUrl = MASTDirectory.appendingPathComponent(fileName.replacingOccurrences(of: "fits", with: "jpg"))
+                    fileUrl = convertFitsToJpeg(url: fileUrl, writeToUrl: jpegUrl)
+                }
                 DispatchQueue.main.async {
                     completion([fileUrl])
                 }
@@ -93,8 +100,6 @@ extension SwiftMAST {
             }
     }
 
-
-    
     func saveTempUrlToFile(targetName: String, product: CoamResult, urlString: String, tempUrl: URL, completion: @escaping ([URL]) -> Void) {
         print("saveFile: \(urlString)")
             // Get the Documents directory
@@ -131,4 +136,23 @@ extension SwiftMAST {
             }
     }
 
+    func saveCGImageToUrl(image: CGImage, toURL: URL, dim: Int=1) -> URL {
+        // Create an image destination using the provided URL
+        
+let destination = CGImageDestinationCreateWithURL(toURL as CFURL, kUTTypeJPEG, dim, nil)!
+        CGImageDestinationAddImage(destination, image, nil)
+        
+        CGImageDestinationFinalize(destination)
+            return toURL
+        }
+    
+    func convertFitsToJpeg(url: URL, writeToUrl: URL) -> URL {
+        
+        let   fits = FitsFile.read( try! Data(contentsOf: url))!
+        
+        let image = try! fits.prime.decode(GrayscaleDecoder.self, ())
+
+        return saveCGImageToUrl(image: image, toURL: writeToUrl)
+    }
+    
 }

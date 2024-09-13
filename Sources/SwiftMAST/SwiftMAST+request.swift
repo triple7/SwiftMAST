@@ -135,7 +135,6 @@ closure(false)
             }
             
             let product = remainingProducts.removeFirst()
-            print("Got first product to download")
             let productUrl = productType == .Fits ? product.dataURL : product.jpegURL
             var request = URLRequest(url: MASTRequest(searchType: .image).getFileDownloadUrl(service: service, parameters: ["uri": productUrl]))
             request.httpMethod = "GET"
@@ -158,8 +157,6 @@ closure(false)
                 }
                 let urlResponse = (response as! HTTPURLResponse)
                 if urlResponse.statusCode != 200 {
-                    print(urlResponse.statusCode)
-                    print(urlResponse)
                     let error = NSError(domain: "com.error", code: urlResponse.statusCode)
                     self.sysLog.append(MASTSyslog(log: .RequestError, message: error.localizedDescription))
                     gotError = true
