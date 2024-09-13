@@ -150,6 +150,7 @@ let destination = CGImageDestinationCreateWithURL(toURL as CFURL, kUTTypeJPEG, d
         
         let   fits = FitsFile.read( try! Data(contentsOf: url))!
         
+        print(fits.prime.debugDescription)
         let image = try! fits.prime.decode(GrayscaleDecoder.self, ())
 
         return saveCGImageToUrl(image: image, toURL: writeToUrl)
