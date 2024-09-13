@@ -28,6 +28,7 @@ public class SwiftMAST:NSObject {
      * progress: progress in percentage of download for a target
      * expectedContentLength: size in kbytes of data
      */
+    internal var currentTargetId:String?
     public var targets:[String: MASTTable]
     private var targetLookups:[String: MASTTable]
     private var buffer:Int!
@@ -42,6 +43,12 @@ public class SwiftMAST:NSObject {
         self.sysLog = [MASTSyslog]()
     }
     
+    /** Saves the targetID to retrieve during the download sequence 
+     */
+         public func setTargetId(targetId: String) {
+             self.currentTargetId = targetId
+         }
+         
 /** Moves the target lookup to a historical location
  */
     public func moveTargetToLookupHistory(target: String) {

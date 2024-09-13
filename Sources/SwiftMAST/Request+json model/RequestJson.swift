@@ -21,17 +21,6 @@ public struct MASTJson:Encodable, CustomStringConvertible {
     var timeout:Int?
     var removenullcolumns:Bool?
     // Custom properties
-    var targetId:String?
-
-    // Getters
-    public func getTargetId() -> String {
-        return self.targetId!
-    }
-    
-    // Mark: custom targetId for returning key
-    public mutating func setTargetId(targetId: String) {
-        self.targetId = targetId
-    }
     
     // Mark: print helper
     public var description:String {

@@ -73,7 +73,7 @@ public func lookupTargetByName(targetName: String, result: @escaping ([NameLooku
             params.setGeneralParameter(param: MAP.pagesize, value: pageSize)
             params.setGeneralParameter(param: MAP.timeout, value: 30)
         }
-        params.setTargetId(targetId: targetId)
+        self.setTargetId(targetId: targetId)
         self.queryMast(service: service, params: params, returnType: .json, { success in
             let end = CACurrentMediaTime()
             print("getConeSearch: search completed in \(end - start)")
@@ -168,7 +168,6 @@ public func getFilteredConeSearch(ra: Float, dec: Float, radius: Float=0.2, filt
     let filterParams = params.scienceImageFilters(waveBand: waveBand)
     params.setFilterParameters(params: filterParams)
         params.setParameters(params: [MAP.columns: "*", MAP.position: "\(ra), \(dec), \(radius)"])
-//        params.setTargetId(targetId: targetName)
 
         let start = CACurrentMediaTime()
         self.queryMast(service: service, params: params, returnType: .json, { success in
@@ -315,7 +314,7 @@ func getTicCrossmatch(ra: Float, dec: Float, radius: Float, result: @escaping ([
         let service = Service.Mast_Name_Lookup
         var params = service.serviceRequest(requestType: .lookup)
         params.setParameter(param: .input, value: targetName)
-        params.setTargetId(targetId: targetName)
+        self.setTargetId(targetId: targetName)
         let targetStart = CACurrentMediaTime()
         self.queryMast(service: service, params: params, returnType: .xml, { success in
             guard let target = self.targets.keys.first, let table = self.targets[target] else {
@@ -346,7 +345,7 @@ func getTicCrossmatch(ra: Float, dec: Float, radius: Float, result: @escaping ([
         let service = Service.Mast_Name_Lookup
         var params = service.serviceRequest(requestType: .lookup)
         params.setParameter(param: .input, value: targetName)
-        params.setTargetId(targetId: targetName)
+        self.setTargetId(targetId: targetName)
         let targetStart = CACurrentMediaTime()
         self.queryMast(service: service, params: params, returnType: .xml, { success in
             guard let target = self.targets.keys.first, let table = self.targets[target] else {
