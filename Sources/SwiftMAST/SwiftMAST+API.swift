@@ -168,7 +168,7 @@ public func getFilteredConeSearch(ra: Float, dec: Float, radius: Float=0.2, filt
     let filterParams = params.scienceImageFilters(waveBand: waveBand)
     params.setFilterParameters(params: filterParams)
         params.setParameters(params: [MAP.columns: "*", MAP.position: "\(ra), \(dec), \(radius)"])
-        params.setTargetId(targetId: targetName)
+//        params.setTargetId(targetId: targetName)
 
         let start = CACurrentMediaTime()
         self.queryMast(service: service, params: params, returnType: .json, { success in
