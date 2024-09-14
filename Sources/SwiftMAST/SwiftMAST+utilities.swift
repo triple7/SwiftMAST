@@ -85,7 +85,7 @@ extension SwiftMAST {
                 try data.write(to: fileUrl)
                 print("saveFile:: file added with size(data.count) bytes")
 
-                if fitsToJpeg {
+                if fitsToJpeg and !fileName.contains("jpg") {
                     let jpegUrl = MASTDirectory.appendingPathComponent(fileName.replacingOccurrences(of: "fits", with: "jpg"))
                     fileUrl = convertFitsToJpeg(url: fileUrl, writeToUrl: jpegUrl)
                 }
