@@ -270,4 +270,47 @@ closure(false)
             }
         }
 
+    /** Forms a request object from the given MAST service domain path and given parameters
+     Adds a resulting table to the targets dictionary for further processing
+     Parameters:
+     service: MAST service domain path
+     params: pre-formed parameter json object
+     returnType: expected response format [json/xml]
+     closure: whether request was successful
+     */
+    func queryPS1(ps1Service: Service, ps1Request: PS1Request, _ closure: @escaping (Bool) -> Void) {
+        
+        
+        let request = ps1Request.getFileListRequest()
+        let configuration = URLSessionConfiguration.ephemeral
+    let queue = OperationQueue.main
+        let session = URLSession(configuration: configuration, delegate: self, delegateQueue: queue)
+
+        let task = session.dataTask(with: request) { [weak self] data, response, error in
+            guard error == nil else {
+                self?.sysLog.append(MASTSyslog(log: .RequestError, message: error!.localizedDescription))
+closure(false)
+                return
+            }
+            guard let response = response as? HTTPURLResponse else {
+                self?.sysLog.append(MASTSyslog(log: .RequestError, message: "response timed out"))
+                closure(false)
+                return
+            }
+            if response.statusCode != 200 {
+                let error = NSError(domain: "com.error", code: response.statusCode)
+                self?.sysLog.append(MASTSyslog(log: .RequestError, message: error.localizedDescription))
+                closure(false)
+                return
+            }
+
+            let table = self?.parsePS1table(text: String(data: data!, encoding: .ascii)!, baseUrl: ps1Request.getFitsCutUrlBase())
+            self?.targets[self!.currentTargetId!] = table
+            self?.sysLog.append(MASTSyslog(log: .OK, message: "request successful"))
+        closure(true)
+            return
+    }
+    task.resume()
+    }
+
 }

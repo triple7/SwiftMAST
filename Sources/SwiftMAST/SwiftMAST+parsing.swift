@@ -31,24 +31,27 @@ func parseJson(data: Data)->MASTTable {
          return MASTTable(fields: fields, values: values)
      }
 
-func parseCsvTable(text: String)->MASTTable {
+     func parseCsvTable(text: String)->MASTTable {
          var table = text.components(separatedBy: "\n")
          let fields = table.removeFirst().components(separatedBy: ",")
          let rows = table.map{$0.components(separatedBy: ",")}
          let values = rows.map{$0.map{QValue(value: $0)}}
          return MASTTable(fields: fields, values: values)
      }
-
-}
-
-
-public enum ProductType:String, Identifiable {
-    case Fits
-    case Jpeg
-
-    public var id:String {
-        return self.rawValue
-    }
-    
+     
+     func parsePS1table(text: String, baseUrl: String)->MASTTable {
+         var table = text.components(separatedBy: "\n")
+         var fields = table.removeFirst().components(separatedBy: " ")
+         let rows = table.map{$0.components(separatedBy: " ")}
+         var values = rows.map{$0.map{QValue(value: $0)}}
+         // Add the URL from the baseUrl string
+         let fileIdx = fields.index(of: "filename")!
+         let raIdx = fields.index(of: "ra")!
+         let decIdx = fields.index(of: "dec")!
+         fields.append("url")
+         values = values.map{$0 + [QValue(value: "\(baseUrl)&ra=\($0[raIdx])&dec=\($0[decIdx])&red=\($0[fileIdx])")]}
+         return MASTTable(fields: fields, values: values)
+     }
+     
 }
 

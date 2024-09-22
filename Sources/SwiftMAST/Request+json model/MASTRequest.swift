@@ -7,6 +7,33 @@
 
 import Foundation
 
+public enum PS1Filter:String, Codable, Identifiable {
+    case grizy
+
+    public var id:String {
+        return self.rawValue
+    }
+    
+}
+
+public enum PS1ImageType: String, Codable, Identifiable {
+    case stack        // Default is stack (standard image stack)
+    case warp         // warp (single-epoch images)
+    case stack_wt     // stack.wt (weight image)
+    case stack_mask   // stack.mask (mask image)
+    case stack_exp    // stack.exp (exposure time)
+    case stack_num    // stack.num (number of exposures)
+    case warp_wt      // warp.wt (weight image for warp)
+    
+    public var id:String {
+        if self.rawValue.contains("_") {
+            return self.rawValue.replacingOccurrences(of: "_", with: ".")
+        }
+        return self.rawValue
+    }
+    
+}
+
 public struct MASTRequest {
     /** MAST archive request formatter
      Creates a request Url from the API and configured parameters,
@@ -94,3 +121,37 @@ public struct MASTRequest {
     
 }
 
+
+public struct PS1Request {
+    /** PS1 panstarr archive request formatter
+     Creates a request Url from the API and configured parameters,
+     */
+    private let fileListUrl = "http://ps1images.stsci.edu/cgi-bin/ps1filenames.py"
+    private let downloadFileUrl = ""
+    private let fitsCutRequestUrl = "http://ps1images.stsci.edu/cgi-bin/fitscut.cgi"
+    private(set) var parameters:[String: Any]
+    private let size:Float
+    private let format:String
+    
+    public init(ra: Float, dec: Float, size: Float = 4000, filters:PS1Filter = .grizy, format: PS1FileType = .fits, imageTypes: [PS1ImageType] = [.stack]) {
+        self.parameters = [:]
+        parameters["filters"] = filters.id as Any
+        parameters["type"] = imageTypes.map{$0.id}.joined(separator: ",") as Any
+                           parameters["position"] = "\(ra) \(dec)" as Any
+        self.format = format.id
+        self.size = size
+    }
+
+    func getFileListRequest()->URLRequest {
+        var request = URLRequest(url: Foundation.URL(string: self.fileListUrl)!)
+        request.httpMethod = "POST"
+        request.httpBody = try! JSONSerialization.data(withJSONObject: self.parameters)
+        return request
+    }
+    
+    
+    func getFitsCutUrlBase() -> String {
+        return "\(self.fitsCutRequestUrl)?size=\(self.size)&format=\(self.format)"
+    }
+    
+}
