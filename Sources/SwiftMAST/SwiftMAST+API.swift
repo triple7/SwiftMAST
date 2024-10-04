@@ -117,7 +117,7 @@ public func getFilteredConeSearch(ra: Float, dec: Float, radius: Float=0.2, filt
      * dec: Float
      * size: squared image pixel size (0.25 arsec/pixel)
      */
-    public func getPS1ImageList(targetName: String, ra: Float, dec: Float, imageSize: Int = 4000, completion: @escaping ([URL]) -> Void) {
+    public func getPS1ImageList(targetName: String, ra: Float, dec: Float, imageSize: Int = 900, completion: @escaping ([URL]) -> Void) {
         print("getPS1Image: \(targetName)")
 
         let ps1Request = PS1Request(ra: ra, dec: dec)
@@ -368,7 +368,7 @@ func getTicCrossmatch(ra: Float, dec: Float, radius: Float, result: @escaping ([
          * target: string
          * size: squared image pixel size (0.25 arsec/pixel)
          */
-    public func getPS1ImagePreview(targetName: String, imageSize: Int = 4000, completion: @escaping ([URL]) -> Void) {
+    public func getPS1ImagePreview(targetName: String, imageSize: Int = 900, completion: @escaping ([URL]) -> Void) {
         print("getPS1ImagePreview: \(targetName)")
 
         let service = Service.Mast_Name_Lookup
@@ -393,9 +393,10 @@ func getTicCrossmatch(ra: Float, dec: Float, radius: Float, result: @escaping ([
             let dec = resolved.dec
             
             self.getPS1ImageList(targetName: target, ra: ra, dec: dec, imageSize: imageSize, completion: { urls in
-                // Download all stacked images, append the metadata to the table and return the URLs to the jpg images
+                // Download the first available image (r), append the metadata to the table and return the URLs to the jpg images
                 
-                self.downloadPS1Cutouts( targetName: target, urls: urls, completion: { succes, jpgUrls in
+                let imageR = urls.count > 0 ? [urls.first!] : urls
+                self.downloadPS1Cutouts( targetName: target, urls: imageR, completion: { success, jpgUrls in
                     completion(jpgUrls)
                     
                 })

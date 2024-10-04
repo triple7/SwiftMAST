@@ -102,7 +102,7 @@ extension SwiftMAST {
     }
 
     func saveFile(targetName: String, tempUrl: URL, fitsToJpeg: Bool = true, completion: @escaping ((URL, [String: QValue])?) -> Void) {
-        print("saveFile: \(targetName)")
+        print("saveFile: \(targetName) \(tempUrl.lastPathComponent)")
             // Get the Documents directory
             guard let documentsDirectory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first else {
                 self.sysLog.append(MASTSyslog(log: .RequestError, message: "Unable to open Documents folder"))
@@ -125,7 +125,7 @@ extension SwiftMAST {
                 let fileUrl = MASTDirectory.appendingPathComponent("\(fileName).fits")
                 try data.write(to: fileUrl)
 
-                    let jpegUrl = MASTDirectory.appendingPathComponent(fileName.replacingOccurrences(of: "fits", with: "jpg"))
+                    let jpegUrl = MASTDirectory.appendingPathComponent("\(fileName).jpg")
                     let imageBundle = convertFitsToJpeg(url: fileUrl, writeToUrl: jpegUrl)
 
                 DispatchQueue.main.async {
