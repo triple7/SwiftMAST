@@ -77,7 +77,6 @@ extension SwiftMAST {
         let fileExtension = fileName.components(separatedBy: ".").last!
         MASTDirectory = MASTDirectory.appendingPathComponent(fileExtension, isDirectory: true)
 
-
             do {
                 try FileManager.default.createDirectory(at: MASTDirectory, withIntermediateDirectories: true, attributes: nil)
 
@@ -101,8 +100,8 @@ extension SwiftMAST {
             }
     }
 
-    func saveFile(targetName: String, tempUrl: URL, fitsToJpeg: Bool = true, completion: @escaping ((URL, [String: QValue])?) -> Void) {
-        print("saveFile: \(targetName) \(tempUrl.lastPathComponent)")
+    func saveFile(fileName: String, tempUrl: URL, fitsToJpeg: Bool = true, completion: @escaping ((URL, [String: QValue])?) -> Void) {
+        print("saveFile: \(fileName) \(tempUrl.lastPathComponent)")
             // Get the Documents directory
             guard let documentsDirectory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first else {
                 self.sysLog.append(MASTSyslog(log: .RequestError, message: "Unable to open Documents folder"))
@@ -111,22 +110,28 @@ extension SwiftMAST {
             }
 
         var MASTDirectory = documentsDirectory.appendingPathComponent("MAST", isDirectory: true)
-        MASTDirectory = MASTDirectory.appendingPathComponent(targetName, isDirectory: true)
+        MASTDirectory = MASTDirectory.appendingPathComponent(fileName, isDirectory: true)
         
         MASTDirectory = MASTDirectory.appendingPathComponent("PS1", isDirectory: true)
 
         do {
                 try FileManager.default.createDirectory(at: MASTDirectory, withIntermediateDirectories: true, attributes: nil)
 
-            let fileName = tempUrl.lastPathComponent.components(separatedBy: ".").first!
-            
-                // First get the fits data saved, then get the converted jpg and metadata
+                // First check if we save the fits and save it, , then get the converted jpg and metadata if requested
             let data = try! Data(contentsOf: tempUrl)
+            if !fitsToJpeg {
                 let fileUrl = MASTDirectory.appendingPathComponent("\(fileName).fits")
                 try data.write(to: fileUrl)
+                let fits = FitsFile.read(data)!
+                let metadata = getFitsMetaData(fits: fits)
 
+                DispatchQueue.main.async {
+                    completion((fileUrl, metadata))
+                }
+            }
+            
                     let jpegUrl = MASTDirectory.appendingPathComponent("\(fileName).jpg")
-                    let imageBundle = convertFitsToJpeg(url: fileUrl, writeToUrl: jpegUrl)
+            let imageBundle = convertFitsToJpeg(url: tempUrl, writeToUrl: jpegUrl)
 
                 DispatchQueue.main.async {
                     completion(imageBundle)
@@ -185,22 +190,30 @@ let destination = CGImageDestinationCreateWithURL(toURL as CFURL, UTType.jpeg.id
             return toURL
         }
     
-    func convertFitsToJpeg(url: URL, writeToUrl: URL) -> (url: URL, metadata: [String: QValue]) {
-        
-        let   fits = FitsFile.read( try! Data(contentsOf: url))!
+    private func getFitsMetaData(fits: FitsFile) -> [String: QValue] {
         
         print(fits.HDUs.count)
         for hdu in fits.HDUs {
             print("HDU \n \(hdu.description)")
         }
-                
-        let image = try! fits.prime.decode(GrayscaleDecoder.self, ())
-
+        
         // get the metadata from the hdu primary header unit
         var metadata = [String:QValue]()
         for unit in  fits.prime.headerUnit {
             metadata[unit.keyword.rawValue] = QValue(value: (unit.value != nil) ? unit.value!.toString : "")
         }
+
+        return metadata
+    }
+    
+    
+    func convertFitsToJpeg(url: URL, writeToUrl: URL) -> (url: URL, metadata: [String: QValue]) {
+        
+
+        let fits = FitsFile.read( try! Data(contentsOf: url))!
+        let metadata = getFitsMetaData(fits: fits)
+
+        let image = try! fits.prime.decode(GrayscaleDecoder.self, ())
 
         return (url: saveCGImageToUrl(image: image, toURL: writeToUrl), metadata: metadata)
     }
