@@ -11,6 +11,7 @@ import FITS
 import FITSKit
 import CoreGraphics
 import ImageIO
+import UniformTypeIdentifiers
 
 
 extension SwiftMAST {
@@ -177,7 +178,7 @@ extension SwiftMAST {
     func saveCGImageToUrl(image: CGImage, toURL: URL, dim: Int=1) -> URL {
         // Create an image destination using the provided URL
         
-let destination = CGImageDestinationCreateWithURL(toURL as CFURL, kUTTypeJPEG, dim, nil)!
+let destination = CGImageDestinationCreateWithURL(toURL as CFURL, UTType.jpeg.identifier as CFString, dim, nil)!
         CGImageDestinationAddImage(destination, image, nil)
         
         CGImageDestinationFinalize(destination)
