@@ -270,15 +270,83 @@ closure(false)
             }
         }
 
-    /** Forms a request object from the given MAST service domain path and given parameters
+    func downloadPS1Cutouts( targetName: String, fileName: String, urls: [URL], completion: @escaping (Bool, [URL])->Void ) {
+        let serialQueue = DispatchQueue(label: "downloadUrlsQueue")
+        
+        
+        var remainingUrls = urls
+        var jpgUrls:[URL] = []
+        // Create a recursive function to handle the download
+        func downloadNextUrl() {
+            guard !remainingUrls.isEmpty else {
+                // All urls have been downloaded, call the completion handler
+                completion(true, jpgUrls)
+                return
+            }
+            
+            let url = remainingUrls.removeFirst()
+            var request = URLRequest(url: url)
+            
+            let operation = MASTDirectDownloadOperation(session: URLSession.shared, request: request, completionHandler: { (tempUrl, response, error) in
+                var gotError = false
+                if error != nil {
+                    print(error!.localizedDescription)
+                    self.sysLog.append(MASTSyslog(log: .RequestError, message: error!.localizedDescription))
+                    gotError = true
+                }
+                if (response as? HTTPURLResponse) == nil {
+                    self.sysLog.append(MASTSyslog(log: .RequestError, message: "response timed out"))
+                    gotError = true
+                }
+                let urlResponse = (response as! HTTPURLResponse)
+                if urlResponse.statusCode != 200 {
+                    print(urlResponse.statusCode)
+                    print(urlResponse)
+                    let error = NSError(domain: "com.error", code: urlResponse.statusCode)
+                    self.sysLog.append(MASTSyslog(log: .RequestError, message: error.localizedDescription))
+                    gotError = true
+                }
+                
+                if !gotError {
+                    self.sysLog.append(MASTSyslog(log: .OK, message: "\(url) downloaded"))
+                    
+                    self.saveFile(targetName: targetName, tempUrl: tempUrl!, completion: { targetPayload in
+                        if let payload = targetPayload {
+                            jpgUrls.append(payload.0)
+                        }
+                        // Call the recursive function to download the next object
+                        serialQueue.async {
+                            downloadNextUrl()
+                        }
+                    })
+                } else {
+                    serialQueue.async {
+                        downloadNextUrl()
+                    }
+                }
+                
+            })
+            
+            // Add the operation to the serial queue to execute it serially
+            serialQueue.async {
+                operation.start()
+            }
+        }
+
+            // Start the download process by calling the recursive function
+            serialQueue.async {
+                downloadNextUrl()
+            }
+        }
+
+    
+    /** Forms a request object from the given PS1 request URL and given parameters
      Adds a resulting table to the targets dictionary for further processing
      Parameters:
-     service: MAST service domain path
-     params: pre-formed parameter json object
-     returnType: expected response format [json/xml]
+     ps1Request: PS1 request generator
      closure: whether request was successful
      */
-    func queryPS1(ps1Service: Service, ps1Request: PS1Request, _ closure: @escaping (Bool) -> Void) {
+    func queryPS1(ps1Request: PS1Request, _ closure: @escaping (Bool) -> Void) {
         
         
         let request = ps1Request.getFileListRequest()

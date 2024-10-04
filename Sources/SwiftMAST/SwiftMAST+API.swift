@@ -111,7 +111,33 @@ public func getFilteredConeSearch(ra: Float, dec: Float, radius: Float=0.2, filt
         })
     }
 
-    
+    /** Get image file list from PS1
+     Parameters:
+     * ra: Float
+     * dec: Float
+     * size: squared image pixel size (0.25 arsec/pixel)
+     */
+    public func getPS1ImageList(targetName: String, ra: Float, dec: Float, imageSize: Float = 900, completion: @escaping ([URL]) -> Void) {
+        print("getPS1Image: \(targetName)")
+
+        let ps1Request = PS1Request(ra: ra, dec: dec)
+        queryPS1(ps1Request: ps1Request, { success in
+            
+            // get the file list URLs and download them
+           
+            guard let target = self.currentTargetId, let table = self.targets[target] else {
+                print("Unable to find target \(self.currentTargetId)")
+                completion([])
+                return
+            }
+            let urls = table.getValues(for: "url").map{$0.value as! String}
+            // stash the MAST lookup dictionary as record
+            self.moveTargetToLookupHistory(target: target)
+
+            completion(urls.map{Foundation.URL(string: $0)!})
+        })
+    }
+
     /** Make a preview image cone search
      Parameters:
      * ra: Float
@@ -337,6 +363,44 @@ func getTicCrossmatch(ra: Float, dec: Float, radius: Float, result: @escaping ([
                        }
     
 
+    /** Get a PS1 multi filter stacked fits cutout
+         Parameters:
+         * target: string
+         * size: squared image pixel size (0.25 arsec/pixel)
+         */
+    public func getPS1ImagePreview(targetName: String, imageSize: Float = 900, completion: @escaping ([URL]) -> Void) {
+        print("getPS1ImagePreview: \(targetName)")
+
+        let service = Service.Mast_Name_Lookup
+        var params = service.serviceRequest(requestType: .lookup)
+        params.setParameter(param: .input, value: targetName)
+        self.setTargetId(targetId: targetName)
+        let targetStart = CACurrentMediaTime()
+        self.queryMast(service: service, params: params, returnType: .xml, { success in
+            guard let target = self.targets.keys.first, let table = self.targets[target] else {
+                print("Unable to find target")
+                completion([])
+                return
+            }
+            let targetEnd = CACurrentMediaTime()
+            print("target found in \(targetEnd - targetStart)")
+
+            let resolved = table.getNameLookupResults().first!
+            // stash the MAST lookup dictionary as record
+            self.moveTargetToLookupHistory(target: target)
+            
+            let ra = resolved.ra
+            let dec = resolved.dec
+            
+            self.getPS1ImageList(targetName: target, ra: ra, dec: dec, imageSize: imageSize, completion: { urls in
+                // Download all stacked images, append the metadata to the table and return the URLs to the jpg images
+                
+            })
+            
+        })
+        
+    }
+    
     /** Select a target by name and download all selectively filtered images
      to the documents folder under MAST/target_name/instrument_name/
      */
