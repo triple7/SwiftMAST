@@ -143,9 +143,10 @@ public struct PS1Request {
     }
 
     func getFileListRequest()->URLRequest {
-        var request = URLRequest(url: Foundation.URL(string: self.fileListUrl)!)
+        let ra = self.parameters["ra"]!
+        let dec = self.parameters["dec"]!
+        var request = URLRequest(url: Foundation.URL(string: "\(self.fileListUrl)?ra=\(ra)&dec=\(dec)")!)
         request.httpMethod = "POST"
-        request.httpBody = try! JSONSerialization.data(withJSONObject: self.parameters)
         return request
     }
     
