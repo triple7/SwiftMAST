@@ -20,7 +20,7 @@ return table
      }
 
 func parseJson(data: Data)->MASTTable {
-         let text = String(decoding: data, as: UTF8.self)
+//         let text = String(decoding: data, as: UTF8.self)
 //    print("debug return\n\(text)")
          let payload = try! JSONDecoder().decode(ReturnJson.self, from: data)
          let fields = payload.fields.map{$0.name}
@@ -49,7 +49,7 @@ func parseJson(data: Data)->MASTTable {
          let raIdx = fields.firstIndex(of: "ra")!
          let decIdx = fields.firstIndex(of: "dec")!
          fields.append("url")
-         values = values.map{$0 + [QValue(value: "\(baseUrl)&ra=\($0[raIdx])&dec=\($0[decIdx])&red=\($0[fileIdx])")]}
+         values = values.map{$0 + [QValue(value: "\(baseUrl)&ra=\($0[raIdx].value)&dec=\($0[decIdx].value)&red=\($0[fileIdx].value)")]}
          return MASTTable(fields: fields, values: values)
      }
      
