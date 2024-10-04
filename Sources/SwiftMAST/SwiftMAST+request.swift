@@ -270,7 +270,7 @@ closure(false)
             }
         }
 
-    func downloadPS1Cutouts( targetName: String, fileName: String, urls: [URL], completion: @escaping (Bool, [URL])->Void ) {
+    func downloadPS1Cutouts( targetName: String, urls: [URL], completion: @escaping (Bool, [URL])->Void ) {
         let serialQueue = DispatchQueue(label: "downloadUrlsQueue")
         
         
@@ -285,7 +285,7 @@ closure(false)
             }
             
             let url = remainingUrls.removeFirst()
-            var request = URLRequest(url: url)
+            let request = URLRequest(url: url)
             
             let operation = MASTDirectDownloadOperation(session: URLSession.shared, request: request, completionHandler: { (tempUrl, response, error) in
                 var gotError = false
@@ -301,7 +301,6 @@ closure(false)
                 let urlResponse = (response as! HTTPURLResponse)
                 if urlResponse.statusCode != 200 {
                     print(urlResponse.statusCode)
-                    print(urlResponse)
                     let error = NSError(domain: "com.error", code: urlResponse.statusCode)
                     self.sysLog.append(MASTSyslog(log: .RequestError, message: error.localizedDescription))
                     gotError = true
@@ -350,7 +349,7 @@ closure(false)
         
         
         let request = ps1Request.getFileListRequest()
-        print("queryPS1:\(request.url!.absoluteString)")
+        print("queryPS1: \(request.url!.absoluteString)")
         let configuration = URLSessionConfiguration.ephemeral
     let queue = OperationQueue.main
         let session = URLSession(configuration: configuration, delegate: self, delegateQueue: queue)

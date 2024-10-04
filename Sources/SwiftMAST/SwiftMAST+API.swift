@@ -395,6 +395,10 @@ func getTicCrossmatch(ra: Float, dec: Float, radius: Float, result: @escaping ([
             self.getPS1ImageList(targetName: target, ra: ra, dec: dec, imageSize: imageSize, completion: { urls in
                 // Download all stacked images, append the metadata to the table and return the URLs to the jpg images
                 
+                self.downloadPS1Cutouts( targetName: target, urls: urls, completion: { succes, jpgUrls in
+                    completion(jpgUrls)
+                    
+                })
             })
             
         })
