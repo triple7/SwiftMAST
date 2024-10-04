@@ -138,13 +138,15 @@ public struct PS1Request {
         parameters["filters"] = filters.id as Any
         parameters["type"] = imageTypes.map{$0.id}.joined(separator: ",") as Any
                            parameters["position"] = "\(ra) \(dec)" as Any
+        parameters["ra"] = ra as Any
+        parameters["dec"] = dec as Any
         self.format = format.id
         self.size = size
     }
 
     func getFileListRequest()->URLRequest {
-        let ra = self.parameters["ra"]!
-        let dec = self.parameters["dec"]!
+        let ra = self.parameters["ra"]! as! Float
+        let dec = self.parameters["dec"]! as! Float
         var request = URLRequest(url: Foundation.URL(string: "\(self.fileListUrl)?ra=\(ra)&dec=\(dec)")!)
         request.httpMethod = "POST"
         return request
