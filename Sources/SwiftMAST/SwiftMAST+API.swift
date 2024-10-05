@@ -136,7 +136,7 @@ public func getFilteredConeSearch(ra: Float, dec: Float, radius: Float=0.2, filt
             // get the file list URLs and download them
            
             guard let target = self.currentTargetId, let table = self.targets[target] else {
-                print("Unable to find target \(self.currentTargetId)")
+                print("Unable to find target \(self.currentTargetId!)")
                 completion([])
                 return
             }

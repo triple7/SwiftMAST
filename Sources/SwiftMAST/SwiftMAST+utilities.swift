@@ -144,7 +144,7 @@ extension SwiftMAST {
             }
     }
 
-    func saveTempUrlToFile(targetName: String, product: CoamResult, urlString: String, tempUrl: URL, completion: @escaping ([URL]) -> Void) {
+    func saveTempUrlToFile(targetName: String, product: CoamResult, urlString: String, tempUrl: URL, productType: ProductType, completion: @escaping ([URL]) -> Void) {
         print("saveFile: \(urlString)")
             // Get the Documents directory
             guard let documentsDirectory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first else {
@@ -157,14 +157,13 @@ extension SwiftMAST {
         MASTDirectory = MASTDirectory.appendingPathComponent(targetName, isDirectory: true)
         
         MASTDirectory = MASTDirectory.appendingPathComponent(product.obs_collection, isDirectory: true)
-        let fileName = urlString.components(separatedBy: "/").last!
-        let fileExtension = fileName.components(separatedBy: ".").last!
-        MASTDirectory = MASTDirectory.appendingPathComponent(fileExtension, isDirectory: true)
+        let fileName = targetName
+        MASTDirectory = MASTDirectory.appendingPathComponent(productType.id, isDirectory: true)
 
             do {
                 try FileManager.default.createDirectory(at: MASTDirectory, withIntermediateDirectories: true, attributes: nil)
 
-                let saveUrl = MASTDirectory.appendingPathComponent(tempUrl.lastPathComponent)
+                let saveUrl = MASTDirectory.appendingPathComponent("\(tempUrl.lastPathComponent).\(productType.id)")
                 
 
                 try FileManager.default.moveItem(at: tempUrl, to: saveUrl)
