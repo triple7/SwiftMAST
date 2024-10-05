@@ -79,12 +79,21 @@ public func lookupTargetByName(targetName: String, result: @escaping ([NameLooku
             print("getConeSearch: search completed in \(end - start)")
             let table = self.targets[targetId]!
             let results = table.getCoamResults()
-            // Put the jpeg URL first as preview
-            let jpegURLs = results.filter{!$0.jpegURL.isEmpty}
-            let dataURLs = results.filter{!$0.dataURL.isEmpty}
 
-            print("getConeSearch: found \(jpegURLs.count) jpegURLs and \(dataURLs.count) dataURLs")
-            result(jpegURLs + dataURLs)
+            // Get dataUrls which are fits for the metadata
+            var dataURLs = results.filter{!$0.dataURL.isEmpty}
+
+            if preview {
+                // Filter down to those which are not TESS
+                dataURLs = dataURLs.filter{$0.obs_collection != "TESS"}
+                print("getConeSearch: preview found \(dataURLs.count) dataURLs")
+
+                result(dataURLs)
+            }
+            // Normal collection of images
+            let jpgUrls = results.filter{!$0.jpegURL.isEmpty}
+            print("getConeSearch: found \(jpgUrls.count) jpegURLs and \(dataURLs.count) dataURLs")
+            result(jpgUrls + dataURLs)
         })
     }
 
@@ -93,7 +102,7 @@ public func lookupTargetByName(targetName: String, result: @escaping ([NameLooku
      
      */
 public func getFilteredConeSearch(ra: Float, dec: Float, radius: Float=0.2, filters:[ResultField] = [.filters, .wavelength_region, .instrument_name, .obs_collection, .dataURL], filterParams: [MASTJsonFilter]? = nil, result: @escaping ([ResultField: [String]]) -> Void) {
-        print("getConeSearch: ra: \(ra) dec: \(dec)")
+        print("getFilteredConeSearch: ra: \(ra) dec: \(dec)")
         
         var output = [ResultField: [String]]()
         let service = Service.Mast_Caom_Cone
