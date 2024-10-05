@@ -19,7 +19,7 @@ extension MASTJson {
         print("scienceImageFilters")
         return [
 //            MASTJsonFilter(paramName: Coam.filters.id, values: FilterValues(values: [QValue(value: "NUV"), QValue(value: "FUV")] as Any), separator: ";"),
-//            MASTJsonFilter(paramName: Coam.calib_level.id, values: FilterValues(values: [QValue(value: "3")] as Any)),
+            MASTJsonFilter(paramName: Coam.calib_level.id, values: FilterValues(values: [QValue(value: "3")] as Any)),
             MASTJsonFilter(paramName: Coam.dataRights.id, values: FilterValues(values: [QValue(value: "PUBLIC")] as Any)),
             MASTJsonFilter(paramName: Coam.dataproduct_type.id, values: FilterValues(values: [QValue(value: "IMAGE")] as Any)),
             MASTJsonFilter(paramName: Coam.intentType.id, values: FilterValues(values: [QValue(value: "science")] as Any)),
