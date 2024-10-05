@@ -89,6 +89,7 @@ public func lookupTargetByName(targetName: String, result: @escaping ([NameLooku
                 print("getConeSearch: preview found \(dataURLs.count) dataURLs")
 
                 result(dataURLs)
+                return
             }
             // Normal collection of images
             let jpgUrls = results.filter{!$0.jpegURL.isEmpty}
