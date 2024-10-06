@@ -403,6 +403,7 @@ func getTicCrossmatch(ra: Float, dec: Float, radius: Float, result: @escaping ([
             print("target found in \(targetEnd - targetStart)")
 
             let resolved = table.getNameLookupResults().first!
+            print(resolved)
             // stash the MAST lookup dictionary as record
             self.moveTargetToLookupHistory(target: target)
             
