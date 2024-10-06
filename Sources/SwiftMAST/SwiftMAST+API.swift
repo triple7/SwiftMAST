@@ -141,9 +141,16 @@ public func getFilteredConeSearch(ra: Float, dec: Float, radius: Float=0.2, filt
                 return
             }
             let urls = table.getValues(for: "url").map{$0.value as! String}
+            
             // stash the MAST lookup dictionary as record
             self.moveTargetToLookupHistory(target: target)
 
+            // Get the r g and b filters
+            // https://ps1images.stsci.edu/ps1image.html
+            let filters = table.getStringValues(for: "filter")
+            let yzirg = "yzirg"
+            let filterList = filters.map{yzirg.range(of: $0)!.lowerBound.utf16Offset(in: yzirg) ?? -1 }
+            print("filterList: \(filterList)")
             completion(urls.map{Foundation.URL(string: $0)!})
         })
     }
@@ -401,8 +408,12 @@ func getTicCrossmatch(ra: Float, dec: Float, radius: Float, result: @escaping ([
             
             let ra = resolved.ra
             let dec = resolved.dec
-            
-            self.getPS1ImageList(targetName: target, ra: ra, dec: dec, imageSize: imageSize, completion: { urls in
+            // radius is used to get pixel cutout
+            // 0.25 arcsec / pixel
+            let radius = resolved.radius
+            let pixelSize = Int(radius/0.25)
+            print("\(target) radius \(ra) pixels \(pixelSize)")
+            self.getPS1ImageList(targetName: target, ra: ra, dec: dec, imageSize: pixelSize, completion: { urls in
                 // Download the first available image (r), append the metadata to the table and return the URLs to the jpg images
                 
                 let imageR = urls.count > 0 ? [urls.first!] : urls
