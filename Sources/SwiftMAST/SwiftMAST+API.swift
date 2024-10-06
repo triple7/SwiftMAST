@@ -142,8 +142,6 @@ public func getFilteredConeSearch(ra: Float, dec: Float, radius: Float=0.2, filt
             }
             let urls = table.getValues(for: "url").map{$0.value as! String}
             
-            // stash the MAST lookup dictionary as record
-            self.moveTargetToLookupHistory(target: target)
 
             // Get the r g and b filters
             // https://ps1images.stsci.edu/ps1image.html
@@ -368,9 +366,9 @@ func getTicCrossmatch(ra: Float, dec: Float, radius: Float, result: @escaping ([
       let targetEnd = CACurrentMediaTime()
             print("downloadpreview: target found in \(targetEnd - targetStart)")
             let resolved = table.getNameLookupResults().first!
-            // stash the MAST lookup dictionary as record
-            self.moveTargetToLookupHistory(target: target)
-            
+            // Save the initial target info
+            self.setTargetAssets(target: target, targetInfo: resolved)
+
             // Get the preview
             self.getPreviewImage(targetName: targetName, ra: resolved.ra, dec: resolved.dec, radius: resolved.radius, pageSize: pageSize, token: token) { urls in
                 completion(urls)
@@ -404,8 +402,8 @@ func getTicCrossmatch(ra: Float, dec: Float, radius: Float, result: @escaping ([
 
             let resolved = table.getNameLookupResults().first!
             print(resolved)
-            // stash the MAST lookup dictionary as record
-            self.moveTargetToLookupHistory(target: target)
+            // Save the initial target info
+            self.setTargetAssets(target: target, targetInfo: resolved)
             
             let ra = resolved.ra
             let dec = resolved.dec
@@ -447,9 +445,9 @@ func getTicCrossmatch(ra: Float, dec: Float, radius: Float, result: @escaping ([
       let targetEnd = CACurrentMediaTime()
             print("target found in \(targetEnd - targetStart)")
             let resolved = table.getNameLookupResults().first!
-            // stash the MAST lookup dictionary as record
-            self.moveTargetToLookupHistory(target: target)
-            
+            // Save the initial target info
+            self.setTargetAssets(target: target, targetInfo: resolved)
+
             // Get the images
             // And save them in the targets dictionary for future downloads if required
             self.getScienceImageProducts(targetName: targetName, ra: resolved.ra, dec: resolved.dec, radius: resolved.radius, productType: .Jpeg, waveBand: waveBand, token: token) { urls in

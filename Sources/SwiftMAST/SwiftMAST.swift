@@ -30,7 +30,7 @@ public class SwiftMAST:NSObject {
      */
     internal var currentTargetId:String?
     public var targets:[String: MASTTable]
-    private var targetLookups:[String: MASTTable]
+    private var targetAssets:[String:TargetAsset]
     private var buffer:Int!
     public var progress:Float?
     private var expectedContentLength:Int?
@@ -38,22 +38,23 @@ public class SwiftMAST:NSObject {
     
     public override init() {
         self.targets = [String: MASTTable]()
-        self.targetLookups = [String: MASTTable]()
+        self.targetAssets = [String:TargetAsset]()
         self.buffer = 0
         self.sysLog = [MASTSyslog]()
     }
     
-    /** Saves the targetID to retrieve during the download sequence 
+    /** Saves the targetID to retrieve during the download sequence
      */
-         public func setTargetId(targetId: String) {
-             self.currentTargetId = targetId
-         }
-         
-/** Moves the target lookup to a historical location
- */
-    public func moveTargetToLookupHistory(target: String) {
-        self.targetLookups[target] = self.targets.removeValue(forKey: target)!
+    public func setTargetId(targetId: String) {
+        self.currentTargetId = targetId
     }
+    
+    /** Saves the target info for retrieval
+     */
+    public func setTargetAssets(target: String, targetInfo: NameLookupJson) {
+        self.targetAssets[target] = TargetAsset(targetInfo: targetInfo)
+    }
+
 }
 
  extension SwiftMAST: URLSessionDelegate {
