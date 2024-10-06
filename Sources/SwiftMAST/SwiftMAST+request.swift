@@ -309,9 +309,11 @@ closure(false)
                 if !gotError {
                     self.sysLog.append(MASTSyslog(log: .OK, message: "\(url) downloaded"))
                     
-                    self.saveFile(fileName: targetName, tempUrl: tempUrl!, completion: { targetPayload in
-                        if let payload = targetPayload {
-                            jpgUrls.append(payload.0)
+                    self.saveFile(fileName: targetName, tempUrl: tempUrl!, completion: { fitsData in
+                        if let fitsData
+                            = fitsData {
+                            jpgUrls.append(fitsData.url)
+                            self.savePreview(target: targetName, fitsData: fitsData)
                         }
                         // Call the recursive function to download the next object
                         serialQueue.async {

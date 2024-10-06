@@ -100,7 +100,7 @@ extension SwiftMAST {
             }
     }
 
-    func saveFile(fileName: String, tempUrl: URL, fitsToJpeg: Bool = true, completion: @escaping ((URL, [String: QValue])?) -> Void) {
+    func saveFile(fileName: String, tempUrl: URL, fitsToJpeg: Bool = true, completion: @escaping (FitsData?) -> Void) {
         print("saveFile: \(fileName) \(tempUrl.lastPathComponent)")
             // Get the Documents directory
             guard let documentsDirectory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first else {
@@ -126,15 +126,15 @@ extension SwiftMAST {
                 let metadata = getFitsMetaData(fits: fits)
 
                 DispatchQueue.main.async {
-                    completion((fileUrl, metadata))
+                    completion((FitsData(metadata: metadata, url: fileUrl)))
                 }
             }
             
                     let jpegUrl = MASTDirectory.appendingPathComponent("\(fileName).jpg")
-            let imageBundle = convertFitsToJpeg(url: tempUrl, writeToUrl: jpegUrl)
+            let fitsData = convertFitsToJpeg(url: tempUrl, writeToUrl: jpegUrl)
 
                 DispatchQueue.main.async {
-                    completion(imageBundle)
+                    completion(fitsData)
                 }
             } catch let error {
                 self.sysLog.append(MASTSyslog(log: .RequestError, message: error.localizedDescription))
@@ -206,7 +206,7 @@ let destination = CGImageDestinationCreateWithURL(toURL as CFURL, UTType.jpeg.id
     }
     
     
-    func convertFitsToJpeg(url: URL, writeToUrl: URL) -> (url: URL, metadata: [String: QValue]) {
+    func convertFitsToJpeg(url: URL, writeToUrl: URL) -> (FitsData) {
         
 
         let fits = FitsFile.read( try! Data(contentsOf: url))!
@@ -214,7 +214,7 @@ let destination = CGImageDestinationCreateWithURL(toURL as CFURL, UTType.jpeg.id
 
         let image = try! fits.prime.decode(GrayscaleDecoder.self, ())
 
-        return (url: saveCGImageToUrl(image: image, toURL: writeToUrl), metadata: metadata)
+        return FitsData(metadata: metadata, url: saveCGImageToUrl(image: image, toURL: writeToUrl))
     }
     
 }

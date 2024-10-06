@@ -55,6 +55,12 @@ public class SwiftMAST:NSObject {
         self.targetAssets[target] = TargetAsset(targetInfo: targetInfo)
     }
 
+    /** Save preview information
+     */
+    public func savePreview(target: String, fitsData: FitsData) {
+        self.targetAssets[target]!.setFitsData(fitsData: fitsData)
+    }
+    
 }
 
  extension SwiftMAST: URLSessionDelegate {
