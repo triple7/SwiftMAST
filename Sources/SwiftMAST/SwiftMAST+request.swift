@@ -269,7 +269,6 @@ closure(false)
         let serialQueue = DispatchQueue(label: "downloadUrlsQueue")
         
         
-        print("downloadPS1Cutouts")
         var remainingUrls = urls
         var urls:[URL] = []
         // Create a recursive function to handle the download
@@ -284,7 +283,6 @@ closure(false)
             let url = remainingUrls.removeFirst()
             let request = URLRequest(url: url)
     
-        print("Setting request for color download: \(request.url?.absoluteString)")
             let operation = MASTDirectDownloadOperation(session: URLSession.shared, request: request, completionHandler: { (tempUrl, response, error) in
                 if self.requestIsValid(error: error, response: response, url: tempUrl) {
                     let url = self.saveImageFile(target: targetName, collection: "PS1", filter: "OPTICAL", productType: .Jpeg, url: tempUrl!)

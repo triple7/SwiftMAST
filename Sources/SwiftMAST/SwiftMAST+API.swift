@@ -130,7 +130,7 @@ public func getFilteredConeSearch(ra: Float, dec: Float, radius: Float=0.2, filt
     public func getPS1ImageList(targetName: String, ra: Float, dec: Float, imageSize: Int = 900, completion: @escaping (MASTTable?) -> Void) {
         print("getPS1ImageList: \(targetName)")
 
-        let ps1Request = PS1Request(ra: ra, dec: dec)
+        let ps1Request = PS1Request(ra: ra, dec: dec, size: imageSize)
         queryPS1(ps1Request: ps1Request, { success in
            
             guard let target = self.currentTargetId, let table = self.targets[target] else {
@@ -404,23 +404,16 @@ func getTicCrossmatch(ra: Float, dec: Float, radius: Float, result: @escaping ([
             let radius = resolved.radius
             let pixelSize = Int(radius/0.25)
             print("\(target) radius \(radius) pixels \(pixelSize)")
-            self.getPS1ImageList(targetName: target, ra: ra, dec: dec, imageSize: pixelSize, completion: { filesTable in
+            self.getPS1ImageList(targetName: target, ra: ra, dec: dec, imageSize: imageSize, completion: { filesTable in
                 
                 guard let filesTable = filesTable else {
                     downloadUrl([])
                     return
                 }
-                print("got files table")
                 // Get the r g and b filters
                             // https://ps1images.stsci.edu/ps1image.html
                 var fileNames = filesTable.getStringValues(for: "filename")
-                print("file names \(fileNames)")
                             let filters = filesTable.getStringValues(for: "filter")
-                print("Filters: \(filters)")
-                let fields = filesTable.fields
-                print(fields)
-                let types = filesTable.getStringValues(for: "type")
-                print(types)
 
                 
                             let yzirg = "yzirg"
