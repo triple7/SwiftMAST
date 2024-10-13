@@ -56,7 +56,7 @@ func parseJson(data: Data)->MASTTable {
              print(value)
          }
 
-         print("fileds \(fields.count) values \(values.count)")
+         print("fileds \(fields.count) values \(values[0].count)")
          return MASTTable(fields: fields, values: values)
      }
      
