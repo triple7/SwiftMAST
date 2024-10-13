@@ -269,6 +269,7 @@ closure(false)
         let serialQueue = DispatchQueue(label: "downloadUrlsQueue")
         
         
+        print("downloadPS1Cutouts")
         var remainingUrls = urls
         var urls:[URL] = []
         // Create a recursive function to handle the download
