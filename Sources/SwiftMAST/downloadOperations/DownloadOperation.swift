@@ -87,7 +87,7 @@ class MASTDownloadOperation : Operation {
 
 
 
-class MASTDirectDownloadOperation : Operation {
+class MASTDirectDownloadOperation : Operation, @unchecked Sendable {
     
     private var task : URLSessionDownloadTask!
     
