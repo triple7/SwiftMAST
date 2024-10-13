@@ -392,7 +392,6 @@ func getTicCrossmatch(ra: Float, dec: Float, radius: Float, result: @escaping ([
             let targetEnd = CACurrentMediaTime()
             print("getPS1ImagePreview: target found in \(targetEnd - targetStart)")
 
-            print("getPS1ImagePreview:: \(table.getNameLookupResults().count)")
             let resolved = table.getNameLookupResults().first!
             print(resolved)
             // Save the initial target info
