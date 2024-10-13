@@ -128,7 +128,7 @@ public func getFilteredConeSearch(ra: Float, dec: Float, radius: Float=0.2, filt
      * size: squared image pixel size (0.25 arsec/pixel)
      */
     public func getPS1ImageList(targetName: String, ra: Float, dec: Float, imageSize: Int = 900, completion: @escaping (MASTTable?) -> Void) {
-        print("getPS1Image: \(targetName)")
+        print("getPS1ImageList: \(targetName)")
 
         let ps1Request = PS1Request(ra: ra, dec: dec)
         queryPS1(ps1Request: ps1Request, { success in
@@ -410,10 +410,13 @@ func getTicCrossmatch(ra: Float, dec: Float, radius: Float, result: @escaping ([
                     downloadUrl([])
                     return
                 }
+                print("got files table")
                 // Get the r g and b filters
                             // https://ps1images.stsci.edu/ps1image.html
                 var fileNames = filesTable.getStringValues(for: "filename")
+                print("file names \(fileNames)")
                             let filters = table.getStringValues(for: "filter")
+                print("Filters: \(filters)")
                 
                             let yzirg = "yzirg"
                             var filterList = filters.map{yzirg.range(of: $0)!.lowerBound.utf16Offset(in: yzirg)}
