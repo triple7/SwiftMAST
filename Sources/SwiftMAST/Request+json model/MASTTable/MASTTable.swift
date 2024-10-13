@@ -47,6 +47,8 @@ public class MASTTable:NSObject {
      */
     public func getValues( for field: String) -> [QValue] {
         print(field)
+        print(fields.count)
+        print(fields)
         if let idx = self.fields.firstIndex(of: field) {
             return self.values.map{$0[idx]}
         }
