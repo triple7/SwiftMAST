@@ -55,9 +55,16 @@ public class SwiftMAST:NSObject {
         self.targetAssets[target] = TargetAsset(targetInfo: targetInfo)
     }
 
-    /** Save preview information
+    /** Save the preview image for the first PS1 cutout
      */
-    public func savePreview(target: String, fitsData: FitsData) {
+    public func setPreviewImage(target: String, url: URL) {
+        self.targetAssets[target]!.setPreview(url: url)
+    }
+    
+    
+    /** Append new fits data
+     */
+    public func appendFitsData(target: String, fitsData: FitsData) {
         self.targetAssets[target]!.setFitsData(fitsData: fitsData)
     }
     

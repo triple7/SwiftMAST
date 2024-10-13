@@ -127,7 +127,7 @@ public func getFilteredConeSearch(ra: Float, dec: Float, radius: Float=0.2, filt
      * dec: Float
      * size: squared image pixel size (0.25 arsec/pixel)
      */
-    public func getPS1ImageList(targetName: String, ra: Float, dec: Float, imageSize: Int = 900, completion: @escaping ([URL]) -> Void) {
+    public func getPS1ImageList(targetName: String, ra: Float, dec: Float, imageSize: Int = 900, completion: @escaping (MASTTable?) -> Void) {
         print("getPS1Image: \(targetName)")
 
         let ps1Request = PS1Request(ra: ra, dec: dec)
@@ -137,19 +137,11 @@ public func getFilteredConeSearch(ra: Float, dec: Float, radius: Float=0.2, filt
            
             guard let target = self.currentTargetId, let table = self.targets[target] else {
                 print("Unable to find target \(self.currentTargetId!)")
-                completion([])
+                completion(nil)
                 return
             }
-            let urls = table.getValues(for: "url").map{$0.value as! String}
             
-
-            // Get the r g and b filters
-            // https://ps1images.stsci.edu/ps1image.html
-            let filters = table.getStringValues(for: "filter")
-            let yzirg = "yzirg"
-            let filterList = filters.map{yzirg.range(of: $0)!.lowerBound.utf16Offset(in: yzirg) ?? -1 }
-            print("filterList: \(filterList)")
-            completion(urls.map{Foundation.URL(string: $0)!})
+            completion(table)
         })
     }
 
@@ -159,7 +151,7 @@ public func getFilteredConeSearch(ra: Float, dec: Float, radius: Float=0.2, filt
      * dec: Float
      * radius: Float
      */
-    public func getPreviewImage(targetName: String, ra: Float, dec: Float, radius: Float, pageSize: Int = 30, token: String?, result: @escaping ([URL]) -> Void) {
+    public func getMASTPreviewImage(targetName: String, ra: Float, dec: Float, radius: Float, pageSize: Int = 30, token: String?, result: @escaping (URL) -> Void) {
         print("getPreviewImage: \(targetName)")
         
         self.getConeSearch(targetId: targetName, ra: ra, dec: dec, radius: radius, preview: true, pageSize: pageSize, result: { coamResults in
@@ -174,17 +166,17 @@ public func getFilteredConeSearch(ra: Float, dec: Float, radius: Float=0.2, filt
                 let productType:ProductType = mastDownloadproducts.first!.jpegURL.isEmpty ? .Fits : .Jpeg
                 
                 let start = CACurrentMediaTime()
-                    self.getDataproducts(targetName: targetName,service: .Download_file, products: [mastDownloadproducts.first!], productType: productType, token: token) { (success, urls) in
+                    self.getDataproducts(targetName: targetName,service: .Download_file, products: [mastDownloadproducts.first!], productType: productType, token: token) { fitsResults in
                         let end = CACurrentMediaTime()
-                        print("downloaded \(urls.count) in \(end - start)")
-                        result(urls)
+                        print("downloaded \(fitsResults.count) in \(end - start)")
+                        result(fitsResults.first!.url)
                     }
             } else {
                 // Direct download
                 let productType:ProductType = directDownloadproducts.first!.jpegURL.isEmpty ? .Fits : .Jpeg
-                self.getDirectDataproducts(targetName: targetName,service: .Download_file, products: [directDownloadproducts.first!], productType: productType, token: token) { (success, directUrls) in
+                self.getDirectDataproducts(targetName: targetName,service: .Download_file, products: [directDownloadproducts.first!], productType: productType, token: token) { (directUrls) in
                     
-                    result(directUrls)
+                    result(directUrls.first!)
                 }
             }
     })
@@ -240,10 +232,10 @@ public func getFilteredConeSearch(ra: Float, dec: Float, radius: Float=0.2, filt
                         }
                     }
                     print("jpegURL count \(jpegUrls.count) testJpeg count \(testJpeg.count)")
-                    self.getDataproducts(targetName: targetName,service: .Download_file, products: [mastDownloadProducts.first!], productType: productType, token: token) { (success, urls) in
+                    self.getDataproducts(targetName: targetName,service: .Download_file, products: [mastDownloadProducts.first!], productType: productType, token: token) { fitsDataResults in
                         
                         print("Downloaded URLs")
-                        result(urls)
+                        result(fitsDataResults.map{$0.url})
                     }
                     
                 } else {
@@ -278,12 +270,14 @@ public func getFilteredConeSearch(ra: Float, dec: Float, radius: Float=0.2, filt
                     let mastDownloadProducts = allFilterProducts.filter{!(productType == .Fits ? $0.dataURL : $0.jpegURL).contains("http")}
                     
                     // Get the MAST query url downloads and return the URLs
-                    self.getDataproducts(targetName: targetName,service: .Download_file, products: mastDownloadProducts, productType: productType, token: token) { (success, urls) in
+                    self.getDataproducts(targetName: targetName,service: .Download_file, products: mastDownloadProducts, productType: productType, token: token) { allFitsDataResults in
+                        
+                        let secondaryUrls = allFitsDataResults.map{$0.url}
                         
                         // Secondary non MAST direct downloads
-                        self.getDirectDataproducts(targetName: targetName,service: .Download_file, products: directDownloadproducts, productType: productType, token: token) { (success, directUrls) in
+                        self.getDirectDataproducts(targetName: targetName,service: .Download_file, products: directDownloadproducts, productType: productType, token: token) { directUrls in
                             
-                            result(urls + directUrls)
+                            result(secondaryUrls + directUrls)
                         }
                     }
                 }
@@ -350,7 +344,7 @@ func getTicCrossmatch(ra: Float, dec: Float, radius: Float, result: @escaping ([
     /** Select a target by name and download preview image
      to the documents folder under MAST/target_name/instrument_name/
      */
-    public func downloadPreview(targetName: String, pageSize: Int = 30, token: String? = nil, completion: @escaping ([URL]) -> Void ) {
+    public func downloadPreview(targetName: String, pageSize: Int = 30, token: String? = nil, completion: @escaping (URL?) -> Void ) {
         print("downloadpreview: \(targetName)")
         let service = Service.Mast_Name_Lookup
         var params = service.serviceRequest(requestType: .lookup)
@@ -360,7 +354,7 @@ func getTicCrossmatch(ra: Float, dec: Float, radius: Float, result: @escaping ([
         self.queryMast(service: service, params: params, returnType: .xml, { success in
             guard let target = self.targets.keys.first, let table = self.targets[target] else {
                 print("downloadpreview: Unable to find target")
-                completion([])
+                completion(nil)
                 return
             }
       let targetEnd = CACurrentMediaTime()
@@ -370,7 +364,7 @@ func getTicCrossmatch(ra: Float, dec: Float, radius: Float, result: @escaping ([
             self.setTargetAssets(target: target, targetInfo: resolved)
 
             // Get the preview
-            self.getPreviewImage(targetName: targetName, ra: resolved.ra, dec: resolved.dec, radius: resolved.radius, pageSize: pageSize, token: token) { urls in
+            self.getMASTPreviewImage(targetName: targetName, ra: resolved.ra, dec: resolved.dec, radius: resolved.radius, pageSize: pageSize, token: token) { urls in
                 completion(urls)
             }
             
@@ -411,12 +405,29 @@ func getTicCrossmatch(ra: Float, dec: Float, radius: Float, result: @escaping ([
             // 0.25 arcsec / pixel
             let radius = resolved.radius
             let pixelSize = Int(radius/0.25)
-            print("\(target) radius \(ra) pixels \(pixelSize)")
-            self.getPS1ImageList(targetName: target, ra: ra, dec: dec, imageSize: pixelSize, completion: { urls in
-                // Download the first available image (r), append the metadata to the table and return the URLs to the jpg images
+            print("\(target) radius \(radius) pixels \(pixelSize)")
+            self.getPS1ImageList(targetName: target, ra: ra, dec: dec, imageSize: pixelSize, completion: { filesTable in
                 
-                let imageR = urls.count > 0 ? [urls.first!] : urls
-                self.downloadPS1Cutouts( targetName: target, urls: imageR, completion: { success, jpgUrls in
+                guard let filesTable = filesTable else {
+                    completion([])
+                    return
+                }
+                // Get the r g and b filters
+                            // https://ps1images.stsci.edu/ps1image.html
+                var fileNames = filesTable.getStringValues(for: "filename")
+                            let filters = table.getStringValues(for: "filter")
+                
+                            let yzirg = "yzirg"
+                            var filterList = filters.map{yzirg.range(of: $0)!.lowerBound.utf16Offset(in: yzirg) ?? -1 }
+                            filterList = filterList.enumerated().sorted{$0.element < $1.element}.map{$0.offset}
+                filterList = Array(filterList[0..<3])
+                            fileNames = filterList.map{fileNames[$0]}
+                
+                // Form a request URL
+                let ps1Request = PS1Request(ra: ra, dec: dec)
+                            let url = ps1Request.getFitsColorImageUrl(fileNames: fileNames)
+                            
+                self.downloadPS1Cutouts( targetName: target, urls: [url], completion: { jpgUrls in
                     completion(jpgUrls)
                     
                 })

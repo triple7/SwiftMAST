@@ -15,6 +15,33 @@ public extension SwiftMAST {
      and save by target object identification [known or user defined]
      */
     
+
+    /** request returned data check
+     */
+    private func requestIsValid(error: Error?, response: URLResponse?, url: URL? = nil) -> Bool {
+        var gotError = false
+        if error != nil {
+            print(error!.localizedDescription)
+            self.sysLog.append(MASTSyslog(log: .RequestError, message: error!.localizedDescription))
+            gotError = true
+        }
+        if (response as? HTTPURLResponse) == nil {
+            self.sysLog.append(MASTSyslog(log: .RequestError, message: "response timed out"))
+            gotError = true
+        }
+        let urlResponse = (response as! HTTPURLResponse)
+        if urlResponse.statusCode != 200 {
+            let error = NSError(domain: "com.error", code: urlResponse.statusCode)
+            self.sysLog.append(MASTSyslog(log: .RequestError, message: error.localizedDescription))
+            gotError = true
+        }
+        if !gotError {
+            let message = url != nil ? url!.absoluteString : "data"
+            self.sysLog.append(MASTSyslog(log: .OK, message: "\(message) downloaded"))
+        }
+        return !gotError
+    }
+    
     
     /** Forms a request object from the given MAST service domain path and given parameters
      Adds a resulting table to the targets dictionary for further processing
@@ -119,18 +146,18 @@ closure(false)
         }
 
     
-    func getDataproducts( targetName: String, service: Service,  products: [CoamResult], productType: ProductType, token: String?, completion: @escaping (Bool, [URL])->Void ) {
+    func getDataproducts( targetName: String, service: Service,  products: [CoamResult], productType: ProductType, token: String?, completion: @escaping ([FitsData])->Void ) {
         let serialQueue = DispatchQueue(label: "MASTDataproductsQueue")
         
         var remainingProducts = products.filter { (productType == .Fits ?  $0.dataURL : $0.jpegURL) != ""}
-        var urls = [URL]()
+        var fitsData = [FitsData]()
         
         
         // Create a recursive function to handle the download
         func downloadNextproduct() {
             guard !remainingProducts.isEmpty else {
                 // All products have been downloaded, call the completion handler
-                completion(true, urls)
+                completion(fitsData)
                 return
             }
             
@@ -145,28 +172,12 @@ closure(false)
             }
             
             let operation = MASTDownloadOperation(session: URLSession.shared, request: request, completionHandler: { (data, response, error) in
-                var gotError = false
-                if error != nil {
-                    print(error!.localizedDescription)
-                    self.sysLog.append(MASTSyslog(log: .RequestError, message: error!.localizedDescription))
-                    gotError = true
-                }
-                if (response as? HTTPURLResponse) == nil {
-                    self.sysLog.append(MASTSyslog(log: .RequestError, message: "response timed out"))
-                    gotError = true
-                }
-                let urlResponse = (response as! HTTPURLResponse)
-                if urlResponse.statusCode != 200 {
-                    let error = NSError(domain: "com.error", code: urlResponse.statusCode)
-                    self.sysLog.append(MASTSyslog(log: .RequestError, message: error.localizedDescription))
-                    gotError = true
-                }
                 
-                if !gotError {
-                    self.sysLog.append(MASTSyslog(log: .OK, message: "\(productUrl) downloaded"))
-                    
-                    self.saveFile(targetName: targetName, product: product, urlString: productUrl, data: data!, completion: { url in
-                        urls += url
+                if self.requestIsValid(error: error, response: response) {
+                    self.saveAsset(targetName: targetName, product: product, urlString: productUrl, data: data!, completion: { fits in
+                        if let fits = fits {
+                            fitsData.append(fits)
+                        }
                         // Call the recursive function to download the next object
                         serialQueue.async {
                             downloadNextproduct()
@@ -193,7 +204,7 @@ closure(false)
         }
         
 
-    func getDirectDataproducts( targetName: String, service: Service,  products: [CoamResult], productType: ProductType, token: String?, completion: @escaping (Bool, [URL])->Void ) {
+    func getDirectDataproducts( targetName: String, service: Service,  products: [CoamResult], productType: ProductType, token: String?, completion: @escaping ([URL])->Void ) {
         let serialQueue = DispatchQueue(label: "DirectDownloadDataproductsQueue")
         
         var remainingProducts = products.filter { (productType == .Fits ?  $0.dataURL : $0.jpegURL) != ""}
@@ -204,7 +215,7 @@ closure(false)
         func downloadNextproduct() {
             guard !remainingProducts.isEmpty else {
                 // All products have been downloaded, call the completion handler
-                completion(true, urls)
+                completion(urls)
                 return
             }
             
@@ -221,30 +232,11 @@ closure(false)
             }
             
             let operation = MASTDirectDownloadOperation(session: URLSession.shared, request: request, completionHandler: { (tempUrl, response, error) in
-                var gotError = false
-                if error != nil {
-                    print(error!.localizedDescription)
-                    self.sysLog.append(MASTSyslog(log: .RequestError, message: error!.localizedDescription))
-                    gotError = true
-                }
-                if (response as? HTTPURLResponse) == nil {
-                    self.sysLog.append(MASTSyslog(log: .RequestError, message: "response timed out"))
-                    gotError = true
-                }
-                let urlResponse = (response as! HTTPURLResponse)
-                if urlResponse.statusCode != 200 {
-                    print(urlResponse.statusCode)
-                    print(urlResponse)
-                    let error = NSError(domain: "com.error", code: urlResponse.statusCode)
-                    self.sysLog.append(MASTSyslog(log: .RequestError, message: error.localizedDescription))
-                    gotError = true
-                }
-                
-                if !gotError {
-                    self.sysLog.append(MASTSyslog(log: .OK, message: "\(productUrl) downloaded"))
-                    
-                    self.saveTempUrlToFile(targetName: targetName, product: product, urlString: productUrl, tempUrl: tempUrl!, productType: productType, completion: { url in
-                        urls.append(contentsOf: url)
+                if self.requestIsValid(error: error, response: response, url: tempUrl) {
+                    self.saveTempUrlToFile(targetName: targetName, product: product, tempUrl: tempUrl!, productType: productType, completion: { url in
+                        if let url = url {
+                            urls.append(url)
+                        }
                         // Call the recursive function to download the next object
                         serialQueue.async {
                             downloadNextproduct()
@@ -270,117 +262,75 @@ closure(false)
             }
         }
 
-    func downloadPS1Cutouts( targetName: String, urls: [URL], completion: @escaping (Bool, [URL])->Void ) {
+    /** Get the fits cutout from PS1, get the color jpeg and save all
+     metadata files from all filters
+     */
+    func downloadPS1Cutouts( targetName: String, urls: [URL], colored: Bool = true, completion: @escaping ([URL])->Void ) {
         let serialQueue = DispatchQueue(label: "downloadUrlsQueue")
         
         
         var remainingUrls = urls
-        var jpgUrls:[URL] = []
+        var urls:[URL] = []
         // Create a recursive function to handle the download
         func downloadNextUrl() {
             guard !remainingUrls.isEmpty else {
                 // All urls have been downloaded, call the completion handler
-                completion(true, jpgUrls)
+                completion(urls)
                 return
             }
+        }
             
             let url = remainingUrls.removeFirst()
             let request = URLRequest(url: url)
             
             let operation = MASTDirectDownloadOperation(session: URLSession.shared, request: request, completionHandler: { (tempUrl, response, error) in
-                var gotError = false
-                if error != nil {
-                    print(error!.localizedDescription)
-                    self.sysLog.append(MASTSyslog(log: .RequestError, message: error!.localizedDescription))
-                    gotError = true
-                }
-                if (response as? HTTPURLResponse) == nil {
-                    self.sysLog.append(MASTSyslog(log: .RequestError, message: "response timed out"))
-                    gotError = true
-                }
-                let urlResponse = (response as! HTTPURLResponse)
-                if urlResponse.statusCode != 200 {
-                    print(urlResponse.statusCode)
-                    let error = NSError(domain: "com.error", code: urlResponse.statusCode)
-                    self.sysLog.append(MASTSyslog(log: .RequestError, message: error.localizedDescription))
-                    gotError = true
-                }
-                
-                if !gotError {
-                    self.sysLog.append(MASTSyslog(log: .OK, message: "\(url) downloaded"))
-                    
-                    self.saveFile(fileName: targetName, tempUrl: tempUrl!, completion: { fitsData in
-                        if let fitsData
-                            = fitsData {
-                            jpgUrls.append(fitsData.url)
-                            self.savePreview(target: targetName, fitsData: fitsData)
-                        }
-                        // Call the recursive function to download the next object
-                        serialQueue.async {
-                            downloadNextUrl()
-                        }
-                    })
-                } else {
+                if self.requestIsValid(error: error, response: response, url: tempUrl) {
+                    let url = self.saveImageFile(target: targetName, collection: "PS1", filter: "OPTICAL", productType: .Jpeg, url: tempUrl!)
+                    if let url = url {
+                        urls.append(url)
+                    }
                     serialQueue.async {
                         downloadNextUrl()
                     }
                 }
-                
             })
             
             // Add the operation to the serial queue to execute it serially
             serialQueue.async {
                 operation.start()
             }
-        }
-
+            
             // Start the download process by calling the recursive function
             serialQueue.async {
                 downloadNextUrl()
             }
         }
-
-    
-    /** Forms a request object from the given PS1 request URL and given parameters
-     Adds a resulting table to the targets dictionary for further processing
-     Parameters:
-     ps1Request: PS1 request generator
-     closure: whether request was successful
-     */
-    func queryPS1(ps1Request: PS1Request, _ closure: @escaping (Bool) -> Void) {
         
         
-        let request = ps1Request.getFileListRequest()
-        print("queryPS1: \(request.url!.absoluteString)")
-        let configuration = URLSessionConfiguration.ephemeral
-    let queue = OperationQueue.main
-        let session = URLSession(configuration: configuration, delegate: self, delegateQueue: queue)
-
-        let task = session.dataTask(with: request) { [weak self] data, response, error in
-            guard error == nil else {
-                self?.sysLog.append(MASTSyslog(log: .RequestError, message: error!.localizedDescription))
-closure(false)
-                return
+        /** Forms a request object from the given PS1 request URL and given parameters
+         Adds a resulting table to the targets dictionary for further processing
+         Parameters:
+         ps1Request: PS1 request generator
+         closure: whether request was successful
+         */
+        func queryPS1(ps1Request: PS1Request, _ closure: @escaping (Bool) -> Void) {
+            
+            
+            let request = ps1Request.getFileListRequest()
+            print("queryPS1: \(request.url!.absoluteString)")
+            let configuration = URLSessionConfiguration.ephemeral
+            let queue = OperationQueue.main
+            let session = URLSession(configuration: configuration, delegate: self, delegateQueue: queue)
+            
+            let task = session.dataTask(with: request) { [weak self] data, response, error in
+                if self!.requestIsValid(error: error, response: response) {
+                    let table = self!.parsePS1table(text: String(data: data!, encoding: .ascii)!, baseUrl: ps1Request.getFitsCutUrlBase())
+                    self?.targets[self!.currentTargetId!] = table
+                    closure(true)
+                    return
+                }
             }
-            guard let response = response as? HTTPURLResponse else {
-                self?.sysLog.append(MASTSyslog(log: .RequestError, message: "response timed out"))
-                closure(false)
-                return
-            }
-            if response.statusCode != 200 {
-                let error = NSError(domain: "com.error", code: response.statusCode)
-                self?.sysLog.append(MASTSyslog(log: .RequestError, message: error.localizedDescription))
-                closure(false)
-                return
-            }
-
-            let table = self?.parsePS1table(text: String(data: data!, encoding: .ascii)!, baseUrl: ps1Request.getFitsCutUrlBase())
-            self?.targets[self!.currentTargetId!] = table
-            self?.sysLog.append(MASTSyslog(log: .OK, message: "request successful"))
-        closure(true)
-            return
-    }
-    task.resume()
+            task.resume()
+        }
     }
 
-}

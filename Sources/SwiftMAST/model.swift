@@ -15,8 +15,17 @@ public struct FitsData:Codable {
 
 public struct TargetAsset:Codable {
     let targetInfo:NameLookupJson
+    var preview:URL?
     var assets:[CoamResult]?
     var fitsData:[FitsData]?
+    
+    
+    public mutating func setPreview(url: URL) {
+        if self.preview == nil {
+            self.preview = url
+        }
+    }
+    
     
     public mutating func setAssets(assets: [CoamResult]) {
         if self.assets == nil {

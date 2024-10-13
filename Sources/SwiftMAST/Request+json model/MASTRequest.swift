@@ -156,5 +156,21 @@ public struct PS1Request {
     func getFitsCutUrlBase() -> String {
         return "\(self.fitsCutRequestUrl)?size=\(self.size)&format=\(self.format)"
     }
+
+    
+    func getFitsColorImageUrl(fileNames: [String], outputSize: Int? = nil, format: String = "jpg") -> URL {
+        let urlBase = "\(self.fitsCutRequestUrl)?size=\(self.size)&format=\(format)"
+        let ra = self.parameters["ra"]! as! Float
+        let dec = self.parameters["dec"]! as! Float
+        var url = "\(urlBase)&ra=\(ra)&dec=\(dec)"
+        if let outputSize = outputSize {
+            url += "&output_size=\(outputSize)"
+        }
+        for (i, param) in ["red", "green", "blue"].enumerated() {
+            url += "&\(param)=\(fileNames[i])"
+        }
+        print("getFitsColorImageUrl: \(url)")
+return URL(string:url.addingPercentEncoding(withAllowedCharacters: CharacterSet.urlQueryAllowed)!)!
+    }
     
 }
