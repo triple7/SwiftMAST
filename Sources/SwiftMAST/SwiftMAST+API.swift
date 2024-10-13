@@ -415,11 +415,11 @@ func getTicCrossmatch(ra: Float, dec: Float, radius: Float, result: @escaping ([
                             // https://ps1images.stsci.edu/ps1image.html
                 var fileNames = filesTable.getStringValues(for: "filename")
                 print("file names \(fileNames)")
-                            let filters = table.getStringValues(for: "filter")
+                            let filters = filesTable.getStringValues(for: "filter")
                 print("Filters: \(filters)")
                 let fields = filesTable.fields
                 print(fields)
-                let types = table.getStringValues(for: "type")
+                let types = filesTable.getStringValues(for: "type")
                 print(types)
 
                 
