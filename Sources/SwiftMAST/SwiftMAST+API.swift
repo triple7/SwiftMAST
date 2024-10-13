@@ -139,7 +139,6 @@ public func getFilteredConeSearch(ra: Float, dec: Float, radius: Float=0.2, filt
                 return
             }
             
-            print("Returning table\(table)")
             completion(table)
         })
     }
@@ -407,6 +406,7 @@ func getTicCrossmatch(ra: Float, dec: Float, radius: Float, result: @escaping ([
             print("\(target) radius \(radius) pixels \(pixelSize)")
             self.getPS1ImageList(targetName: target, ra: ra, dec: dec, imageSize: pixelSize, completion: { filesTable in
                 
+                print("Got files table")
                 guard let filesTable = filesTable else {
                     completion([])
                     return
