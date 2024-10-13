@@ -16,6 +16,7 @@ func parseXml(data: Data)->MASTTable {
          let parser = XMLParser(data: data)
          parser.delegate = table
          _ = parser.parse()
+    
 return table
      }
 

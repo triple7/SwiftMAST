@@ -180,8 +180,6 @@ public class MASTTable:NSObject {
     }
 
     public func populateTable() {
-        print(populateTable())
-        print(self.xmlDict)
         self.fields = self.xmlDict.keys.map{$0}
         self.values.append(self.xmlDict.keys.map{QValue(value: self.xmlDict[$0]! as! String)})
     }
