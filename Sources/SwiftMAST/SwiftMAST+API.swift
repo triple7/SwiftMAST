@@ -406,7 +406,6 @@ func getTicCrossmatch(ra: Float, dec: Float, radius: Float, result: @escaping ([
             print("\(target) radius \(radius) pixels \(pixelSize)")
             self.getPS1ImageList(targetName: target, ra: ra, dec: dec, imageSize: pixelSize, completion: { filesTable in
                 
-                print("Got files table")
                 guard let filesTable = filesTable else {
                     completion([])
                     return
@@ -425,6 +424,7 @@ func getTicCrossmatch(ra: Float, dec: Float, radius: Float, result: @escaping ([
                 // Form a request URL
                 let ps1Request = PS1Request(ra: ra, dec: dec)
                             let url = ps1Request.getFitsColorImageUrl(fileNames: fileNames)
+                print(url)
                             
                 self.downloadPS1Cutouts( targetName: target, urls: [url], completion: { jpgUrls in
                     completion(jpgUrls)
