@@ -41,7 +41,6 @@ func parseJson(data: Data)->MASTTable {
      }
      
      func parsePS1table(text: String, baseUrl: String)->MASTTable {
-         print(text)
          var table = text.components(separatedBy: "\n")
          var fields = table.removeFirst().components(separatedBy: " ")
          let rows = table.map{$0.components(separatedBy: " ")}
@@ -52,12 +51,7 @@ func parseJson(data: Data)->MASTTable {
          let decIdx = fields.firstIndex(of: "dec")!
          fields.append("url")
          values = values.map{$0 + [QValue(value: "\(baseUrl)&ra=\($0[raIdx].value)&dec=\($0[decIdx].value)&red=\($0[fileIdx].value)")]}
-         for value in values {
-             print("next row")
-             print(value)
-         }
 
-         print("fileds \(fields.count) values \(values[0].count)")
          return MASTTable(fields: fields, values: values)
      }
      

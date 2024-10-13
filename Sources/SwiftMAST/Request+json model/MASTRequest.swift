@@ -147,7 +147,7 @@ public struct PS1Request {
     func getFileListRequest()->URLRequest {
         let ra = self.parameters["ra"]! as! Float
         let dec = self.parameters["dec"]! as! Float
-        var request = URLRequest(url: Foundation.URL(string: "\(self.fileListUrl)?ra=\(ra)&dec=\(dec)")!)
+        var request = URLRequest(url: Foundation.URL(string: "\(self.fileListUrl)?ra=\(ra)&dec=\(dec)&size=\(size)")!)
         request.httpMethod = "POST"
         return request
     }
