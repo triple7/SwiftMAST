@@ -323,6 +323,7 @@ closure(false)
             let session = URLSession(configuration: configuration, delegate: self, delegateQueue: queue)
             
             let task = session.dataTask(with: request) { [weak self] data, response, error in
+                print("Request completed \(error) \(response.debugDescription)")
                 if self!.requestIsValid(error: error, response: response) {
                     let table = self!.parsePS1table(text: String(data: data!, encoding: .ascii)!, baseUrl: ps1Request.getFitsCutUrlBase())
                     self?.targets[self!.currentTargetId!] = table
