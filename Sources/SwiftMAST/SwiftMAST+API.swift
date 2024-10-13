@@ -417,7 +417,7 @@ func getTicCrossmatch(ra: Float, dec: Float, radius: Float, result: @escaping ([
                             let filters = table.getStringValues(for: "filter")
                 
                             let yzirg = "yzirg"
-                            var filterList = filters.map{yzirg.range(of: $0)!.lowerBound.utf16Offset(in: yzirg) ?? -1 }
+                            var filterList = filters.map{yzirg.range(of: $0)!.lowerBound.utf16Offset(in: yzirg)}
                             filterList = filterList.enumerated().sorted{$0.element < $1.element}.map{$0.offset}
                 filterList = Array(filterList[0..<3])
                             fileNames = filterList.map{fileNames[$0]}

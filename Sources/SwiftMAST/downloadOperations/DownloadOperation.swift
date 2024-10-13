@@ -8,7 +8,7 @@
 import Foundation
 
 
-class MASTDownloadOperation : Operation {
+class MASTDownloadOperation : Operation, @unchecked Sendable {
     
     private var task : URLSessionDataTask!
     
