@@ -127,7 +127,7 @@ public func getFilteredConeSearch(ra: Float, dec: Float, radius: Float=0.2, filt
      * dec: Float
      * size: squared image pixel size (0.25 arsec/pixel)
      */
-    public func getPS1ImageList(targetName: String, ra: Float, dec: Float, imageSize: Int = 900, completion: @escaping (MASTTable?) -> Void) {
+    public func getPS1ImageList(targetName: String, ra: Float, dec: Float, imageSize: Int = 4000, completion: @escaping (MASTTable?) -> Void) {
         print("getPS1ImageList: \(targetName)")
 
         let ps1Request = PS1Request(ra: ra, dec: dec, size: imageSize)
@@ -375,7 +375,7 @@ func getTicCrossmatch(ra: Float, dec: Float, radius: Float, result: @escaping ([
          * target: string
          * size: squared image pixel size (0.25 arsec/pixel)
          */
-    public func getPS1ImagePreview(targetName: String, imageSize: Int = 900, downloadUrl: @escaping ([URL]) -> Void) {
+    public func getPS1ImagePreview(targetName: String, imageSize: Int = 4000, downloadUrl: @escaping ([URL]) -> Void) {
         print("getPS1ImagePreview: \(targetName)")
 
         let service = Service.Mast_Name_Lookup
