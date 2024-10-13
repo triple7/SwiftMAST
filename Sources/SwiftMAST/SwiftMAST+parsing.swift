@@ -40,6 +40,7 @@ func parseJson(data: Data)->MASTTable {
      }
      
      func parsePS1table(text: String, baseUrl: String)->MASTTable {
+         print(text)
          var table = text.components(separatedBy: "\n")
          var fields = table.removeFirst().components(separatedBy: " ")
          let rows = table.map{$0.components(separatedBy: " ")}
