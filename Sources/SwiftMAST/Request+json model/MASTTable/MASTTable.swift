@@ -51,6 +51,7 @@ public class MASTTable:NSObject {
             return self.values.map{$0[idx]}
         }
         // field does not exist, return empty QValues
+        print("returning empty for \(field)")
         return [QValue](repeating: QValue(value: ""), count: self.values.count)
     }
     

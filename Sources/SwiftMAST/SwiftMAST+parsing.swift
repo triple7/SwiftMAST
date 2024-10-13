@@ -45,16 +45,18 @@ func parseJson(data: Data)->MASTTable {
          var fields = table.removeFirst().components(separatedBy: " ")
          let rows = table.map{$0.components(separatedBy: " ")}
          var values = rows.map{$0.map{QValue(value: $0)}}
-         for value in values {
-             print("next row")
-             print(value)
-         }
          // Add the URL from the baseUrl string
          let fileIdx = fields.firstIndex(of: "filename")!
          let raIdx = fields.firstIndex(of: "ra")!
          let decIdx = fields.firstIndex(of: "dec")!
          fields.append("url")
          values = values.map{$0 + [QValue(value: "\(baseUrl)&ra=\($0[raIdx].value)&dec=\($0[decIdx].value)&red=\($0[fileIdx].value)")]}
+         for value in values {
+             print("next row")
+             print(value)
+         }
+
+         print("fileds \(fields.count) values \(values.count)")
          return MASTTable(fields: fields, values: values)
      }
      
