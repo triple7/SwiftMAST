@@ -133,7 +133,7 @@ public struct PS1Request {
     private let size:Int
     private let format:String
     
-    public init(ra: Float, dec: Float, size: Int = 4000, filters:PS1Filter = .grizy, format: PS1FileType = .fits, imageTypes: [PS1ImageType] = [.stack]) {
+    public init(ra: Float, dec: Float, size: Int = 8000, filters:PS1Filter = .grizy, format: PS1FileType = .fits, imageTypes: [PS1ImageType] = [.stack]) {
         self.parameters = [:]
         parameters["filters"] = filters.id as Any
         parameters["type"] = imageTypes.map{$0.id}.joined(separator: ",") as Any
