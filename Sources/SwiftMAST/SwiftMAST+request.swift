@@ -39,6 +39,7 @@ public extension SwiftMAST {
             let message = url != nil ? url!.absoluteString : "data"
             self.sysLog.append(MASTSyslog(log: .OK, message: "\(message) downloaded"))
         }
+        print("requestIsValid: \(!gotError)")
         return !gotError
     }
     
