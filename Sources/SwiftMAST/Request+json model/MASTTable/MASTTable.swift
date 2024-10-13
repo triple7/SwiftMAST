@@ -164,6 +164,7 @@ public class MASTTable:NSObject {
     public func parser(_ parser: XMLParser, foundCharacters string: String) {
             if !string.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
                 if xmlDict[currentElement] == nil {
+                    print("string for xmldict: \(string)")
                        xmlDict.updateValue(string, forKey: currentElement)
                 }
             }
@@ -171,6 +172,8 @@ public class MASTTable:NSObject {
 
     public func parser(_ parser: XMLParser, didEndElement elementName: String, namespaceURI: String?, qualifiedName qName: String?) {
         if elementName == "element" {
+            print("got array element")
+            print(xmlDict)
                 xmlDictArr.append(xmlDict)
         }
     }
