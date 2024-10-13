@@ -375,7 +375,7 @@ func getTicCrossmatch(ra: Float, dec: Float, radius: Float, result: @escaping ([
          * target: string
          * size: squared image pixel size (0.25 arsec/pixel)
          */
-    public func getPS1ImagePreview(targetName: String, imageSize: Int = 900, completion: @escaping ([URL]) -> Void) {
+    public func getPS1ImagePreview(targetName: String, imageSize: Int = 900, downloadUrl: @escaping ([URL]) -> Void) {
         print("getPS1ImagePreview: \(targetName)")
 
         let service = Service.Mast_Name_Lookup
@@ -386,7 +386,7 @@ func getTicCrossmatch(ra: Float, dec: Float, radius: Float, result: @escaping ([
         self.queryMast(service: service, params: params, returnType: .xml, { success in
             guard let target = self.targets.keys.first, let table = self.targets[target] else {
                 print("Unable to find target")
-                completion([])
+                downloadUrl([])
                 return
             }
             let targetEnd = CACurrentMediaTime()
@@ -407,7 +407,7 @@ func getTicCrossmatch(ra: Float, dec: Float, radius: Float, result: @escaping ([
             self.getPS1ImageList(targetName: target, ra: ra, dec: dec, imageSize: pixelSize, completion: { filesTable in
                 
                 guard let filesTable = filesTable else {
-                    completion([])
+                    downloadUrl([])
                     return
                 }
                 // Get the r g and b filters
@@ -427,7 +427,7 @@ func getTicCrossmatch(ra: Float, dec: Float, radius: Float, result: @escaping ([
                 print(url)
                             
                 self.downloadPS1Cutouts( targetName: target, urls: [url], completion: { jpgUrls in
-                    completion(jpgUrls)
+                    downloadUrl(jpgUrls)
                     
                 })
             })

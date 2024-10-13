@@ -319,7 +319,6 @@ closure(false)
             
             
             let request = ps1Request.getFileListRequest()
-            print("queryPS1: \(request.url!.absoluteString)")
             let configuration = URLSessionConfiguration.ephemeral
             let queue = OperationQueue.main
             let session = URLSession(configuration: configuration, delegate: self, delegateQueue: queue)
