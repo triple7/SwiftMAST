@@ -346,6 +346,7 @@ closure(false)
                     let text = String(data: data!, encoding: .utf8)
                     completion(nedResolver)
                 } catch let error  {
+                    print("issue with resolver: \(error)")
                     self.sysLog.append(MASTSyslog(log: .RequestError, message: error.localizedDescription))
 
                     completion(nil)
