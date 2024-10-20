@@ -186,11 +186,25 @@ public struct NedResult: Codable {
     let nameResolver: String
     let preferred: Preferred
 
+    enum CodingKeys: String, CodingKey {
+        case queryTime = "QueryTime"
+        case resultCode = "ResultCode"
+        case copyright = "Copyright"
+        case version = "Version"
+        case statusCode = "StatusCode"
+        case interpreted = "Interpreted"
+        case supplied = "Supplied"
+        case nameResolver = "NameResolver"
+        case preferred = "Preferred"
+    }
 }
 
 public struct Interpreted: Codable {
     let name: String
 
+    enum CodingKeys: String, CodingKey {
+        case name = "Name"
+    }
 }
 
 public struct Preferred: Codable {
@@ -199,6 +213,12 @@ public struct Preferred: Codable {
     let position: Position
     let objType: ObjType
 
+    enum CodingKeys: String, CodingKey {
+        case redshift = "Redshift"
+        case name = "Name"
+        case position = "Position"
+        case objType = "ObjType"
+    }
 }
 
 public struct Redshift: Codable {
@@ -207,6 +227,12 @@ public struct Redshift: Codable {
     let refCode: String
     let qualityFlag: String?
 
+    enum CodingKeys: String, CodingKey {
+        case value = "Value"
+        case uncertainty = "Uncertainty"
+        case refCode = "RefCode"
+        case qualityFlag = "QualityFlag"
+    }
 }
 
 public struct Position: Codable {
@@ -217,14 +243,25 @@ public struct Position: Codable {
     let uncSemiMajor: Double
     let refCode: String
 
+    enum CodingKeys: String, CodingKey {
+        case ra = "RA"
+        case dec = "Dec"
+        case posAngle = "PosAngle"
+        case uncSemiMinor = "UncSemiMinor"
+        case uncSemiMajor = "UncSemiMajor"
+        case refCode = "RefCode"
+    }
 }
 
 public struct ObjType: Codable {
     let value: String
     let refCode: String?
 
+    enum CodingKeys: String, CodingKey {
+        case value = "Value"
+        case refCode = "RefCode"
+    }
 }
-
 public struct NedResolverRequest {
     private let baseUrl = "https://ned.ipac.caltech.edu/srs/ObjectLookup"
 
