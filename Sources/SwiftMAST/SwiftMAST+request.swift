@@ -343,8 +343,11 @@ closure(false)
                 do {
                     let decoder = JSONDecoder()
                     let nedResolver = try decoder.decode(NedResult.self, from: data!)
+                    let text = String(data: data!, encoding: .utf8)
+                    print(data)
                     completion(nedResolver)
-                } catch {
+                } catch let error  {
+                    print(error.localizedDescription)
                     completion(nil)
                 }
             }
