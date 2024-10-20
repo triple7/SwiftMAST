@@ -337,7 +337,6 @@ closure(false)
         let requestBuilder = NedResolverRequest()
         
         let request = requestBuilder.getRequest(target: target)
-        print(request.url!.absoluteString)
         URLSession.shared.dataTask(with: request) { data, response, error in
             if self.requestIsValid(error: error, response: response) {
                 // Decode JSON into NedResolver
@@ -348,7 +347,7 @@ closure(false)
                     print(data)
                     completion(nedResolver)
                 } catch let error  {
-                    print(error.localizedDescription)
+                    print(error)
                     completion(nil)
                 }
             }
