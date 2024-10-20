@@ -177,14 +177,14 @@ return URL(string:url.addingPercentEncoding(withAllowedCharacters: CharacterSet.
 
 public struct NedResult: Codable {
     let queryTime: String
-    let resultCode: Int
-    let copyright: String
-    let version: String
-    let statusCode: Int
-    let interpreted: Interpreted
-    let supplied: String
-    let nameResolver: String
-    let preferred: Preferred
+    let resultCode: Int?
+    let copyright: String?
+    let version: String?
+    let statusCode: Int?
+    let interpreted: Interpreted?
+    let supplied: String?
+    let nameResolver: String?
+    let preferred: Preferred?
 
     enum CodingKeys: String, CodingKey {
         case queryTime = "QueryTime"
