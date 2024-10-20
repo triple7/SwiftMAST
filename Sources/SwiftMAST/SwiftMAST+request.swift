@@ -331,5 +331,26 @@ closure(false)
             }
             task.resume()
         }
+
+    
+    func getNedResolver(target: String, completion: @escaping (NedResult?) -> Void) {
+        let requestBuilder = NedResolverRequest()
+        
+        let request = requestBuilder.getRequest(target: target)
+        URLSession.shared.dataTask(with: request) { data, response, error in
+            if self.requestIsValid(error: error, response: response) {
+                // Decode JSON into NedResolver
+                do {
+                    let decoder = JSONDecoder()
+                    let nedResolver = try decoder.decode(NedResult.self, from: data!)
+                    completion(nedResolver)
+                } catch {
+                    completion(nil)
+                }
+            }
+            completion(nil)
+        }.resume()
     }
+    
+}
 

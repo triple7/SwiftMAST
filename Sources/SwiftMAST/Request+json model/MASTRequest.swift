@@ -174,3 +174,67 @@ return URL(string:url.addingPercentEncoding(withAllowedCharacters: CharacterSet.
     }
     
 }
+
+public struct NedResult: Codable {
+    let queryTime: String
+    let resultCode: Int
+    let copyright: String
+    let version: String
+    let statusCode: Int
+    let interpreted: Interpreted
+    let supplied: String
+    let nameResolver: String
+    let preferred: Preferred
+
+}
+
+public struct Interpreted: Codable {
+    let name: String
+
+}
+
+public struct Preferred: Codable {
+    let redshift: Redshift
+    let name: String
+    let position: Position
+    let objType: ObjType
+
+}
+
+public struct Redshift: Codable {
+    let value: Double
+    let uncertainty: Double?
+    let refCode: String
+    let qualityFlag: String?
+
+}
+
+public struct Position: Codable {
+    let ra: Double
+    let dec: Double
+    let posAngle: Int
+    let uncSemiMinor: Double
+    let uncSemiMajor: Double
+    let refCode: String
+
+}
+
+public struct ObjType: Codable {
+    let value: String
+    let refCode: String?
+
+}
+
+public struct NedResolverRequest {
+    private let baseUrl = "https://ned.ipac.caltech.edu/srs/ObjectLookup"
+
+    func getRequest(target: String) -> URLRequest {
+        // Construct URL with base URL and query parameter
+        var urlComponents = URLComponents(string: baseUrl)
+            
+        urlComponents!.queryItems = [URLQueryItem(name: "name", value: target)]
+
+        return URLRequest(url: urlComponents!.url!)
+    }
+    
+}
