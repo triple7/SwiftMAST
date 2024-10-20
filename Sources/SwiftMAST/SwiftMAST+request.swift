@@ -344,10 +344,10 @@ closure(false)
                     let decoder = JSONDecoder()
                     let nedResolver = try decoder.decode(NedResult.self, from: data!)
                     let text = String(data: data!, encoding: .utf8)
-                    print(data)
                     completion(nedResolver)
                 } catch let error  {
-                    print(error)
+                    self.sysLog.append(MASTSyslog(log: .RequestError, message: error.localizedDescription))
+
                     completion(nil)
                 }
             }
