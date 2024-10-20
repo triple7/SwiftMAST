@@ -222,9 +222,9 @@ public struct Preferred: Codable {
 }
 
 public struct Redshift: Codable {
-    let value: Double
+    let value: Double?
     let uncertainty: Double?
-    let refCode: String
+    let refCode: String?
     let qualityFlag: String?
 
     enum CodingKeys: String, CodingKey {
@@ -236,12 +236,12 @@ public struct Redshift: Codable {
 }
 
 public struct Position: Codable {
-    let ra: Double
-    let dec: Double
-    let posAngle: Int
-    let uncSemiMinor: Double
-    let uncSemiMajor: Double
-    let refCode: String
+    let ra: Double?
+    let dec: Double?
+    let posAngle: Int?
+    let uncSemiMinor: Double?
+    let uncSemiMajor: Double?
+    let refCode: String?
 
     enum CodingKeys: String, CodingKey {
         case ra = "RA"
@@ -254,7 +254,7 @@ public struct Position: Codable {
 }
 
 public struct ObjType: Codable {
-    let value: String
+    let value: String?
     let refCode: String?
 
     enum CodingKeys: String, CodingKey {
