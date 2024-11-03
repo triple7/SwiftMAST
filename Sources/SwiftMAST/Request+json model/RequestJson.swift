@@ -142,6 +142,7 @@ public struct MASTJsonParams:Encodable {
         case .input: self.input = value as? String
         case .url: self.url = value as? String
         case .maxrecords: self.maxrecords = value as? Int
+        case .format: self.input = value as? String
         default: break
         }
     }
