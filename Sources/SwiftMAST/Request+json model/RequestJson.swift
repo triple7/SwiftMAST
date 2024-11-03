@@ -118,6 +118,7 @@ public struct MASTJsonParams:Encodable {
     var input:String?
     var url:String?
     var maxrecords:Int?
+    var format:String?
     
     public init(params: [MAP: Any]) {
         for k in params.keys {
