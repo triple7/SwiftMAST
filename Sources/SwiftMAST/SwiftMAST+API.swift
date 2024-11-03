@@ -68,7 +68,7 @@ public func lookupTargetByName(targetName: String, result: @escaping ([NameLooku
         let service = Service.Mast_Caom_Cone
         var params = service.serviceRequest(requestType: .coneSearch)
         params.setParameters(params: [MAP.ra: ra, MAP.dec: dec, MAP.radius: radius])
-        params.setGeneralParameter(params: MAP.values.defaultGeneralParameters())
+        params.setGeneralParameters(params: MAP.values.defaultGeneralParameters())
         if preview {
             params.setGeneralParameter(param: MAP.pagesize, value: pageSize)
             params.setGeneralParameter(param: MAP.timeout, value: 30)
@@ -194,7 +194,7 @@ public func getFilteredConeSearch(ra: Float, dec: Float, radius: Float=0.2, filt
     let service = Service.Mast_Caom_Filtered_Position
     var params = service.serviceRequest(requestType: .advancedSearch)
         
-    params.setGeneralParameter(params: MAP.values.defaultGeneralParameters())
+    params.setGeneralParameters(params: MAP.values.defaultGeneralParameters())
         params.setParameter(param: MAP.pagesize, value: 10)
     let filterParams = params.scienceImageFilters(waveBand: waveBand)
     params.setFilterParameters(params: filterParams)

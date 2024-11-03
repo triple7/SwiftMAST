@@ -38,20 +38,20 @@ public struct MASTJson:Encodable, CustomStringConvertible {
     }
     // Mark: Json request general parameters
     
-    public mutating func setGeneralParameter( params: [MAP: Any]) {
+    public mutating func setGeneralParameters( params: [MAP: Any]) {
         for param in params.keys {
             setGeneralParameter(param: param, value: params[param]!)
         }
     }
     
     public mutating func setGeneralParameter(param: MAP, value: Any) {
-//        print("param \(param) value: \(value)")
         switch param {
         case .pagesize: self.pagesize = value as? Int
         case .page: self.page = value as? Int
         case .removecache: self.removecache = value as? Bool
         case .timeout: self.timeout = value as? Int
         case .removenullcolumns: self.removenullcolumns = value as? Bool
+        case .format: self.format = value as! String
         default: break
         }
     }
@@ -66,6 +66,7 @@ public struct MASTJson:Encodable, CustomStringConvertible {
 
     public mutating func setParameter( param: MAP, value: Any) {
         print("set parameter \(param) value \(value)")
+        print(self.params)
         self.params?.setParameter(parameter: param, value: value)
     }
     

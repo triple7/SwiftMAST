@@ -54,7 +54,7 @@ public extension SwiftMAST {
 func queryMast(service: Service, params: MASTJson, returnType: APIReturnType, _ closure: @escaping (Bool) -> Void) {
         
     var extendedParams = params
-    extendedParams.setParameter(param: MAP.format, value: returnType.id as Any)
+    extendedParams.setGeneralParameter(param: MAP.format, value: returnType.id as Any)
     let json = service.jsonData(json: extendedParams)
 
         let url = MASTRequest(searchType: .apiRequest).getApiUrl(json: json)
