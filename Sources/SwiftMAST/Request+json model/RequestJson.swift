@@ -66,7 +66,7 @@ public struct MASTJson:Encodable, CustomStringConvertible {
 
     public mutating func setParameter( param: MAP, value: Any) {
         print("set parameter \(param) value \(value)")
-        print(self.params)
+        print("internal params: \(self.params)")
         self.params?.setParameter(parameter: param, value: value)
     }
     
@@ -126,7 +126,7 @@ public struct MASTJsonParams:Encodable {
     }
     
     public mutating func setParameter(parameter: MAP, value: Any) {
-        print("setParameter: \(parameter)")
+        print("setParameter: \(parameter) value: \(value)")
         switch parameter {
         case .columns: self.columns = value as? String
         case .filters: self.filters = value as? [MASTJsonFilter]
