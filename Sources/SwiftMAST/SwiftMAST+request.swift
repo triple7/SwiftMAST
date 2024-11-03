@@ -56,7 +56,6 @@ func queryMast(service: Service, params: MASTJson, returnType: APIReturnType, _ 
     var extendedParams = params
     extendedParams.setParameters(params: [MAP.format: returnType.id as Any])
     let json = service.jsonData(json: extendedParams)
-    print(json)
 
         let url = MASTRequest(searchType: .apiRequest).getApiUrl(json: json)
 
