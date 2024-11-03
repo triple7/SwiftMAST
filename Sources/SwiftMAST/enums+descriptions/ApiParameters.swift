@@ -43,6 +43,7 @@ public enum MASTApiParameter:String, CaseIterable, Identifiable {
     case pagesize // string
 case page // Int
     case removecache // Bool
+    case format // String
 
     public var id:String {
         return self.rawValue
