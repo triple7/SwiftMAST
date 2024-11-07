@@ -51,7 +51,7 @@ public struct MASTJson:Encodable, CustomStringConvertible {
         case .removecache: self.removecache = value as? Bool
         case .timeout: self.timeout = value as? Int
         case .removenullcolumns: self.removenullcolumns = value as? Bool
-        case .format: self.format = value as! String
+        case .format: self.format = value as? String
         default: break
         }
     }

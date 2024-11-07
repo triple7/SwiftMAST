@@ -108,27 +108,29 @@ extension QValue:Codable {
 public typealias ReturnJson = MASTJsonPayload
 
 public struct MASTJsonPayload:Decodable {
-    let status:String
-    let msg:String
-    let paging:MASTJsonPaging
+    var status:String?
+    var msg:String?
+    var paging:MASTJsonPaging?
     var percent_complete:Int?
-    let fields:[MASTJsonField]
-    let data:[[String:QValue]]
+    var fields:[MASTJsonField]?
+    var data:[[String:QValue]]?
+    var resolvedCoordinate:[LookupSearchResult]?
     
 
     enum CodingKeys: String, CodingKey {
-        case status, msg, paging, percent_complete, fields, data
+        case status, msg, paging, percent_complete, fields, data, resolvedCoordinate
     }
     
     public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         
-        status = try container.decode(String.self, forKey: .status)
-        msg = try container.decode(String.self, forKey: .msg)
-        paging = try container.decode(MASTJsonPaging.self, forKey: .paging)
+        status = try container.decodeIfPresent(String.self, forKey: .status)
+        msg = try container.decodeIfPresent(String.self, forKey: .msg)
+        paging = try container.decodeIfPresent(MASTJsonPaging.self, forKey: .paging)
         percent_complete = try container.decodeIfPresent(Int.self, forKey: .percent_complete)
-        fields = try container.decode([MASTJsonField].self, forKey: .fields)
+        fields = try container.decodeIfPresent([MASTJsonField].self, forKey: .fields)
         
+        resolvedCoordinate = try container.decodeIfPresent([LookupSearchResult].self, forKey: .resolvedCoordinate)
         // Decode data
         var dataContainer = try container.nestedUnkeyedContainer(forKey: .data)
         var dataArray: [[String: QValue]] = []
@@ -233,7 +235,6 @@ public struct NameLookupJson:Codable {
         }
     }
 }
-
 
 // Mark: Equatable MAST return Json for time adjustments
 
@@ -370,3 +371,17 @@ extension CoamResult {
     }
     
 }
+
+struct LookupSearchResult: Codable {
+let searchString: String
+let resolver: String
+let cached: Bool
+let resolverTime: Int
+let searchRadius: Double
+let canonicalName: String
+let ra: Double
+let decl: Double
+let radius: Double
+let objectType: String
+}
+

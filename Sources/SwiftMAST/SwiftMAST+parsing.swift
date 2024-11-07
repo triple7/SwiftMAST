@@ -24,11 +24,27 @@ func parseJson(data: Data)->MASTTable {
          let text = String(decoding: data, as: UTF8.self)
     print("debug return\n\(text)")
          let payload = try! JSONDecoder().decode(ReturnJson.self, from: data)
-         let fields = payload.fields.map{$0.name}
-         var values = [[QValue]]()
-         for row in payload.data {
-                     values.append(fields.map{row[$0]!})
-         }
+
+    // either a search result or a target resolver
+    var values = [[QValue]]()
+    var fields = [String]()
+    if let fieldValues = payload.fields {
+        fields = Mirror(reflecting: fieldValues).children.map{ (name, value) in return name! as String}
+        for row in payload.data! {
+            values.append(fieldValues.map{row[$0.name]!})
+        }
+    } else if  let resolvedCoordinate = payload.resolvedCoordinate {
+        var feilds = Mirror(reflecting: resolvedCoordinate.first!).children.map { (name, value) in
+            return name! as String
+        }
+        for row in payload.resolvedCoordinate! {
+            let mirror = Mirror(reflecting: row)
+            values.append(mirror.children.map { (name, value) in
+                return QValue(value: value as! String)
+            })
+        }
+    }
+                
          return MASTTable(fields: fields, values: values)
      }
 
