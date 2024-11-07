@@ -132,17 +132,18 @@ public struct MASTJsonPayload:Decodable {
         
         resolvedCoordinate = try container.decodeIfPresent([LookupSearchResult].self, forKey: .resolvedCoordinate)
         // Decode data
-        var dataContainer = try container.nestedUnkeyedContainer(forKey: .data)
-        var dataArray: [[String: QValue]] = []
-        
-        while !dataContainer.isAtEnd {
-            let dictionary = try dataContainer.decodeIfPresent([String: QValue].self)
-            if let existingValue = dictionary {
-                dataArray.append(existingValue)
+        if var         dataContainer = try? container.nestedUnkeyedContainer(forKey: .data) {
+            var dataArray: [[String: QValue]] = []
+            
+            while !dataContainer.isAtEnd {
+                let dictionary = try dataContainer.decodeIfPresent([String: QValue].self)
+                if let existingValue = dictionary {
+                    dataArray.append(existingValue)
+                }
             }
+            
+            data = dataArray
         }
-        
-        data = dataArray
     }
 
 }
