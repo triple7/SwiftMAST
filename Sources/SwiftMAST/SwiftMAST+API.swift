@@ -34,7 +34,6 @@ public func lookupTargetByName(targetName: String, result: @escaping ([NameLooku
     self.queryMast(service: service, params: params, returnType: .json, { success in
             for target in self.targets.keys {
                 let table = self.targets[target]
-                print("got table ")
                 let resolved = table!.getNameLookupResults()
                 output += resolved
             }
@@ -384,7 +383,7 @@ func getTicCrossmatch(ra: Float, dec: Float, radius: Float, result: @escaping ([
         params.setParameter(param: .input, value: targetName)
         self.setTargetId(targetId: targetName)
         let targetStart = CACurrentMediaTime()
-        self.queryMast(service: service, params: params, returnType: .xml, { success in
+        self.queryMast(service: service, params: params, returnType: .json, { success in
             guard let target = self.targets.keys.first, let table = self.targets[target] else {
                 print("Unable to find target")
                 downloadUrl([])
