@@ -34,6 +34,7 @@ public func lookupTargetByName(targetName: String, result: @escaping ([NameLooku
     self.queryMast(service: service, params: params, returnType: .json, { success in
             for target in self.targets.keys {
                 let table = self.targets[target]
+                print("got table ")
                 let resolved = table!.getNameLookupResults()
                 output += resolved
             }
