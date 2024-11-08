@@ -72,6 +72,7 @@ extension QValue:Codable {
             self = .string(value)
     }
 
+    
     public func encode(to encoder: Encoder) throws {
         var singleContainer = encoder.singleValueContainer()
         

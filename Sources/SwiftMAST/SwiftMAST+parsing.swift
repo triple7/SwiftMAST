@@ -40,7 +40,7 @@ func parseJson(data: Data)->MASTTable {
         for row in payload.resolvedCoordinate! {
             let mirror = Mirror(reflecting: row)
             values.append(mirror.children.map { (name, value) in
-                return QValue(value: value as! String)
+                return QValue(value: String(describing: value))
             })
         }
     }
