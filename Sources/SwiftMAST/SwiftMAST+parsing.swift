@@ -21,11 +21,12 @@ return table
      }
 
 func parseJson(data: Data)->MASTTable {
-         let text = String(decoding: data, as: UTF8.self)
-    print("debug return\n\(text)")
+//         let text = String(decoding: data, as: UTF8.self)
+//    print("debug return\n\(text)")
          let payload = try! JSONDecoder().decode(ReturnJson.self, from: data)
 
     // either a search result or a target resolver
+    // Possibly empty tables are tolerated
     var values = [[QValue]]()
     var fields = [String]()
     if let fieldValues = payload.fields {
@@ -36,11 +37,13 @@ func parseJson(data: Data)->MASTTable {
         }
             fields = dataFields
     } else if  let resolvedCoordinate = payload.resolvedCoordinate {
-        let targetFields = Mirror(reflecting: resolvedCoordinate.first!).children.map { (name, value) in
-            return (String(describing: name!), QValue(value: String(describing: value)))
+        if !resolvedCoordinate.isEmpty {
+            let targetFields = Mirror(reflecting: resolvedCoordinate.first!).children.map { (name, value) in
+                return (String(describing: name!), QValue(value: String(describing: value)))
+            }
+            fields = targetFields.map{$0.0}
+            values.append(targetFields.map{$0.1})
         }
-        fields = targetFields.map{$0.0}
-        values.append(targetFields.map{$0.1})
         }
          return MASTTable(fields: fields, values: values)
      }
