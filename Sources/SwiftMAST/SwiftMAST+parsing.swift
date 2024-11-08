@@ -37,6 +37,7 @@ func parseJson(data: Data)->MASTTable {
         }
     } else if  let resolvedCoordinate = payload.resolvedCoordinate {
         var feilds = Mirror(reflecting: resolvedCoordinate.first!).children.map { (name, value) in
+            print("name \(name) value \(value)")
             return String(describing: name!)
         }
         print("Fields \(fields)")
