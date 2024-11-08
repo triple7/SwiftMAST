@@ -29,7 +29,9 @@ func parseJson(data: Data)->MASTTable {
     var values = [[QValue]]()
     var fields = [String]()
     if let fieldValues = payload.fields {
-        fields = Mirror(reflecting: fieldValues).children.map{ (name, value) in return name! as String}
+        fields = Mirror(reflecting: fieldValues).children.map{ (name, value) in
+            print("name \(name) value \(value)")
+            return name! as String}
         for row in payload.data! {
             values.append(fieldValues.map{row[$0.name]!})
         }
