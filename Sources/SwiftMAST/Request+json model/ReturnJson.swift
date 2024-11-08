@@ -170,11 +170,12 @@ public struct NameLookupJson:Codable {
     public let dec:Float
     public let resolver:String
     public let canonicalName:String
-    public var radius:Float?
+    public let radius:Float
     public let objectType:String
     public let searchRadius:Float
     public let searchString:String
 
+    
     public init(data: [QValue], fields: [String]) {
         if let raIndex = fields.firstIndex(of: "ra"), let raValue = data[raIndex].value as? Float {
             ra = raValue
@@ -375,15 +376,37 @@ extension CoamResult {
 }
 
 struct LookupSearchResult: Codable {
-let searchString: String
-let resolver: String
-let cached: Bool
-let resolverTime: Int
-let searchRadius: Double
-let canonicalName: String
-let ra: Double
-let decl: Double
-let radius: Double
-let objectType: String
+    let searchString: String
+    let resolver: String
+    let cached: Bool
+    let resolverTime: Int
+    let searchRadius: Double
+    let canonicalName: String
+    let ra: Double
+    let decl: Double
+    var radius: Double?
+    let objectType: String
+
+    enum CodingKeys: String, CodingKey {
+        case searchString, resolver, cached, resolverTime, searchRadius, canonicalName, ra, decl, radius, objectType
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        
+        searchString = try container.decode(String.self, forKey: .searchString)
+        resolver = try container.decode(String.self, forKey: .resolver)
+        cached = try container.decode(Bool.self, forKey: .cached)
+        resolverTime = try container.decode(Int.self, forKey: .resolverTime)
+        searchRadius = try container.decode(Double.self, forKey: .searchRadius)
+        canonicalName = try container.decode(String.self, forKey: .canonicalName)
+        ra = try container.decode(Double.self, forKey: .ra)
+        decl = try container.decode(Double.self, forKey: .decl)
+        objectType = try container.decode(String.self, forKey: .objectType)
+        
+        // Decode optional property
+        radius = try container.decodeIfPresent(Double.self, forKey: .radius)
+    }
+    
 }
 
