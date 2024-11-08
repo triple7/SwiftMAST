@@ -170,7 +170,7 @@ public struct NameLookupJson:Codable {
     public let dec:Float
     public let resolver:String
     public let canonicalName:String
-    public let radius:Float
+    public var radius:Float?
     public let objectType:String
     public let searchRadius:Float
     public let searchString:String

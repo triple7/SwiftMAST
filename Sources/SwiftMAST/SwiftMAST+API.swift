@@ -362,7 +362,7 @@ func getTicCrossmatch(ra: Float, dec: Float, radius: Float, result: @escaping ([
             self.setTargetAssets(target: target, targetInfo: resolved)
 
             // Get the preview
-            self.getMASTPreviewImage(targetName: targetName, ra: resolved.ra, dec: resolved.dec, radius: resolved.radius, pageSize: pageSize, token: token) { urls in
+            self.getMASTPreviewImage(targetName: targetName, ra: resolved.ra, dec: resolved.dec, radius: resolved.radius ?? 0.001, pageSize: pageSize, token: token) { urls in
                 completion(urls)
             }
             
@@ -401,7 +401,7 @@ func getTicCrossmatch(ra: Float, dec: Float, radius: Float, result: @escaping ([
             let dec = resolved.dec
             // radius is used to get pixel cutout
             // 0.25 arcsec / pixel
-            let radius = resolved.radius
+            let radius = resolved.radius ?? 0.025
             let pixelSize = Int(radius/0.25)
             print("\(target) radius \(radius) pixels \(pixelSize)")
             self.getPS1ImageList(targetName: target, ra: ra, dec: dec, imageSize: imageSize, completion: { filesTable in
@@ -461,7 +461,7 @@ func getTicCrossmatch(ra: Float, dec: Float, radius: Float, result: @escaping ([
 
             // Get the images
             // And save them in the targets dictionary for future downloads if required
-            self.getScienceImageProducts(targetName: targetName, ra: resolved.ra, dec: resolved.dec, radius: resolved.radius, productType: .Jpeg, waveBand: waveBand, token: token) { urls in
+            self.getScienceImageProducts(targetName: targetName, ra: resolved.ra, dec: resolved.dec, radius: resolved.radius ?? 0.0025, productType: .Jpeg, waveBand: waveBand, token: token) { urls in
                 completion(urls)
             }
             
