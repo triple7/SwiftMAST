@@ -29,25 +29,19 @@ func parseJson(data: Data)->MASTTable {
     var values = [[QValue]]()
     var fields = [String]()
     if let fieldValues = payload.fields {
-        fields = Mirror(reflecting: fieldValues).children.map{ (name, value) in
-            print("name \(name) value \(value)")
-            return name! as String}
+        let dataFields = Mirror(reflecting: fieldValues).children.map{ (name, value) in
+            return String(describing: name!) }
         for row in payload.data! {
             values.append(fieldValues.map{row[$0.name]!})
         }
+            fields = dataFields
     } else if  let resolvedCoordinate = payload.resolvedCoordinate {
-        let test = Mirror(reflecting: resolvedCoordinate.first!).children.map { (name, value) in
-            print("name \(name) value \(value)")
-            return String(describing: name!)
+        let targetFields = Mirror(reflecting: resolvedCoordinate.first!).children.map { (name, value) in
+            return (String(describing: name!), QValue(value: String(describing: value)))
         }
-        print("test \(test)")
-        for row in payload.resolvedCoordinate! {
-            let mirror = Mirror(reflecting: row)
-            values.append(mirror.children.map { (name, value) in
-                return QValue(value: String(describing: value))
-            })
+        fields = targetFields.map{$0.0}
+        values.append(targetFields.map{$0.1})
         }
-    }
                 
          return MASTTable(fields: fields, values: values)
      }
