@@ -30,12 +30,10 @@ func parseJson(data: Data)->MASTTable {
     var values = [[QValue]]()
     var fields = [String]()
     if let fieldValues = payload.fields {
-        let dataFields = Mirror(reflecting: fieldValues).children.map{ (name, value) in
-            return String(describing: name!) }
+        fields = fieldValues.map{$0.name}
         for row in payload.data! {
             values.append(fieldValues.map{row[$0.name]!})
         }
-            fields = dataFields
     } else if  let resolvedCoordinate = payload.resolvedCoordinate {
         if !resolvedCoordinate.isEmpty {
             let targetFields = Mirror(reflecting: resolvedCoordinate.first!).children.map { (name, value) in
