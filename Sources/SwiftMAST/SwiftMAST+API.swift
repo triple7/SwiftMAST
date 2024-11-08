@@ -349,7 +349,7 @@ func getTicCrossmatch(ra: Float, dec: Float, radius: Float, result: @escaping ([
         params.setParameter(param: .input, value: targetName)
         self.setTargetId(targetId: targetName)
         let targetStart = CACurrentMediaTime()
-        self.queryMast(service: service, params: params, returnType: .xml, { success in
+        self.queryMast(service: service, params: params, returnType: .json, { success in
             guard let target = self.targets.keys.first, let table = self.targets[target] else {
                 print("downloadpreview: Unable to find target")
                 completion(nil)
@@ -447,7 +447,7 @@ func getTicCrossmatch(ra: Float, dec: Float, radius: Float, result: @escaping ([
         params.setParameter(param: .input, value: targetName)
         self.setTargetId(targetId: targetName)
         let targetStart = CACurrentMediaTime()
-        self.queryMast(service: service, params: params, returnType: .xml, { success in
+        self.queryMast(service: service, params: params, returnType: .json, { success in
             guard let target = self.targets.keys.first, let table = self.targets[target] else {
                 print("Unable to find target")
                 completion([])
