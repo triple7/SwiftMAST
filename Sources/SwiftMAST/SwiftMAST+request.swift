@@ -64,39 +64,25 @@ func queryMast(service: Service, params: MASTJson, returnType: APIReturnType, _ 
         let session = URLSession(configuration: configuration, delegate: self, delegateQueue: queue)
 
         let task = session.dataTask(with: url) { [weak self] data, response, error in
-            guard error == nil else {
-                self?.sysLog.append(MASTSyslog(log: .RequestError, message: error!.localizedDescription))
-closure(false)
+            
+            if self!.requestIsValid(error: error, response: response) {
+                var table:MASTTable!
+                switch returnType {
+                case .json:
+                    table = self?.parseJson(data: data!)
+                case .xml:
+                    table = self?.parseXml(data: data!)
+                default:
+                    self?.sysLog.append(MASTSyslog(log: .RequestError, message: "Return type not recognized or not yet available"))
+                    closure(false)
+                    return
+                }
+                
+                self?.targets[self!.currentTargetId!] = table
+                closure(true)
                 return
             }
-            guard let response = response as? HTTPURLResponse else {
-                self?.sysLog.append(MASTSyslog(log: .RequestError, message: "response timed out"))
-                closure(false)
-                return
-            }
-            if response.statusCode != 200 {
-                let error = NSError(domain: "com.error", code: response.statusCode)
-                self?.sysLog.append(MASTSyslog(log: .RequestError, message: error.localizedDescription))
-                closure(false)
-                return
-            }
-
-            var table:MASTTable!
-            switch returnType {
-            case .json:
-                table = self?.parseJson(data: data!)
-            case .xml:
-                 table = self?.parseXml(data: data!)
-            default:
-                self?.sysLog.append(MASTSyslog(log: .RequestError, message: "Return type not recognized or not yet available"))
             closure(false)
-                return
-            }
-
-            self?.targets[self!.currentTargetId!] = table
-            self?.sysLog.append(MASTSyslog(log: .OK, message: "request successful"))
-        closure(true)
-            return
     }
     task.resume()
     }

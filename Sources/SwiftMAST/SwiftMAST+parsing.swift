@@ -32,9 +32,7 @@ func parseJson(data: Data)->MASTTable {
     var fields = [String]()
     if let fieldValues = payload.fields {
         fields = fieldValues.map{$0.name}
-        print("fields are: \(fields)")
         for row in payload.data! {
-            print(row)
             values.append(fieldValues.map{row[$0.name]!})
         }
     } else if  let resolvedCoordinate = payload.resolvedCoordinate {

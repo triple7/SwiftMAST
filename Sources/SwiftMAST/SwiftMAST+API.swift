@@ -48,6 +48,8 @@ public func lookupTargetByName(targetName: String, result: @escaping ([NameLooku
         let service = Service.Mast_Missions_List
         let params = service.serviceRequest(requestType: .missionList)
         var output:[String] = []
+        // Here target is not some object but jus a mission list
+        self.setTargetId(targetId: "missions")
         self.queryMast(service: service, params: params, returnType: .json, { success in
             for target in self.targets.keys {
                 let table = self.targets[target]
