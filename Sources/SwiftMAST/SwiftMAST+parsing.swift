@@ -25,13 +25,16 @@ func parseJson(data: Data)->MASTTable {
     print("debug return\n\(text)")
          let payload = try! JSONDecoder().decode(ReturnJson.self, from: data)
 
-    // either a search result or a target resolver
+    // either a json is built as
+    // coam results | resolver | missions list
     // Possibly empty tables are tolerated
     var values = [[QValue]]()
     var fields = [String]()
     if let fieldValues = payload.fields {
         fields = fieldValues.map{$0.name}
+        print("fields are: \(fields)")
         for row in payload.data! {
+            print(row)
             values.append(fieldValues.map{row[$0.name]!})
         }
     } else if  let resolvedCoordinate = payload.resolvedCoordinate {
