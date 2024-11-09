@@ -189,7 +189,7 @@ public func getFilteredConeSearch(ra: Float, dec: Float, radius: Float=0.2, filt
      * waveband: String (comma separated single string
      * returnFilters:[FilterResult]
      */
-    public func getScienceImageProducts(targetName: String, ra: Float, dec: Float, radius: Float, productType: ProductType = .Fits, waveBand: String, preview: Bool = true, token: String?, result: @escaping ([URL]) -> Void) {
+    public func getScienceImageProducts(targetName: String, ra: Float, dec: Float, radius: Float, productType: ProductType = .Fits, waveBand: String, token: String?, result: @escaping ([URL]) -> Void) {
         
     let service = Service.Mast_Caom_Filtered_Position
     var params = service.serviceRequest(requestType: .advancedSearch)
