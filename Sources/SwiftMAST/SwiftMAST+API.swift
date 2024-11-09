@@ -202,7 +202,6 @@ public func getFilteredConeSearch(ra: Float, dec: Float, radius: Float=0.2, filt
 
         let start = CACurrentMediaTime()
         self.queryMast(service: service, params: params, returnType: .json, { success in
-
             let end = CACurrentMediaTime()
             print("target products downloaded in \(end - start)")
             // we are looking for the targetId set previously
@@ -215,30 +214,6 @@ public func getFilteredConeSearch(ra: Float, dec: Float, radius: Float=0.2, filt
                 //                print(c)
                 //            }
                 
-                if preview {
-                    // Just save the first image
-                    
-                    let mastDownloadProducts = coamResults.filter{!(productType == .Fits ? $0.dataURL : $0.jpegURL).contains("http")}
-                    
-                    print("coam Result count: fits \(mastDownloadProducts.count)")
-                    let jpegUrls = coamResults.filter{$0.jpegURL != ""}
-                    var testJpeg:[CoamResult] = []
-                    for result in coamResults {
-                        if result.jpegURL != "" {
-                            print("got jpeg: \(result.jpegURL)")
-                            testJpeg.append(result)
-                        }
-                    }
-                    print("jpegURL count \(jpegUrls.count) testJpeg count \(testJpeg.count)")
-                    self.getDataproducts(targetName: targetName,service: .Download_file, products: [mastDownloadProducts.first!], productType: productType, token: token) { fitsDataResults in
-                        
-                        print("Downloaded URLs")
-                        result(fitsDataResults.map{$0.url})
-                    }
-                    
-                } else {
-                    
-                    // non preview, get everything
                     let uniqueFilters = table.getUniqueString(for: Coam.filters.id)
                     print("getScienceImageProducts: \(uniqueFilters.count) unique filters")
                     
@@ -278,7 +253,6 @@ public func getFilteredConeSearch(ra: Float, dec: Float, radius: Float=0.2, filt
                             result(secondaryUrls + directUrls)
                         }
                     }
-                }
     })
     }
 
@@ -344,14 +318,11 @@ func getTicCrossmatch(ra: Float, dec: Float, radius: Float, result: @escaping ([
      */
     public func downloadPreview(targetName: String, pageSize: Int = 30, token: String? = nil, completion: @escaping (URL?) -> Void ) {
         print("downloadpreview: \(targetName)")
-        let service = Service.Mast_Name_Lookup
-        var params = service.serviceRequest(requestType: .lookup)
-        params.setParameter(param: .input, value: targetName)
         self.setTargetId(targetId: targetName)
         let targetStart = CACurrentMediaTime()
-        self.queryMast(service: service, params: params, returnType: .json, { success in
-            guard let target = self.targets.keys.first, let table = self.targets[target] else {
-                print("downloadpreview: Unable to find target")
+        self.lookupTargetByName(targetName: targetName, result: { targetLookup in
+            guard !targetLookup.isEmpty, let table = self.targets[targetName] else {
+                print("downloadpreview: Unable to resolve \(targetName)")
                 completion(nil)
                 return
             }
@@ -359,10 +330,10 @@ func getTicCrossmatch(ra: Float, dec: Float, radius: Float, result: @escaping ([
             print("downloadpreview: target found in \(targetEnd - targetStart)")
             let resolved = table.getNameLookupResults().first!
             // Save the initial target info
-            self.setTargetAssets(target: target, targetInfo: resolved)
+            self.setTargetAssets(target: targetName, targetInfo: resolved)
 
             // Get the preview
-            self.getMASTPreviewImage(targetName: targetName, ra: resolved.ra, dec: resolved.dec, radius: resolved.radius ?? 0.001, pageSize: pageSize, token: token) { urls in
+            self.getMASTPreviewImage(targetName: targetName, ra: resolved.ra, dec: resolved.dec, radius: resolved.radius, pageSize: pageSize, token: token) { urls in
                 completion(urls)
             }
             
@@ -378,14 +349,11 @@ func getTicCrossmatch(ra: Float, dec: Float, radius: Float, result: @escaping ([
     public func getPS1ImagePreview(targetName: String, imageSize: Int = 8000, downloadUrl: @escaping ([URL]) -> Void) {
         print("getPS1ImagePreview: \(targetName)")
 
-        let service = Service.Mast_Name_Lookup
-        var params = service.serviceRequest(requestType: .lookup)
-        params.setParameter(param: .input, value: targetName)
         self.setTargetId(targetId: targetName)
         let targetStart = CACurrentMediaTime()
-        self.queryMast(service: service, params: params, returnType: .json, { success in
-            guard let target = self.targets.keys.first, let table = self.targets[target] else {
-                print("Unable to find target")
+        self.lookupTargetByName(targetName: targetName, result: { targetLookup in
+            guard !targetLookup.isEmpty, let table = self.targets[targetName] else {
+                print("Unable to resolve \(targetName)")
                 downloadUrl([])
                 return
             }
@@ -393,18 +361,17 @@ func getTicCrossmatch(ra: Float, dec: Float, radius: Float, result: @escaping ([
             print("getPS1ImagePreview: target found in \(targetEnd - targetStart)")
 
             let resolved = table.getNameLookupResults().first!
-            print(resolved)
             // Save the initial target info
-            self.setTargetAssets(target: target, targetInfo: resolved)
+            self.setTargetAssets(target: targetName, targetInfo: resolved)
             
             let ra = resolved.ra
             let dec = resolved.dec
             // radius is used to get pixel cutout
             // 0.25 arcsec / pixel
-            let radius = resolved.radius ?? 0.025
+            let radius = resolved.radius
             let pixelSize = Int(radius/0.25)
-            print("\(target) radius \(radius) pixels \(pixelSize)")
-            self.getPS1ImageList(targetName: target, ra: ra, dec: dec, imageSize: imageSize, completion: { filesTable in
+            print("\(targetName) radius \(radius) pixels \(pixelSize)")
+            self.getPS1ImageList(targetName: targetName, ra: ra, dec: dec, imageSize: imageSize, completion: { filesTable in
                 
                 guard let filesTable = filesTable else {
                     downloadUrl([])
@@ -427,7 +394,7 @@ func getTicCrossmatch(ra: Float, dec: Float, radius: Float, result: @escaping ([
                             let url = ps1Request.getFitsColorImageUrl(fileNames: fileNames)
                 print(url)
                             
-                self.downloadPS1Cutouts( targetName: target, urls: [url], completion: { jpgUrls in
+                self.downloadPS1Cutouts( targetName: targetName, urls: [url], completion: { jpgUrls in
                     downloadUrl(jpgUrls)
                     
                 })
@@ -442,22 +409,17 @@ func getTicCrossmatch(ra: Float, dec: Float, radius: Float, result: @escaping ([
      */
     public func downloadImagery(targetName: String, waveBand: String = "optical", token: String? = nil, completion: @escaping ([URL]) -> Void ) {
         print("downloadImagery: \(targetName)")
-        let service = Service.Mast_Name_Lookup
-        var params = service.serviceRequest(requestType: .lookup)
-        params.setParameter(param: .input, value: targetName)
-        self.setTargetId(targetId: targetName)
         let targetStart = CACurrentMediaTime()
-        self.queryMast(service: service, params: params, returnType: .json, { success in
-            guard let target = self.targets.keys.first, let table = self.targets[target] else {
-                print("Unable to find target")
-                completion([])
+        self.lookupTargetByName(targetName: targetName, result: { targetLookup in
+            guard !targetLookup.isEmpty, let table = self.targets[targetName] else {
+                print("Could not resolve \(targetName)")
                 return
             }
-      let targetEnd = CACurrentMediaTime()
+                                let targetEnd = CACurrentMediaTime()
             print("target found in \(targetEnd - targetStart)")
             let resolved = table.getNameLookupResults().first!
             // Save the initial target info
-            self.setTargetAssets(target: target, targetInfo: resolved)
+            self.setTargetAssets(target: targetName, targetInfo: resolved)
 
             // Get the images
             // And save them in the targets dictionary for future downloads if required

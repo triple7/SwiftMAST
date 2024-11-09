@@ -57,6 +57,17 @@ public class MASTTable:NSObject {
         return [QValue](repeating: QValue(value: ""), count: self.values.count)
     }
     
+    /** gets rows with a given key having a given value
+     Parameters
+     key: String
+     value: String
+     */
+    public func getRows( for key: String, with value: String) -> [QValue] {
+        let rows = getValues(for: key)
+        let qValue = QValue(value: value)
+        return rows.filter{$0 == qValue}
+    }
+    
     /** Gets string values for a given field
      Parameters
      field: String
