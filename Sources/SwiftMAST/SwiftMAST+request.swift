@@ -152,6 +152,7 @@ closure(false)
         let serialQueue = DispatchQueue(label: "MASTDataproductsQueue")
         
         var remainingProducts = products.filter { (productType == .Fits ?  $0.dataURL : $0.jpegURL) != ""}
+        print("Remaining products: \(remainingProducts)")
         var fitsData = [FitsData]()
         
         
