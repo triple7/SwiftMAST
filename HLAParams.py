@@ -21,7 +21,6 @@ def run():
     rows = rows[1:]
     output = {}
     for r in rows:
-        breakpoint()
         cols = r.find_all('td')
         parameter = f"let {cols[0].text}:"
         desc = cols[1].text
