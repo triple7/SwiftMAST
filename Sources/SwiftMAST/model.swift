@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import SwiftQValue
 
 public struct FitsData:Codable {
     let metadata:[String: QValue]

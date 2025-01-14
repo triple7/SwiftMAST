@@ -12,6 +12,7 @@ import FITSKit
 import CoreGraphics
 import ImageIO
 import UniformTypeIdentifiers
+import SwiftQValue
 
 
 extension SwiftMAST {

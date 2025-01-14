@@ -28,6 +28,15 @@
       }
     },
     {
+      "identity" : "swiftqvalue",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/triple7/SwiftQValue",
+      "state" : {
+        "branch" : "main",
+        "revision" : "12d465537199544c00e4411fc2c21fa2124ede9d"
+      }
+    },
+    {
       "identity" : "zip",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/marmelroy/Zip.git",

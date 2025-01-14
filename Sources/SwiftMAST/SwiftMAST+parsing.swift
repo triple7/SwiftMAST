@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import SwiftQValue
 
  public extension SwiftMAST {
 /** MAST request return type parsing functions

@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import SwiftQValue
 
 public class MASTTable:NSObject {
     /** Initial key value pair return type
