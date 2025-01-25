@@ -425,7 +425,7 @@ func getTicCrossmatch(ra: Float, dec: Float, radius: Float, result: @escaping ([
 
             // Get the images
             // And save them in the targets dictionary for future downloads if required
-            self.getScienceImageProducts(targetName: targetName, ra: resolved.ra, dec: resolved.dec, radius: resolved.radius ?? 0.0025, productType: .Jpeg, waveBand: waveBand, token: token) { urls in
+            self.getScienceImageProducts(targetName: targetName, ra: resolved.ra, dec: resolved.dec, radius: resolved.radius, productType: .Jpeg, waveBand: waveBand, token: token) { urls in
                 completion(urls)
             }
             

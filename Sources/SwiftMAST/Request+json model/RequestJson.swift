@@ -66,8 +66,6 @@ public struct MASTJson:Encodable, CustomStringConvertible {
     }
 
     public mutating func setParameter( param: MAP, value: Any) {
-        print("set parameter \(param) value \(value)")
-        print("internal params: \(self.params)")
         self.params?.setParameter(parameter: param, value: value)
     }
     

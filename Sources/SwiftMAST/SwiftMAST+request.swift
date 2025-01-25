@@ -338,7 +338,7 @@ func queryMast(service: Service, params: MASTJson, returnType: APIReturnType, _ 
                 do {
                     let decoder = JSONDecoder()
                     let nedResolver = try decoder.decode(NedResult.self, from: data!)
-                    let text = String(data: data!, encoding: .utf8)
+//                    let text = String(data: data!, encoding: .utf8)
                     completion(nedResolver)
                 } catch let error  {
                     print("issue with resolver: \(error)")
@@ -350,6 +350,48 @@ func queryMast(service: Service, params: MASTJson, returnType: APIReturnType, _ 
             completion(nil)
         }.resume()
     }
-    
+
+    func queryMASTTap(selectQuery: String? = nil, table: MASTTap, fields: [String], parameters: [MASTTapParameter], format: APIReturnType = .json, token: String? = nil, closure: @escaping (MASTTAPResponse)-> Void) {
+        /** Gets a TAP (Table Access protocol) result
+         Params:
+         table: the table to query
+         fields: which fields to use
+         params: the WHERe clause elements
+         format: what format to return
+         token: the ADS API token
+         closure: the resulting json data
+         */
+        var mASTTapRequest:MASTTapRequest
+        if let _ = selectQuery {
+            mASTTapRequest = MASTTapRequest()
+        } else {
+            mASTTapRequest = MASTTapRequest(table: table, fields: fields, parameters: parameters, format: format)
+        }
+        let configuration = URLSessionConfiguration.ephemeral
+        let queue = OperationQueue.main
+        let session = URLSession(configuration: configuration, delegate: self, delegateQueue: queue)
+        var request = URLRequest(url: mASTTapRequest.getUrl(selectQuery))
+        request.httpMethod = "POST"
+        if token != nil {
+            request.addValue("Bearer \(token!)", forHTTPHeaderField: "Authorization")
+        }
+
+        print(mASTTapRequest.getUrl(selectQuery).absoluteString)
+
+        let task = session.dataTask(with: request) { [weak self] data, response, error in
+            
+            if self!.requestIsValid(error: error, response: response) {
+//                print(String(data: data!, encoding: .utf8))
+                let result = try! JSONDecoder().decode(MASTTAPResponse.self, from: data!)
+
+                self?.sysLog.append(MASTSyslog(log: .OK, message: "query \(mASTTapRequest.getSelectQuery()) result downloaded"))
+                closure(result)
+                return
+
+            }
+        }
+        task.resume()
+    }
+
 }
 
