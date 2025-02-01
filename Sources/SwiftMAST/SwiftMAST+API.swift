@@ -396,6 +396,7 @@ func getTicCrossmatch(ra: Float, dec: Float, radius: Float, result: @escaping ([
                             let url = ps1Request.getFitsColorImageUrl(fileNames: fileNames)
                             
                 self.downloadPS1Cutouts( targetName: targetName, urls: [url], completion: { jpgUrls in
+                    print("Download complete: adding files to documents folder")
                     downloadUrl(jpgUrls)
                     
                 })
