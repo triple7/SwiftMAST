@@ -130,7 +130,7 @@ public func getFilteredConeSearch(ra: Float, dec: Float, radius: Float=0.2, filt
      * size: squared image pixel size (0.25 arsec/pixel)
      */
     public func getPS1ImageList(targetName: String, ra: Float, dec: Float, imageSize: Int = 8000, completion: @escaping (MASTTable?) -> Void) {
-        print("getPS1ImageList: \(targetName)")
+        print("getPS1ImageList: \(targetName) imagesize: \(imageSize)")
 
         let ps1Request = PS1Request(ra: ra, dec: dec, size: imageSize)
         queryPS1(ps1Request: ps1Request, { success in
@@ -392,9 +392,8 @@ func getTicCrossmatch(ra: Float, dec: Float, radius: Float, result: @escaping ([
                             fileNames = filterList.map{fileNames[$0]}
                 
                 // Form a request URL
-                let ps1Request = PS1Request(ra: ra, dec: dec)
+                let ps1Request = PS1Request(ra: ra, dec: dec, size: imageSize)
                             let url = ps1Request.getFitsColorImageUrl(fileNames: fileNames)
-                print(url)
                             
                 self.downloadPS1Cutouts( targetName: targetName, urls: [url], completion: { jpgUrls in
                     downloadUrl(jpgUrls)
