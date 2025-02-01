@@ -274,14 +274,14 @@ func queryMast(service: Service, params: MASTJson, returnType: APIReturnType, _ 
         func downloadNextUrl() {
             guard !remainingUrls.isEmpty else {
                 // All urls have been downloaded, call the completion handler
+                print("All URLS downloaded")
                 completion(urls)
                 return
             }
-        }
             
             let url = remainingUrls.removeFirst()
             let request = URLRequest(url: url)
-    
+            
             let operation = MASTDirectDownloadOperation(session: URLSession.shared, request: request, completionHandler: { (tempUrl, response, error) in
                 if self.requestIsValid(error: error, response: response, url: tempUrl) {
                     print("downloadFitsCutout: \(tempUrl)")
@@ -299,7 +299,8 @@ func queryMast(service: Service, params: MASTJson, returnType: APIReturnType, _ 
             serialQueue.async {
                 operation.start()
             }
-            
+        }
+        
             // Start the download process by calling the recursive function
             serialQueue.async {
                 downloadNextUrl()
