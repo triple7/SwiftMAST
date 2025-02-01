@@ -21,7 +21,7 @@ public extension SwiftMAST {
     private func requestIsValid(error: Error?, response: URLResponse?, url: URL? = nil) -> Bool {
         var gotError = false
         if error != nil {
-            print(error!.localizedDescription)
+            print("requestIsValid: \(error!.localizedDescription)")
             self.sysLog.append(MASTSyslog(log: .RequestError, message: error!.localizedDescription))
             gotError = true
         }
@@ -44,6 +44,9 @@ public extension SwiftMAST {
         if !gotError {
             let message = url != nil ? url!.absoluteString : "data"
             self.sysLog.append(MASTSyslog(log: .OK, message: "\(message) downloaded"))
+        }
+        for log in self.sysLog {
+            print(log)
         }
         return !gotError
     }
@@ -261,6 +264,7 @@ func queryMast(service: Service, params: MASTJson, returnType: APIReturnType, _ 
      metadata files from all filters
      */
     func downloadPS1Cutouts( targetName: String, urls: [URL], colored: Bool = true, completion: @escaping ([URL])->Void ) {
+        print("downloadPS1Cutouts: \(targetName)")
         let serialQueue = DispatchQueue(label: "downloadUrlsQueue")
         
         
@@ -280,6 +284,7 @@ func queryMast(service: Service, params: MASTJson, returnType: APIReturnType, _ 
     
             let operation = MASTDirectDownloadOperation(session: URLSession.shared, request: request, completionHandler: { (tempUrl, response, error) in
                 if self.requestIsValid(error: error, response: response, url: tempUrl) {
+                    print("downloadFitsCutout: \(tempUrl)")
                     let url = self.saveImageFile(target: targetName, collection: "PS1", filter: "OPTICAL", productType: .Jpeg, url: tempUrl!)
                     if let url = url {
                         urls.append(url)
