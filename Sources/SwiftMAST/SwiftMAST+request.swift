@@ -378,14 +378,13 @@ func queryMast(service: Service, params: MASTJson, returnType: APIReturnType, _ 
         let session = URLSession(configuration: configuration, delegate: self, delegateQueue: queue)
         var request = URLRequest(url: mASTTapRequest.getUrl(selectQuery))
         request.httpMethod = "POST"
-        request.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
 
         
         if token != nil {
             request.addValue("Bearer \(token!)", forHTTPHeaderField: "Authorization")
         }
 
-        print(mASTTapRequest.getUrl(selectQuery).absoluteString)
+        print(request.url?.absoluteString)
 
         let task = session.dataTask(with: request) { [weak self] data, response, error in
             print("error: \(error)")
