@@ -385,7 +385,8 @@ func queryMast(service: Service, params: MASTJson, returnType: APIReturnType, _ 
         print(mASTTapRequest.getUrl(selectQuery).absoluteString)
 
         let task = session.dataTask(with: request) { [weak self] data, response, error in
-            
+            print("error: \(error)")
+            print("response: \(response)")
             if self!.requestIsValid(error: error, response: response) {
 //                print(String(data: data!, encoding: .utf8))
                 let result = try! JSONDecoder().decode(MASTTAPResponse.self, from: data!)
