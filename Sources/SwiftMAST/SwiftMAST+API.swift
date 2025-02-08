@@ -431,5 +431,16 @@ func getTicCrossmatch(ra: Float, dec: Float, radius: Float, result: @escaping ([
             
     })
                        }
+
+    
+    /** Make a MAST TAP request to get the current TESS Input Catalog entries
+     */
+    public func getTIC( completion: @escaping (MASTTAPResponse)-> Void) {
+        let selectQuery = "SELECT id, hip FROM dbo.catalogrecord WHERE hip IS NOT NULL"
+        queryMASTTap(selectQuery: selectQuery, table: .dbo_catalog_record, fields: [], parameters: [], format: .json, closure: { response in
+            completion(response)
+        })
+        
+    }
     
 }
