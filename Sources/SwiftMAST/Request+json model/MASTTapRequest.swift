@@ -7,6 +7,19 @@
 
 import Foundation
 
+public struct MASTTapRequestBody:Codable {
+    let query:String
+    let request:String
+    let lang:String
+    let format:String
+    
+    public init(query: String) {
+        self.query = query
+        self.request = "doQuery"
+        self.lang = "ADQL-2.0"
+        self.format = "json"
+    }
+}
 
 public struct MASTTapRequest {
     /** MAST TAP request formatter
@@ -52,7 +65,11 @@ private let APIUrl = "https://mast.stsci.edu/vo-tap/api/v0.1/tic/sync"
         ]
         return url!.url!
     }
-    
+
+    public func getBaseUrl() -> URL {
+        return URL(string: self.APIUrl)!
+    }
+
     
 }
 

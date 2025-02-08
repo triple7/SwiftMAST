@@ -376,8 +376,12 @@ func queryMast(service: Service, params: MASTJson, returnType: APIReturnType, _ 
         let configuration = URLSessionConfiguration.ephemeral
         let queue = OperationQueue.main
         let session = URLSession(configuration: configuration, delegate: self, delegateQueue: queue)
-        var request = URLRequest(url: mASTTapRequest.getUrl(selectQuery))
+        var request = URLRequest(url: mASTTapRequest.getBaseUrl())
         request.httpMethod = "POST"
+        let requestBody = MASTTapRequestBody(query: mASTTapRequest.getSelectQuery())
+        let jsonData = try! JSONEncoder().encode(requestBody)
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.httpBody = jsonData
         if token != nil {
             request.addValue("Bearer \(token!)", forHTTPHeaderField: "Authorization")
         }
