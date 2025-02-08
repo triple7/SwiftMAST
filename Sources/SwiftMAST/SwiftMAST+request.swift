@@ -378,10 +378,14 @@ func queryMast(service: Service, params: MASTJson, returnType: APIReturnType, _ 
         let session = URLSession(configuration: configuration, delegate: self, delegateQueue: queue)
         var request = URLRequest(url: mASTTapRequest.getBaseUrl())
         request.httpMethod = "POST"
-        let requestBody = MASTTapRequestBody(query: mASTTapRequest.getSelectQuery())
-        let jsonData = try! JSONEncoder().encode(requestBody)
+//        let requestBody = MASTTapRequestBody(query: mASTTapRequest.getSelectQuery())
+//        let jsonData = try! JSONEncoder().encode(requestBody)
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.httpBody = jsonData
+        request.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
+
+        let bodyParameters = "QUERY=\(mASTTapRequest.getSelectQuery().addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? "")&LANG=ADQL-2.0&format=json"
+        request.httpBody = bodyParameters.data(using: .utf8)
+
         if token != nil {
             request.addValue("Bearer \(token!)", forHTTPHeaderField: "Authorization")
         }
