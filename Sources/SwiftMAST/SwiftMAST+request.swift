@@ -385,6 +385,7 @@ func queryMast(service: Service, params: MASTJson, returnType: APIReturnType, _ 
         }
 
         print(request.url?.absoluteString)
+        print(request.httpBody)
 
         let task = session.dataTask(with: request) { [weak self] data, response, error in
             print("error: \(error)")
