@@ -380,7 +380,7 @@ func queryMast(service: Service, params: MASTJson, returnType: APIReturnType, _ 
         request.httpMethod = "POST"
 //        let requestBody = MASTTapRequestBody(query: mASTTapRequest.getSelectQuery())
 //        let jsonData = try! JSONEncoder().encode(requestBody)
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+//        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
 
         let bodyParameters = "QUERY=\(selectQuery!.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? "")&\"LANG\"=ADQL&format=json"
@@ -390,7 +390,6 @@ func queryMast(service: Service, params: MASTJson, returnType: APIReturnType, _ 
             request.addValue("Bearer \(token!)", forHTTPHeaderField: "Authorization")
         }
 
-        print(mASTTapRequest.getUrl(selectQuery).absoluteString)
 
         let task = session.dataTask(with: request) { [weak self] data, response, error in
             print("error: \(error)")
