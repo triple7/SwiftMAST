@@ -386,8 +386,6 @@ func queryMast(service: Service, params: MASTJson, returnType: APIReturnType, _ 
         let bodyParameters = "QUERY=\(selectQuery!.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? "")&\"LANG\"=ADQL&format=json"
         request.httpBody = bodyParameters.data(using: .utf8)
 
-        request.httpBody = bodyParameters.data(using: .utf8)
-
         if token != nil {
             request.addValue("Bearer \(token!)", forHTTPHeaderField: "Authorization")
         }
