@@ -60,8 +60,8 @@ private let APIUrl = "https://mast.stsci.edu/vo-tap/api/v0.1/tic/sync"
         url!.queryItems = [
             URLQueryItem(name: "query", value: tapQuery),
             URLQueryItem(name: "request", value: "doQuery"),
-            URLQueryItem(name: "LANG", value: "ADQL-2.0"),
-            URLQueryItem(name: "format", value: self.format.id)
+            URLQueryItem(name: "lang", value: "ADQL-2.0"),
+            URLQueryItem(name: "responseformat", value: self.format.id)
         ]
         return url!.url!
     }
