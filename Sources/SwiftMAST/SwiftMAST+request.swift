@@ -383,7 +383,10 @@ func queryMast(service: Service, params: MASTJson, returnType: APIReturnType, _ 
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
 
-        let bodyParameters = "QUERY=\(mASTTapRequest.getSelectQuery().addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? "")&LANG=ADQL-2.0&format=json"
+        let query = mASTTapRequest.getSelectQuery()
+        let bodyParameters = "QUERY=\(query.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? "")&LANG=ADQL-2.0&format=json"
+        request.httpBody = bodyParameters.data(using: .utf8)
+
         request.httpBody = bodyParameters.data(using: .utf8)
 
         if token != nil {
