@@ -376,8 +376,9 @@ func queryMast(service: Service, params: MASTJson, returnType: APIReturnType, _ 
         let configuration = URLSessionConfiguration.ephemeral
         let queue = OperationQueue.main
         let session = URLSession(configuration: configuration, delegate: self, delegateQueue: queue)
-        var request = URLRequest(url: mASTTapRequest.getUrl(selectQuery))
+        var request = URLRequest(url: mASTTapRequest.getBaseUrl())
         request.httpMethod = "POST"
+        request.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
 
         
         if token != nil {

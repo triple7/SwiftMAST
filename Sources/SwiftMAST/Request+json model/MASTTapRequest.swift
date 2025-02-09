@@ -58,8 +58,8 @@ private let APIUrl = "https://mast.stsci.edu/vo-tap/api/v0.1/tic/sync"
         var url = URLComponents(string: APIUrl)
         let tapQuery = query != nil ? query! : self.getSelectQuery()
         url!.queryItems = [
-            URLQueryItem(name: "query", value: tapQuery),
-            URLQueryItem(name: "lang", value: "ADQL-2.0"),
+            URLQueryItem(name: "QUERY", value: tapQuery),
+            URLQueryItem(name: "LANG", value: "ADQL-2.0"),
             URLQueryItem(name: "responseformat", value: self.format.id)
         ]
         return url!.url!
