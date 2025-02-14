@@ -284,7 +284,7 @@ func queryMast(service: Service, params: MASTJson, returnType: APIReturnType, _ 
             
             let operation = MASTDirectDownloadOperation(session: URLSession.shared, request: request, completionHandler: { (tempUrl, response, error) in
                 if self.requestIsValid(error: error, response: response, url: tempUrl) {
-                    print("downloadFitsCutout: \(tempUrl)")
+//                    print("downloadFitsCutout: \(tempUrl)")
                     let url = self.saveImageFile(target: targetName, collection: "PS1", filter: "OPTICAL", productType: .Jpeg, url: tempUrl!)
                     if let url = url {
                         urls.append(url)
@@ -405,5 +405,6 @@ func queryMast(service: Service, params: MASTJson, returnType: APIReturnType, _ 
         task.resume()
     }
 
+    
 }
 
