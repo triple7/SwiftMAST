@@ -447,7 +447,7 @@ func getTicCrossmatch(ra: Float, dec: Float, radius: Float, result: @escaping ([
     /** Make a MAST TAP request to ge get tic and hip values given a position and radius
      */
     public func getTICByPos(ra: Double, dec: Double, radius: Double, completion: @escaping (MASTTAPResponse)-> Void) {
-        let selectQuery = "SELECT TOP 50000 id, hip FROM dbo.catalogrecord WHERE 1 = CONTAINS(POINT('ICRS', ra, dec),CIRCLE('ICRS', \(ra),\(dec),\(radius))"
+        let selectQuery = "SELECT TOP 50000 id, hip FROM dbo.catalogrecord WHERE 1 = CONTAINS(POINT('ICRS', ra, dec),CIRCLE('ICRS', \(ra),\(dec),\(radius)))"
         
         queryMASTTap(selectQuery: selectQuery, table: .dbo_catalog_record, fields: [], parameters: [], format: .json, closure: { response in
             completion(response)
