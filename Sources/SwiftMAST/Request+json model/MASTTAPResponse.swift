@@ -8,7 +8,7 @@
 import SwiftQValue
 
 public struct MASTTAPResponse: Codable {
-    public var metadata:[[String: String]]
+    public var info:[[String: QValue]]
     public var data: QObject
 }
 
