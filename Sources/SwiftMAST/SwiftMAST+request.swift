@@ -390,8 +390,6 @@ func queryMast(service: Service, params: MASTJson, returnType: APIReturnType, _ 
             request.addValue("Bearer \(token!)", forHTTPHeaderField: "Authorization")
         }
 
-        print(request.httpBody)
-
         let task = session.dataTask(with: request) { [weak self] data, response, error in
             print("error: \(error)")
             print("response: \(response)")
