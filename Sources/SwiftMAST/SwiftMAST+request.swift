@@ -382,6 +382,7 @@ func queryMast(service: Service, params: MASTJson, returnType: APIReturnType, _ 
         
         let bodyParameters = "QUERY=\(selectQuery!.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? "")&LANG=ADQL-2.0&responseformat=json"
 
+        print(bodyParameters)
         request.httpBody = bodyParameters.data(using: .utf8)
 
 
