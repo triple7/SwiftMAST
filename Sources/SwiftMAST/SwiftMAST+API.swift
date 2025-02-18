@@ -463,9 +463,7 @@ func getTicCrossmatch(ra: Float, dec: Float, radius: Float, result: @escaping ([
      */
     public func getTICByHipList(hips: [Int], completion: @escaping (MASTTAPResponse)-> Void) {
 
-        let joined = hips.map{String($0)}.joined(separator: ",")
-        
-        let selectQuery = "SELECT TOP 100000 id,HIP FROM dbo.catalogrecord WHERE hip IN (\(joined)"
+        let selectQuery = "SELECT TOP 100000 id,HIP FROM dbo.catalogrecord WHERE hip > \(hips[0]) and hip < \(hips[1]) "
         
 
         queryMASTTap(selectQuery: selectQuery, table: .dbo_catalog_record, fields: [], parameters: [], format: .json, closure: { response in
