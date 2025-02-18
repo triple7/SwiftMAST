@@ -450,7 +450,7 @@ func getTicCrossmatch(ra: Float, dec: Float, radius: Float, result: @escaping ([
 //        let selectQuery = "SELECT TOP 100000 id,hip FROM dbo.catalogrecord WHERE ra > \(ra1) AND ra < \(ra2) AND dec > \(dec1) AND dec < \(dec2) AND hip IS NOT null"
         
 
-        let selectQuery = "SELECT TOP 100000 id,hip FROM dbo.catalogrecord WHERE (ra BETWEEN \(ra1) AND \(ra2)) AND (dec BETWEEN \(dec1) AND \(dec2)) AND hip IS NOT null"
+        let selectQuery = "SELECT TOP 100000 id,HIP FROM dbo.catalogrecord WHERE (ra BETWEEN \(ra1) AND \(ra2)) AND (dec BETWEEN \(dec1) AND \(dec2)) AND hip IS NOT null"
         
 
         queryMASTTap(selectQuery: selectQuery, table: .dbo_catalog_record, fields: [], parameters: [], format: .json, closure: { response in
