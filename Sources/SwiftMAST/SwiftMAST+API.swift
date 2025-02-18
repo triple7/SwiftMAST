@@ -459,4 +459,19 @@ func getTicCrossmatch(ra: Float, dec: Float, radius: Float, result: @escaping ([
         
     }
 
+    /** Make a MAST TAP request to ge get tic and hip from a list of hip
+     */
+    public func getTICByHipList(hips: [Int], completion: @escaping (MASTTAPResponse)-> Void) {
+
+        let joined = hips.map{String($0)}.joined(separator: ",")
+        
+        let selectQuery = "SELECT TOP 100000 id,HIP FROM dbo.catalogrecord WHERE hip IN (\(joined)"
+        
+
+        queryMASTTap(selectQuery: selectQuery, table: .dbo_catalog_record, fields: [], parameters: [], format: .json, closure: { response in
+            completion(response)
+        })
+        
+    }
+
 }
