@@ -447,8 +447,12 @@ func getTicCrossmatch(ra: Float, dec: Float, radius: Float, result: @escaping ([
     /** Make a MAST TAP request to ge get tic and hip values ra/dec bounds
      */
     public func getTICBYRaDec(ra1: Double, ra2: Double, dec1: Double, dec2: Double, completion: @escaping (MASTTAPResponse)-> Void) {
-        let selectQuery = "SELECT TOP 100000 id,hip FROM dbo.catalogrecord WHERE ra > \(ra1) AND ra < \(ra2) AND dec > \(dec1) AND dec < \(dec2) AND hip IS NOT null"
+//        let selectQuery = "SELECT TOP 100000 id,hip FROM dbo.catalogrecord WHERE ra > \(ra1) AND ra < \(ra2) AND dec > \(dec1) AND dec < \(dec2) AND hip IS NOT null"
         
+
+        let selectQuery = "SELECT TOP 100000 id,hip FROM dbo.catalogrecord WHERE (ra BETWEEN \(ra1) AND \(ra2)) AND (dec BETWEEN \(dec1) AND \(dec2)) AND hip IS NOT null"
+        
+
         queryMASTTap(selectQuery: selectQuery, table: .dbo_catalog_record, fields: [], parameters: [], format: .json, closure: { response in
             completion(response)
         })
