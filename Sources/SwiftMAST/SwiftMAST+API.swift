@@ -412,6 +412,7 @@ func getTicCrossmatch(ra: Float, dec: Float, radius: Float, result: @escaping ([
     public func downloadImagery(targetName: String, waveBand: String = "optical", token: String? = nil, completion: @escaping ([URL]) -> Void ) {
         print("downloadImagery: \(targetName)")
         let targetStart = CACurrentMediaTime()
+        self.setTargetId(targetId: targetName)
         self.lookupTargetByName(targetName: targetName, result: { targetLookup in
             guard !targetLookup.isEmpty, let table = self.targets[targetName] else {
                 print("Could not resolve \(targetName)")

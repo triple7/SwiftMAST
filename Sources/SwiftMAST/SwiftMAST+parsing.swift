@@ -45,8 +45,6 @@ func parseJson(data: Data)->MASTTable {
             values.append(targetFields.map{$0.1})
         }
         }
-    print(fields)
-    print(values)
          return MASTTable(fields: fields, values: values)
      }
 
