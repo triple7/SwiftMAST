@@ -23,7 +23,7 @@ return table
 
 func parseJson(data: Data)->MASTTable {
          let text = String(decoding: data, as: UTF8.self)
-    print("debug return\n\(text)")
+//    print("debug return\n\(text)")
          let payload = try! JSONDecoder().decode(ReturnJson.self, from: data)
 
     // either a json is built as

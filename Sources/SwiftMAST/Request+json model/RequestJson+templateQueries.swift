@@ -25,7 +25,7 @@ extension MASTJson {
             MASTJsonFilter(paramName: Coam.dataRights.id, values: QObject(values: [QValue(value: "PUBLIC")] as Any)),
             MASTJsonFilter(paramName: Coam.dataproduct_type.id, values: QObject(values: [QValue(value: "IMAGE")] as Any)),
             MASTJsonFilter(paramName: Coam.intentType.id, values: QObject(values: [QValue(value: "science")] as Any)),
-            MASTJsonFilter(paramName: Coam.obs_collection.id, values: QObject(values: [QValue(value: "SWIFT"), QValue(value: "HST"), QValue(value: "PS1")] as Any), separator: ";")
+            MASTJsonFilter(paramName: Coam.obs_collection.id, values: QObject(values: [QValue(value: "SWIFT"), QValue(value: "HST"), QValue(value: "PS1"), QValue(value: "IUV"), QValue(value: "JWST")] as Any), separator: ";")
         ]
     }
     

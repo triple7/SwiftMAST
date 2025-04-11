@@ -197,7 +197,7 @@ public func getFilteredConeSearch(ra: Float, dec: Float, radius: Float=0.2, filt
     var params = service.serviceRequest(requestType: .advancedSearch)
         
     params.setGeneralParameters(params: MAP.values.defaultGeneralParameters())
-        params.setParameter(param: MAP.pagesize, value: 10)
+        params.setParameter(param: MAP.pagesize, value: 20)
     let filterParams = params.scienceImageFilters(waveBand: waveBand)
     params.setFilterParameters(params: filterParams)
         params.setParameters(params: [MAP.columns: "*", MAP.position: "\(ra), \(dec), \(radius)"])
@@ -210,15 +210,16 @@ public func getFilteredConeSearch(ra: Float, dec: Float, radius: Float=0.2, filt
                 let table = self.targets[targetName]!
                 var coamResults = table.getCoamResults()
                 coamResults.sort()
-                //            let collections = table!.getUniqueString(for: Coam.obs_collection.id)
-                //            print("Unique observation collections")
-                //            for c in collections {
-                //                print(c)
-                //            }
+                            let collections = table.getUniqueString(for: Coam.obs_collection.id)
+                            print("Unique observation collections")
+                            for c in collections {
+                                print(c)
+                            }
                 
                     let uniqueFilters = table.getUniqueString(for: Coam.filters.id)
                     print("getScienceImageProducts: \(uniqueFilters.count) unique filters")
                     
+            print("\(coamResults.count) results from search")
                     // dictionary of products by filter
                     var products = [String:[CoamResult]]()
                     for result in coamResults {
