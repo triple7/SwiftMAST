@@ -409,7 +409,7 @@ func getTicCrossmatch(ra: Float, dec: Float, radius: Float, result: @escaping ([
     /** Select a target by name and download all selectively filtered images
      to the documents folder under MAST/target_name/instrument_name/
      */
-    public func downloadImagery(targetName: String, waveBand: String = "optical", token: String? = nil, completion: @escaping ([URL]) -> Void ) {
+    public func downloadImagery(targetName: String, waveBand: String = "optical", productType: ProductType = .Jpeg, token: String? = nil, completion: @escaping ([URL]) -> Void ) {
         print("downloadImagery: \(targetName)")
         let targetStart = CACurrentMediaTime()
         self.setTargetId(targetId: targetName)
@@ -426,7 +426,7 @@ func getTicCrossmatch(ra: Float, dec: Float, radius: Float, result: @escaping ([
 
             // Get the images
             // And save them in the targets dictionary for future downloads if required
-            self.getScienceImageProducts(targetName: targetName, ra: resolved.ra, dec: resolved.dec, radius: resolved.radius, productType: .Jpeg, waveBand: waveBand, token: token) { urls in
+            self.getScienceImageProducts(targetName: targetName, ra: resolved.ra, dec: resolved.dec, radius: resolved.radius, productType: .Fits, waveBand: waveBand, token: token) { urls in
                 completion(urls)
             }
             
