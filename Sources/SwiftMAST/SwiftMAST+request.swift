@@ -147,7 +147,6 @@ func queryMast(service: Service, params: MASTJson, returnType: APIReturnType, _ 
         print("Remaining products: \(remainingProducts)")
         var fitsData = [FitsData]()
         
-        
         // Create a recursive function to handle the download
         func downloadNextproduct() {
             guard !remainingProducts.isEmpty else {
