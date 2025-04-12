@@ -330,7 +330,7 @@ struct LookupSearchResult: Codable {
             radius = try container.decode(Double.self, forKey: .radius)
         } catch let error {
             print("Radius not present: \(error.localizedDescription)")
-            radius = 0.0
+            radius = 0.02
         }
 //        radius = try container.decodeIfPresent(Double.self, forKey: .radius)
     }
