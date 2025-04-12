@@ -305,6 +305,7 @@ struct LookupSearchResult: Codable {
         canonicalName = try container.decode(String.self, forKey: .canonicalName)
         ra = try container.decode(Double.self, forKey: .ra)
         decl = try container.decode(Double.self, forKey: .decl)
+        print("decl: \(decl)")
         objectType = try container.decode(String.self, forKey: .objectType)
         
         // Decode optional property
