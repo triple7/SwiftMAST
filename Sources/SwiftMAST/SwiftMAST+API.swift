@@ -64,7 +64,7 @@ public func lookupTargetByName(targetName: String, result: @escaping ([NameLooku
     /** Make a cone search for data products in the MAST archives
      
      */
-    public func getConeSearch(targetId: String, ra: Float, dec: Float, radius: Float=0.2, preview: Bool=false, pageSize: Int = 0, result: @escaping ([CoamResult]) -> Void) {
+    public func getConeSearch(targetId: String, ra: Float, dec: Float, radius: Float=0.2, preview: Bool=false, pageSize: Int = 50, result: @escaping ([CoamResult]) -> Void) {
         print("getConeSearch: ra: \(ra) dec: \(dec)")
         
     let start = CACurrentMediaTime()
