@@ -192,13 +192,13 @@ public func getFilteredConeSearch(ra: Float, dec: Float, radius: Float=0.2, filt
      * waveband: String (comma separated single string
      * returnFilters:[FilterResult]
      */
-    public func getScienceImageProducts(targetName: String, ra: Float, dec: Float, radius: Float, productType: ProductType = .Fits, waveBand: String, token: String?, result: @escaping ([URL]) -> Void) {
+    public func getScienceImageProducts(targetName: String, ra: Float, dec: Float, radius: Float, productType: ProductType = .Fits, waveBand: String, pageSize: Int = 50, token: String?, result: @escaping ([URL]) -> Void) {
         
     let service = Service.Mast_Caom_Filtered_Position
     var params = service.serviceRequest(requestType: .advancedSearch)
         
     params.setGeneralParameters(params: MAP.values.defaultGeneralParameters())
-        params.setParameter(param: MAP.pagesize, value: 100)
+        params.setParameter(param: MAP.pagesize, value: pageSize)
     let filterParams = params.scienceImageFilters(waveBand: waveBand)
     params.setFilterParameters(params: filterParams)
         params.setParameters(params: [MAP.columns: "*", MAP.position: "\(ra), \(dec), \(radius)"])
@@ -404,7 +404,7 @@ func getTicCrossmatch(ra: Float, dec: Float, radius: Float, result: @escaping ([
     /** Select a target by name and download all selectively filtered images
      to the documents folder under MAST/target_name/instrument_name/
      */
-    public func downloadImagery(targetName: String, waveBand: String = "optical", productType: ProductType = .Jpeg, token: String? = nil, completion: @escaping ([URL]) -> Void ) {
+    public func downloadImagery(targetName: String, waveBand: String = "optical", productType: ProductType = .Jpeg, pageSize: Int = 50, token: String? = nil, completion: @escaping ([URL]) -> Void ) {
         print("downloadImagery: \(targetName)")
         let targetStart = CACurrentMediaTime()
         self.setTargetId(targetId: targetName)
@@ -423,7 +423,7 @@ func getTicCrossmatch(ra: Float, dec: Float, radius: Float, result: @escaping ([
 
             // Get the images
             // And save them in the targets dictionary for future downloads if required
-            self.getScienceImageProducts(targetName: targetName, ra: resolved.ra, dec: resolved.dec, radius: 0.1, productType: .Fits, waveBand: waveBand, token: token) { urls in
+            self.getScienceImageProducts(targetName: targetName, ra: resolved.ra, dec: resolved.dec, radius: resolved.radius, productType: .Fits, waveBand: waveBand, pageSize: pageSize, token: token) { urls in
                 completion(urls)
             }
             
