@@ -211,6 +211,7 @@ public func getFilteredConeSearch(ra: Float, dec: Float, radius: Float=0.2, filt
                 let table = self.targets[targetName]!
                 var coamResults = table.getCoamResults()
                 coamResults.sort()
+            print("Got list of \(coamResults.count) data products.")
                     let uniqueFilters = table.getUniqueString(for: Coam.filters.id)
 
             self.printUniqueSets(table: table)
