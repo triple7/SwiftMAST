@@ -291,7 +291,7 @@ struct LookupSearchResult: Codable {
     let canonicalName: String
     let ra: Double
     let decl: Double
-    var radius: Double?
+    let radius: Double
     let objectType: String
 
     enum CodingKeys: String, CodingKey {
@@ -312,11 +312,13 @@ struct LookupSearchResult: Codable {
         objectType = try container.decode(String.self, forKey: .objectType)
         
         // Decode optional property
-        let value = try container.decodeIfPresent(Double.self, forKey: .radius)
-        if let value = value {
-            print("radius value exists")
-            radius = value
+        do {
+            radius = try container.decode(Double.self, forKey: .radius)
+        } catch let error {
+            print("Radius not presetn: \(error.localizedDescription)")
+            radius = 0.0
         }
+//        radius = try container.decodeIfPresent(Double.self, forKey: .radius)
     }
     
 }
