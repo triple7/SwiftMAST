@@ -413,8 +413,9 @@ func getTicCrossmatch(ra: Float, dec: Float, radius: Float, result: @escaping ([
                 return
             }
                                 let targetEnd = CACurrentMediaTime()
-            print("target found in \(targetEnd - targetStart)")
+            print("downloadImagery: Target found in \(targetEnd - targetStart)")
             let resolved = table.getNameLookupResults().first!
+            print(resolved)
             // Save the initial target info
             self.setTargetAssets(target: targetName, targetInfo: resolved)
 
