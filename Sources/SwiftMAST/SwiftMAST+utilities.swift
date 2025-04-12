@@ -183,6 +183,9 @@ let destination = CGImageDestinationCreateWithURL(toURL as CFURL, UTType.jpeg.id
         print("getFitsMetaData: HDU count \(fits.HDUs.count)")
         for hdu in fits.HDUs {
             print("HDU: \n \(hdu.description)")
+            for header in hdu.headerUnit {
+                print("\(header.keyword): \(header.value)")
+            }
         }
         
         // get the metadata from the hdu primary header unit
