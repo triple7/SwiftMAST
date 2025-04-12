@@ -80,6 +80,7 @@ public struct NameLookupJson:Codable {
 
     
     public init(data: [QValue], fields: [String]) {
+        print("fields\n\(fields)")
         if let raIndex = fields.firstIndex(of: "ra"), let raValue = data[raIndex].value as? Float {
             ra = raValue
         } else {
@@ -98,7 +99,7 @@ public struct NameLookupJson:Codable {
             resolverTime = 0
         }
         
-        if let decIndex = fields.firstIndex(of: "dec"), let decValue = data[decIndex].value as? Float {
+        if let decIndex = fields.firstIndex(of: "decl"), let decValue = data[decIndex].value as? Float {
             dec = decValue
         } else {
             dec = 0.0
