@@ -39,6 +39,7 @@ func parseJson(data: Data)->MASTTable {
     } else if  let resolvedCoordinate = payload.resolvedCoordinate {
         if !resolvedCoordinate.isEmpty {
             let targetFields = Mirror(reflecting: resolvedCoordinate.first!).children.map { (name, value) in
+                print("\(name) \(value)")
                 return (String(describing: name!), QValue(value: String(describing: value)))
             }
             fields = targetFields.map{$0.0}
