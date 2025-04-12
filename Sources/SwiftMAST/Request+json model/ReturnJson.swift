@@ -312,7 +312,11 @@ struct LookupSearchResult: Codable {
         objectType = try container.decode(String.self, forKey: .objectType)
         
         // Decode optional property
-        radius = try container.decodeIfPresent(Double.self, forKey: .radius)
+        let value = try container.decodeIfPresent(Double.self, forKey: .radius)
+        if let value = value {
+            print("radius value exists")
+            radius = value
+        }
     }
     
 }
