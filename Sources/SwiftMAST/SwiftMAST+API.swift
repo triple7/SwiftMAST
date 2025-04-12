@@ -221,7 +221,8 @@ public func getFilteredConeSearch(ra: Float, dec: Float, radius: Float=0.2, filt
             for filter in uniqueFilters {
                 print(filter)
             }
-                    
+
+            self.printUniqueSets(table: table)
             print("\(coamResults.count) results from search")
                     // dictionary of products by filter
                     var products = [String:[CoamResult]]()
@@ -233,11 +234,6 @@ public func getFilteredConeSearch(ra: Float, dec: Float, radius: Float=0.2, filt
                             products[filter] = [result]
                         }
                     }
-                    
-            for product in products.keys {
-                print(product)
-                print(products[product]!.count)
-            }
                     // Append the first image of each filter
                     var allFilterProducts = [CoamResult]()
                     for filter in uniqueFilters {

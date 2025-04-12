@@ -204,5 +204,17 @@ let destination = CGImageDestinationCreateWithURL(toURL as CFURL, UTType.jpeg.id
 
         return FitsData(metadata: metadata, url: saveCGImageToUrl(image: image, toURL: writeToUrl))
     }
-    
+
+    // Mark: Debug helper
+    internal func printUniqueSets(table: MASTTable) {
+        let fieldss:[Coam] = [.calib_level, .dataproduct_type, .filters, .instrument_name, .obs_collection, .wavelength_region]
+        for field in fieldss {
+            let uniqueFields = table.getUniqueString(for: field.id)
+            print("\(field.id) has \(uniqueFields.count)")
+            for u in uniqueFields {
+                print(u)
+            }
+        }
+
+    }
 }
