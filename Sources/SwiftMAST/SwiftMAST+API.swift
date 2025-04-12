@@ -31,6 +31,7 @@ public func lookupTargetByName(targetName: String, result: @escaping ([NameLooku
         let service = Service.Mast_Name_Lookup
         var params = service.serviceRequest(requestType: .lookup)
         params.setParameter(param: .input, value: targetName)
+    params.setParameter(param: .searchRadius, value: 0.1)
     self.queryMast(service: service, params: params, returnType: .json, { success in
             for target in self.targets.keys {
                 let table = self.targets[target]

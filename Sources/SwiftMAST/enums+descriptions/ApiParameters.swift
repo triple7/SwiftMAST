@@ -44,6 +44,7 @@ public enum MASTApiParameter:String, CaseIterable, Identifiable {
 case page // Int
     case removecache // Bool
     case format // String
+    case searchRadius // float
 
     public var id:String {
         return self.rawValue
