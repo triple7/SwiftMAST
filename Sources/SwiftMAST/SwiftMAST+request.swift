@@ -84,6 +84,8 @@ func queryMast(service: Service, params: MASTJson, returnType: APIReturnType, _ 
                     return
                 }
                 
+                print(table.fields)
+                print(table.values)
                 self?.targets[self!.currentTargetId!] = table
                 closure(true)
                 return
