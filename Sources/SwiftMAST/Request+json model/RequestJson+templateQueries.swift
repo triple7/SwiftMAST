@@ -18,7 +18,7 @@ import SwiftQValue
 extension MASTJson {
     
     public func scienceImageFilters(waveBand: String = "OPTICAL") -> [MASTJsonFilter] {
-        print("scienceImageFilters")
+//        print("scienceImageFilters")
         return [
 //            MASTJsonFilter(paramName: Coam.filters.id, values: QObject(values: [QValue(value: "NUV"), QValue(value: "FUV")] as Any), separator: ";"),
             MASTJsonFilter(paramName: Coam.calib_level.id, values: QObject(values: [QValue(value: "3")] as Any)),

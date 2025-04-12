@@ -37,7 +37,7 @@ class MASTDownloadOperation : Operation, @unchecked Sendable {
   
     init(session: URLSession, request: URLRequest, completionHandler: ((Data?, URLResponse?, Error?) -> Void)?) {
         super.init()
-        print("URL: \(request.url!.absoluteString)")
+//        print("URL: \(request.url!.absoluteString)")
         
         // use weak self to prevent retain cycle
         task = session.dataTask(with: request, completionHandler: { [weak self] (data, response, error) in
@@ -116,7 +116,7 @@ class MASTDirectDownloadOperation : Operation, @unchecked Sendable {
   
     init(session: URLSession, request: URLRequest, completionHandler: ((URL?, URLResponse?, Error?) -> Void)?) {
         super.init()
-        print("URL: \(request.url!.absoluteString)")
+//        print("URL: \(request.url!.absoluteString)")
         
         // use weak self to prevent retain cycle
         task = session.downloadTask(with: request, completionHandler: { [weak self] (tempUrl, response, error) in

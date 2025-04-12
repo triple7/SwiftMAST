@@ -80,10 +80,10 @@ public struct NameLookupJson:Codable {
 
     
     public init(data: [QValue], fields: [String]) {
-        print("fields\n\(fields)")
-        print("Fields count \(fields.count)")
-        print("Data count \(data.count)")
-        print(data)
+//        print("fields\n\(fields)")
+//        print("Fields count \(fields.count)")
+//        print("Data count \(data.count)")
+//        print(data)
         if let raIndex = fields.firstIndex(of: "ra"), let raValue = data[raIndex].value as? Float {
             ra = raValue
         } else {
@@ -329,7 +329,7 @@ struct LookupSearchResult: Codable {
         do {
             radius = try container.decode(Double.self, forKey: .radius)
         } catch let error {
-            print("Radius not presetn: \(error.localizedDescription)")
+            print("Radius not present: \(error.localizedDescription)")
             radius = 0.0
         }
 //        radius = try container.decodeIfPresent(Double.self, forKey: .radius)

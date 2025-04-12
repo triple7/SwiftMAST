@@ -54,7 +54,7 @@ public class MASTTable:NSObject {
             return self.values.map{$0[idx]}
         }
         // field does not exist, return empty QValues
-        print("returning empty for \(field)")
+//        print("returning empty for \(field)")
         return [QValue](repeating: QValue(value: ""), count: self.values.count)
     }
     
@@ -176,7 +176,7 @@ public class MASTTable:NSObject {
     public func parser(_ parser: XMLParser, foundCharacters string: String) {
             if !string.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
                 if xmlDict[currentElement] == nil {
-                    print("string for xmldict: \(string)")
+//                    print("string for xmldict: \(string)")
                        xmlDict.updateValue(string, forKey: currentElement)
                 }
             }
@@ -184,8 +184,8 @@ public class MASTTable:NSObject {
 
     public func parser(_ parser: XMLParser, didEndElement elementName: String, namespaceURI: String?, qualifiedName qName: String?) {
         if elementName == "element" {
-            print("got array element")
-            print(xmlDict)
+//            print("got array element")
+//            print(xmlDict)
                 xmlDictArr.append(xmlDict)
         }
     }
@@ -208,7 +208,7 @@ extension MASTTable {
         var output = [ResultField: [QValue]]()
         for filter in filters {
             if let idx = fields.firstIndex(of: filter.id) {
-                print("filter \(filters) idx \(idx)")
+//                print("filter \(filters) idx \(idx)")
                 output[filter] = values.map{$0[idx]}
             }
         }
