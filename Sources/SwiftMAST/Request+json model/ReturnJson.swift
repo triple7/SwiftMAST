@@ -81,6 +81,9 @@ public struct NameLookupJson:Codable {
     
     public init(data: [QValue], fields: [String]) {
         print("fields\n\(fields)")
+        print("Fields count \(fields.count)")
+        print("Data count \(data.count)")
+        print(data)
         if let raIndex = fields.firstIndex(of: "ra"), let raValue = data[raIndex].value as? Float {
             ra = raValue
         } else {
