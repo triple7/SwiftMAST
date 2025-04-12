@@ -147,8 +147,6 @@ func queryMast(service: Service, params: MASTJson, returnType: APIReturnType, _ 
         let serialQueue = DispatchQueue(label: "MASTDataproductsQueue")
         
         var remainingProducts = products.filter { (productType == .Fits ?  $0.dataURL : $0.jpegURL) != ""}
-        print(products)
-        print("Remaining products: \(remainingProducts)")
         var fitsData = [FitsData]()
         
         // Create a recursive function to handle the download
