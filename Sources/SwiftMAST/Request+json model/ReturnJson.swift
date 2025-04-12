@@ -148,7 +148,7 @@ public struct NameLookupJson:Codable {
 
 // Mark: Equatable MAST return Json for time adjustments
 
-public struct CoamResult:Codable, Comparable, Hashable {
+public struct CoamResult:Codable, Comparable, Hashable, CustomStringConvertible {
     public let calib_level:Int
     public let dataRights:String
     public let dataURL:String
@@ -184,6 +184,20 @@ public struct CoamResult:Codable, Comparable, Hashable {
     public let target_name:String
     public let wavelength_region:String
 
+    public var description: String {
+        return """
+        \(target_name)
+        \(target_classification)
+        \(instrument_name)
+        \(wavelength_region)
+        \(filters)
+        \(dataURL)
+        \(jpegURL)
+"""
+    
+    }
+    
+    
     public static func ==(lhs: CoamResult, rhs: CoamResult) -> Bool {
         return lhs.obs_id == rhs.obs_id && lhs.filters == rhs.filters && lhs.instrument_name == rhs.instrument_name && lhs.t_min == rhs.t_min && lhs.t_max == rhs.t_max
     }
