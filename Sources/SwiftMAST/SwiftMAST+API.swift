@@ -206,7 +206,7 @@ public func getFilteredConeSearch(ra: Float, dec: Float, radius: Float=0.2, filt
         let start = CACurrentMediaTime()
         self.queryMast(service: service, params: params, returnType: .json, { success in
             let end = CACurrentMediaTime()
-            print("target products downloaded in \(end - start)")
+            print("target search results downloaded in \(end - start)")
             // we are looking for the targetId set previously
                 let table = self.targets[targetName]!
                 var coamResults = table.getCoamResults()
