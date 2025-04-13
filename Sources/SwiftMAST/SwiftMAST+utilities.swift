@@ -196,8 +196,10 @@ extension SwiftMAST {
         
         // get the metadata from the hdu primary header unit
         var metadata = [String:QValue]()
-        for unit in  fits.prime.headerUnit {
-            metadata[unit.keyword.rawValue] = QValue(value: (unit.value != nil) ? unit.value!.toString : "")
+        for hdu in fits.HDUs {
+            for unit in  hdu.headerUnit {
+                metadata[unit.keyword.rawValue] = QValue(value: (unit.value != nil) ? unit.value!.toString : "")
+            }
         }
         return metadata
     }
