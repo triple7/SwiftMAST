@@ -112,7 +112,7 @@ extension SwiftMAST {
 /** Saves jpg/png only
  no fits data
  */
-    func saveImageFile(target: String, collection: String, filter: String, productType: ProductType = .Jpeg, url: URL) -> URL? {
+    func saveImageFile(target: String, collection: String, filter: String, productType: ProductType = .Jpeg, url: URL? = nil, data: Data? = nil) -> URL? {
         print("saveImageFile: \(target) \(collection)")
         
         let MASTDirectory = getproductFolder(target: target, collection: collection)
@@ -123,9 +123,14 @@ extension SwiftMAST {
         do {
             try FileManager.default.createDirectory(at: MASTDirectory, withIntermediateDirectories: true, attributes: nil)
 
-            let data = try Data(contentsOf: url)
-            try data.write(to: imageUrl)
-
+            if let url = url {
+                let data = try Data(contentsOf: url)
+                try data.write(to: imageUrl)
+            } else if let data = data {
+                try data.write(to: imageUrl)
+            } else {
+                assertionFailure("No url or data specified.")
+            }
             // Set the preview image if it's not set
             
             return imageUrl
@@ -136,6 +141,7 @@ extension SwiftMAST {
     }
                                                             }
                                                             
+
     
     func saveTempUrlToFile(targetName: String, product: CoamResult, tempUrl: URL, productType: ProductType, completion: @escaping (URL?) -> Void) {
         print("saveTempUrlToFile: \(targetName)")

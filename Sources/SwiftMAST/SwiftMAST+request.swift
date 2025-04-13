@@ -170,15 +170,27 @@ func queryMast(service: Service, params: MASTJson, returnType: APIReturnType, _ 
             let operation = MASTDownloadOperation(session: URLSession.shared, request: request, completionHandler: { (data, response, error) in
                 
                 if self.requestIsValid(error: error, response: response) {
-                    self.saveAsset(targetName: targetName, product: product, urlString: productUrl, data: data!, completion: { fits in
-                        if let fits = fits {
-                            fitsData.append(fits)
+                    // We either parse the fits or just get a jpeg
+                    if productType == .Fits {
+                        self.saveAsset(targetName: targetName, product: product, urlString: productUrl, data: data!, completion: { fits in
+                            if let fits = fits {
+                                fitsData.append(fits)
+                            }
+                            // Call the recursive function to download the next object
+                            serialQueue.async {
+                                downloadNextproduct()
+                            }
+                        })
+                    } else {
+                        // jpeg
+                        let url = self.saveImageFile(target: targetName, collection: product.obs_collection, filter: product.filters, productType: productType, data: data)
+                        if let url = url {
+                            fitsData.append(FitsData(metadata: [:], url: url))
                         }
-                        // Call the recursive function to download the next object
-                        serialQueue.async {
-                            downloadNextproduct()
-                        }
-                    })
+
+                        
+                    }
+                    
                 } else {
                     serialQueue.async {
                         downloadNextproduct()
