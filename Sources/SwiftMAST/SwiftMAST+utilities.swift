@@ -207,6 +207,9 @@ extension SwiftMAST {
         
         let fits = FitsFile.read( try! Data(contentsOf: url))!
         let metadata = getFitsMetaData(fits: fits)
+        for key in metadata.keys {
+            print("key: \(key)")
+        }
         let hduExtension = metadata["XTENSION"]!
         let numAxis = metadata["NAXIS"]!
         
