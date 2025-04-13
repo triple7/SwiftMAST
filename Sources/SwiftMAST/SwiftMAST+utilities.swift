@@ -207,7 +207,9 @@ extension SwiftMAST {
         
         let fits = FitsFile.read( try! Data(contentsOf: url))!
         let metadata = getFitsMetaData(fits: fits)
-        
+        if let extensionType = metadata["XTENSION"] {
+            print("Extension is \(extensionType)")
+        }
         let image = try! fits.prime.decode(GrayscaleDecoder.self, ())
         
         return FitsData(metadata: metadata, url: saveCGImageToUrl(image: image, toURL: writeToUrl))
