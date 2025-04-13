@@ -192,14 +192,14 @@ public func getFilteredConeSearch(ra: Float, dec: Float, radius: Float=0.2, filt
      * waveband: String (comma separated single string
      * returnFilters:[FilterResult]
      */
-    public func getScienceImageProducts(targetName: String, ra: Float, dec: Float, radius: Float, productType: ProductType = .Fits, waveBand: String, pageSize: Int = 50, token: String?, result: @escaping ([URL]) -> Void) {
+    public func getScienceImageProducts(targetName: String, ra: Float, dec: Float, radius: Float, productType: ProductType = .Fits, pageSize: Int = 50, token: String?, result: @escaping ([URL]) -> Void) {
         
     let service = Service.Mast_Caom_Filtered_Position
     var params = service.serviceRequest(requestType: .advancedSearch)
         
     params.setGeneralParameters(params: MAP.values.defaultGeneralParameters())
         params.setParameter(param: MAP.pagesize, value: pageSize)
-    let filterParams = params.scienceImageFilters(waveBand: waveBand)
+    let filterParams = params.scienceImageFilters()
     params.setFilterParameters(params: filterParams)
         params.setParameters(params: [MAP.columns: "*", MAP.position: "\(ra), \(dec), \(radius)"])
 
@@ -234,7 +234,8 @@ public func getFilteredConeSearch(ra: Float, dec: Float, radius: Float=0.2, filt
                             allFilterProducts.append(coamResult.first!)
                         }
                     }
-                    
+           
+            print("There are \(allFilterProducts.count) filtered products.")
                     // Some products are meant to be ddirect downloads
                     let directDownloadproducts = allFilterProducts.filter{(productType == .Fits ? $0.dataURL : $0.jpegURL).contains("http")}
                     
@@ -405,7 +406,7 @@ func getTicCrossmatch(ra: Float, dec: Float, radius: Float, result: @escaping ([
     /** Select a target by name and download all selectively filtered images
      to the documents folder under MAST/target_name/instrument_name/
      */
-    public func downloadImagery(targetName: String, waveBand: String = "optical", productType: ProductType = .Jpeg, pageSize: Int = 50, token: String? = nil, completion: @escaping ([URL]) -> Void ) {
+    public func downloadImagery(targetName: String, productType: ProductType = .Jpeg, pageSize: Int = 50, token: String? = nil, completion: @escaping ([URL]) -> Void ) {
         print("downloadImagery: \(targetName)")
         let targetStart = CACurrentMediaTime()
         self.setTargetId(targetId: targetName)
@@ -416,15 +417,13 @@ func getTicCrossmatch(ra: Float, dec: Float, radius: Float, result: @escaping ([
             }
                                 let targetEnd = CACurrentMediaTime()
             print("downloadImagery: Target found in \(targetEnd - targetStart)")
-            let resolved_all = table.getNameLookupResults()
             let resolved = table.getNameLookupResults().first!
-            print(resolved)
             // Save the initial target info
             self.setTargetAssets(target: targetName, targetInfo: resolved)
 
             // Get the images
             // And save them in the targets dictionary for future downloads if required
-            self.getScienceImageProducts(targetName: targetName, ra: resolved.ra, dec: resolved.dec, radius: resolved.radius, productType: productType, waveBand: waveBand, pageSize: pageSize, token: token) { urls in
+            self.getScienceImageProducts(targetName: targetName, ra: resolved.ra, dec: resolved.dec, radius: resolved.radius, productType: productType, pageSize: pageSize, token: token) { urls in
                 completion(urls)
             }
             
