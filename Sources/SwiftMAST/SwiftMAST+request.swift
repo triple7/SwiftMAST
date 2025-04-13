@@ -147,7 +147,7 @@ func queryMast(service: Service, params: MASTJson, returnType: APIReturnType, _ 
         let serialQueue = DispatchQueue(label: "MASTDataproductsQueue")
         
         var remainingProducts = products.filter { (productType == .Fits ?  $0.dataURL : $0.jpegURL) != ""}
-        print("Direct downloads for \(productType.id) \(remainingProducts)")
+        print("Direct downloads for \(productType.id) \(remainingProducts.count)")
         var fitsData = [FitsData]()
         
         // Create a recursive function to handle the download
@@ -187,6 +187,11 @@ func queryMast(service: Service, params: MASTJson, returnType: APIReturnType, _ 
                         let url = self.saveImageFile(target: targetName, collection: product.obs_collection, filter: product.filters, productType: productType, data: data)
                         if let url = url {
                             fitsData.append(FitsData(metadata: [:], url: url))
+                        }
+
+                        // Call the recursive function to download the next object
+                        serialQueue.async {
+                            downloadNextproduct()
                         }
 
                         
