@@ -215,6 +215,7 @@ public func getFilteredConeSearch(ra: Float, dec: Float, radius: Float=0.2, filt
                     let uniqueFilters = table.getUniqueString(for: Coam.filters.id)
 
             self.printUniqueSets(table: table)
+            self.printUrls(table: table)
                     // dictionary of products by filter
                     var products = [String:[CoamResult]]()
                     for result in coamResults {
