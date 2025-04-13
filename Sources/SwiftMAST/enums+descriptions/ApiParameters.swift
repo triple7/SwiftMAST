@@ -54,7 +54,7 @@ case page // Int
      Convenience function for optimising search results
      */
     public func defaultGeneralParameters()->[MAP: Any] {
-        return [MAP.pagesize: 100, MAP.timeout: 600, MAP.removenullcolumns: true, MAP.page: 1]
+        return [MAP.pagesize: 200, MAP.timeout: 600, MAP.removenullcolumns: true, MAP.page: 1]
     }
 }
 
