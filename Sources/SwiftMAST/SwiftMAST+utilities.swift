@@ -113,7 +113,7 @@ extension SwiftMAST {
      no fits data
      */
     func saveImageFile(target: String, collection: String, filter: String, productType: ProductType = .Jpeg, url: URL? = nil, data: Data? = nil) -> URL? {
-        print("saveImageFile: \(target) \(collection)")
+        print("saveImageFile: \(target)_\(collection)_\(filter).\(productType.id)")
         
         let MASTDirectory = getproductFolder(target: target, collection: collection)
         
