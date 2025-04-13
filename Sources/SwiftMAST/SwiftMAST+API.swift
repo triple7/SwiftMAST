@@ -239,8 +239,10 @@ public func getFilteredConeSearch(ra: Float, dec: Float, radius: Float=0.2, filt
                     // Some products are meant to be ddirect downloads
                     let directDownloadproducts = allFilterProducts.filter{(productType == .Fits ? $0.dataURL : $0.jpegURL).contains("http")}
                     
+            print("There are \(directDownloadproducts.count) direct downloads.")
                     let mastDownloadProducts = allFilterProducts.filter{!(productType == .Fits ? $0.dataURL : $0.jpegURL).contains("http")}
                     
+            print("There are \(mastDownloadProducts.count) mast download products.")
                     // Get the MAST query url downloads and return the URLs
                     self.getDataproducts(targetName: targetName,service: .Download_file, products: mastDownloadProducts, productType: productType, token: token) { allFitsDataResults in
                         
