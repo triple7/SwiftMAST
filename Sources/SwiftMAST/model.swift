@@ -10,7 +10,7 @@ import SwiftQValue
 
 public struct FitsData:Codable {
     let metadata:[String: QValue]
-    let url:URL
+    var url:URL?
 }
 
 

@@ -89,7 +89,7 @@ extension SwiftMAST {
         do {
             try FileManager.default.createDirectory(at: MASTDirectory, withIntermediateDirectories: true, attributes: nil)
             
-            let fileExtension = "_\(product.objID).fits"
+            let fileExtension = "_\(product.wavelength_region)_\(product.obs_id).fits"
             let fileUrl = MASTDirectory.appendingPathComponent(fileExtension)
             
             try data.write(to: fileUrl)
@@ -207,12 +207,22 @@ extension SwiftMAST {
         
         let fits = FitsFile.read( try! Data(contentsOf: url))!
         let metadata = getFitsMetaData(fits: fits)
-        for key in metadata.keys {
-            print("key: \(key)")
-        }
-        let image = try! fits.prime.decode(GrayscaleDecoder.self, ())
+        let hduExtension = metadata["XTENSION"]!
+        let numAxis = metadata["NAXIS"]!
         
-        return FitsData(metadata: metadata, url: saveCGImageToUrl(image: image, toURL: writeToUrl))
+        if hduExtension.string.lowercased() == "image" {
+            if Int(numAxis.string)! == 3 {
+                let image = try! fits.prime.decode(GrayscaleDecoder.self, ())
+                return FitsData(metadata: metadata, url: saveCGImageToUrl(image: image, toURL: writeToUrl))
+            } else {
+
+                let image = try! fits.prime.decode(RGB_Decoder<RGB>.self, ())
+                return FitsData(metadata: metadata, url: saveCGImageToUrl(image: image, toURL: writeToUrl))
+            }
+        } else {
+// TODO: handle conversions for all fits data types
+            return FitsData(metadata: metadata, url: nil)
+        }
     }
     
     // Mark: Debug helper

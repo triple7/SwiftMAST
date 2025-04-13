@@ -170,7 +170,7 @@ public func getFilteredConeSearch(ra: Float, dec: Float, radius: Float=0.2, filt
                     self.getDataproducts(targetName: targetName,service: .Download_file, products: [mastDownloadproducts.first!], productType: productType, token: token) { fitsResults in
                         let end = CACurrentMediaTime()
                         print("downloaded \(fitsResults.count) in \(end - start)")
-                        result(fitsResults.first!.url)
+                        result(fitsResults.first!.url!)
                     }
             } else {
                 // Direct download
@@ -246,7 +246,8 @@ public func getFilteredConeSearch(ra: Float, dec: Float, radius: Float=0.2, filt
                     // Get the MAST query url downloads and return the URLs
                     self.getDataproducts(targetName: targetName,service: .Download_file, products: mastDownloadProducts, productType: productType, token: token) { allFitsDataResults in
                         
-                        let secondaryUrls = allFitsDataResults.map{$0.url}
+                        let existingUrls = allFitsDataResults.filter{$0.url != nil}
+                        let secondaryUrls = existingUrls.map{$0.url!}
                         
                         // Secondary non MAST direct downloads
                         self.getDirectDataproducts(targetName: targetName,service: .Download_file, products: directDownloadproducts, productType: productType, token: token) { directUrls in
