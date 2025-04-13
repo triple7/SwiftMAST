@@ -23,8 +23,8 @@ extension MASTJson {
 //            MASTJsonFilter(paramName: Coam.filters.id, values: QObject(values: [QValue(value: "NUV"), QValue(value: "FUV")] as Any), separator: ";"),
             MASTJsonFilter(paramName: Coam.calib_level.id, values: QObject(values: [QValue(value: "3"), QValue(value: "4")] as Any)),
             MASTJsonFilter(paramName: Coam.dataRights.id, values: QObject(values: [QValue(value: "PUBLIC")] as Any)),
-            MASTJsonFilter(paramName: Coam.dataproduct_type.id, values: QObject(values: [QValue(value: "IMAGE")] as Any)),
-            MASTJsonFilter(paramName: Coam.intentType.id, values: QObject(values: [QValue(value: "science")] as Any)),
+//            MASTJsonFilter(paramName: Coam.dataproduct_type.id, values: QObject(values: [QValue(value: "IMAGE")] as Any)),
+//            MASTJsonFilter(paramName: Coam.intentType.id, values: QObject(values: [QValue(value: "science")] as Any)),
 //            MASTJsonFilter(paramName: Coam.obs_collection.id, values: QObject(values: [QValue(value: "SWIFT"), QValue(value: "HST"), QValue(value: "PS1"), QValue(value: "IUV"), QValue(value: "JWST"), QValue(value: "WIZE")] as Any), separator: ";"),
             MASTJsonFilter(paramName: Coam.obs_collection.id, values: QObject(values: [QValue(value: "GALEX"), QValue(value: "WIZE")] as Any), separator: ";"),
 //            MASTJsonFilter(paramName: Coam.wavelength_region.id, values: QObject(values: [QValue(value: "OPTICAL"), QValue(value: "EUV"), QValue(value: "XRAY"), QValue(value: "INFRARED"), QValue(value: "IR")] as Any), separator: ";")
