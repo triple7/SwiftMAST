@@ -251,5 +251,5 @@ extension SwiftMAST {
             print(c.jpegURL)
         }
     }
-    
+
 }
