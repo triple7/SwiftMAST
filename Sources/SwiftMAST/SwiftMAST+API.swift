@@ -473,4 +473,25 @@ func getTicCrossmatch(ra: Float, dec: Float, radius: Float, result: @escaping ([
         
     }
 
+    
+    /** Make a MAST TAP request to get disc detection info on a given coordinate
+     */
+    public func getDiscDetection(target: String, ra: Float, dec: Float, radius: Float, completion: @escaping (MASTTAPResponse)-> Void) {
+        print("getDiscDetection: \(target) ra: \(ra) dec: \(dec) radiuss \(radius)")
+        
+    let start = CACurrentMediaTime()
+        let service = Service.Mast_Catalogs_DiskDetective_Cone
+        var params = service.serviceRequest(requestType: .coneSearch)
+        params.setParameters(params: [MAP.ra: ra, MAP.dec: dec, MAP.radius: radius])
+        params.setGeneralParameters(params: MAP.values.defaultGeneralParameters())
+        self.setTargetId(targetId: target)
+        self.queryMast(service: service, params: params, returnType: .json, { success in
+            let end = CACurrentMediaTime()
+            print("getDiscDetection: search completed in \(end - start)")
+            let table = self.targets[target]!
+            let results = table.getCoamResults()
+            print(results)
+        })
+    }
+
 }

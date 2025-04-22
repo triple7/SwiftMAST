@@ -13,6 +13,7 @@ public enum MASTTap: String, Codable, CaseIterable {
     case tap_schema_keys = "tap_schema.keys"
     case tap_schema_key_columns = "tap_schema.key_columns"
     case dbo_catalog_record = "dbo.catalogrecord"
+    case disk_detective = "disk_detective"
 
     private enum CodingKeys: String, CodingKey {
         case tap_schema_schemas = "tap_schema.schemas"

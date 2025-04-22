@@ -252,4 +252,28 @@ extension SwiftMAST {
         }
     }
 
+    /** Mark: optimise what products get downloaded
+     Using combined frequency ranges
+     FILTER_BANDS models a range of frequencies
+     per filter band
+    */
+//    internal func pruneProductsByFilterBand(results: [CoamResult]) -> [CoamResult] {
+//        var firstFilter = [String: [CoamResult]]()
+//        for product in results {
+//            for key in FILTER_BANDS.keys {
+//                let band = FILTER_BANDS[key]!
+//                if band.contains(product.filters) {
+//                    if firstFilter[key] == nil {
+//                        firstFilter[key] = [product]
+//                    } else {
+//                        firstFilter[key]!.append(product)
+//                    }
+//                }
+//            }
+//        }
+//        
+//        // Get unique filter and obs_collection combinations
+//    }
+
+    
 }
