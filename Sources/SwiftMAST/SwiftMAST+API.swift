@@ -476,7 +476,7 @@ func getTicCrossmatch(ra: Float, dec: Float, radius: Float, result: @escaping ([
     
     /** Make a MAST TAP request to get disc detection info on a given coordinate
      */
-    public func getDiscDetection(target: String, ra: Float, dec: Float, radius: Float, completion: @escaping (MASTTAPResponse)-> Void) {
+    public func getDiscDetection(target: String, ra: Float, dec: Float, radius: Float, completion: @escaping ([CoamResult])-> Void) {
         print("getDiscDetection: \(target) ra: \(ra) dec: \(dec) radiuss \(radius)")
         
     let start = CACurrentMediaTime()
@@ -490,7 +490,7 @@ func getTicCrossmatch(ra: Float, dec: Float, radius: Float, result: @escaping ([
             print("getDiscDetection: search completed in \(end - start)")
             let table = self.targets[target]!
             let results = table.getCoamResults()
-            print(results)
+            completion(results)
         })
     }
 
