@@ -74,8 +74,6 @@ func queryMast(service: Service, params: MASTJson, returnType: APIReturnType, _ 
 
         let task = session.dataTask(with: url) { [weak self] data, response, error in
             
-            print(error)
-            print(response)
             if self!.requestIsValid(error: error, response: response) {
                 var table:MASTTable!
                 switch returnType {

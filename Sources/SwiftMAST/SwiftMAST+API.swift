@@ -206,17 +206,18 @@ public func getFilteredConeSearch(ra: Float, dec: Float, radius: Float=0.2, filt
         let start = CACurrentMediaTime()
         self.queryMast(service: service, params: params, returnType: .json, { success in
             let end = CACurrentMediaTime()
-            print("target search results downloaded in \(end - start)")
+            print("getScienceImageProducts: search results downloaded in \(end - start)")
             // we are looking for the targetId set previously
                 let table = self.targets[targetName]!
                 var coamResults = table.getCoamResults()
                 coamResults.sort()
-            print("Got list of \(coamResults.count) data products.")
+            print("getScienceImageProducts: Got list of \(coamResults.count) data products.")
                     let uniqueFilters = table.getUniqueString(for: Coam.filters.id)
 
             self.printUniqueSets(table: table)
 //            self.printUrls(table: table)
                     // dictionary of products by filter
+            self.pruneProductsByFilterBand(results: coamResults)
                     var products = [String:[CoamResult]]()
                     for result in coamResults {
                         let filter = result.filters
