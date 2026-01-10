@@ -8,14 +8,14 @@
 import Foundation
 import SwiftMAST
 
-print("🚀 Starting M31 FITS Metadata Extraction Test\n")
+print("Starting M31 FITS Metadata Extraction Test\n")
 
 let mast = SwiftMAST()
 
 // Test with M31 (Andromeda Galaxy)
 let targetName = "M31"
 
-print("📡 Downloading imagery for \(targetName)...\n")
+print("Downloading imagery for \(targetName)...\n")
 
 // Download FITS files for M31
 // Using default science filter options and requesting FITS files
@@ -26,8 +26,10 @@ mast.downloadImagery(
     pageSize: 5,  // Limit to 5 for testing
     token: nil
 ) { urls in
-    print("\n✅ Download complete!")
-    print("📦 Downloaded \(urls.count) FITS files\n")
+    print("\nDownload complete!")
+    print("Downloaded \(urls.count) FITS files\n")
+
+    print('')
 
     // Print all the URLs with their metadata
     for (index, url) in urls.enumerated() {
@@ -36,12 +38,12 @@ mast.downloadImagery(
         // Get metadata for this specific URL
         if let metadata = mast.getFitsMetadata(target: targetName, forUrl: url) {
             print(
-                "    📐 NAXIS: \(metadata.naxis ?? 0), Dimensions: \(metadata.dimensionDescription)")
+                "    NAXIS: \(metadata.naxis ?? 0), Dimensions: \(metadata.dimensionDescription)")
             if let filter = metadata.filter {
                 print("    🔭 Filter: \(filter)")
             }
             if let expTime = metadata.exposureTime {
-                print("    ⏱️ Exposure: \(String(format: "%.2f", expTime))s")
+                print("    Exposure: \(String(format: "%.2f", expTime))s")
             }
         }
     }
@@ -55,18 +57,18 @@ mast.downloadImagery(
 
     // Get metadata as dictionary keyed by URL
     let metadataByUrl = mast.getFitsMetadata(target: targetName, forUrls: urls)
-    print("\n📎 Metadata lookup by URL: \(metadataByUrl.count)/\(urls.count) URLs have metadata")
+    print("\n Metadata lookup by URL: \(metadataByUrl.count)/\(urls.count) URLs have metadata")
 
     // Access the metadata programmatically
     if let metadataList = mast.getFitsMetadata(target: targetName) {
         print("\n" + String(repeating: "=", count: 80))
-        print("📈 METADATA STATISTICS")
+        print(" METADATA STATISTICS")
         print(String(repeating: "=", count: 80) + "\n")
 
         // Analyze dimensions
         let dimensions = metadataList.compactMap { $0.naxis }
         if !dimensions.isEmpty {
-            print("📐 Dimension Analysis:")
+            print(" Dimension Analysis:")
             let dim2D = dimensions.filter { $0 == 2 }.count
             let dim3D = dimensions.filter { $0 == 3 }.count
             print("  - 2D Images: \(dim2D)")
@@ -77,14 +79,14 @@ mast.downloadImagery(
         let filters = metadataList.compactMap { $0.filter }
         if !filters.isEmpty {
             let uniqueFilters = Set(filters)
-            print("\n🔭 Filters Used: \(uniqueFilters.sorted().joined(separator: ", "))")
+            print("\n Filters Used: \(uniqueFilters.sorted().joined(separator: ", "))")
         }
 
         // Analyze telescopes
         let telescopes = metadataList.compactMap { $0.telescope }
         if !telescopes.isEmpty {
             let uniqueTelescopes = Set(telescopes)
-            print("\n🛰️ Telescopes: \(uniqueTelescopes.sorted().joined(separator: ", "))")
+            print("\n Telescopes: \(uniqueTelescopes.sorted().joined(separator: ", "))")
         }
 
         // Analyze instruments
@@ -100,7 +102,7 @@ mast.downloadImagery(
             let avgExposure = exposureTimes.reduce(0, +) / Double(exposureTimes.count)
             let minExposure = exposureTimes.min() ?? 0
             let maxExposure = exposureTimes.max() ?? 0
-            print("\n⏱️ Exposure Times:")
+            print("\n⏱ Exposure Times:")
             print("  - Average: \(String(format: "%.2f", avgExposure)) s")
             print("  - Min: \(String(format: "%.2f", minExposure)) s")
             print("  - Max: \(String(format: "%.2f", maxExposure)) s")
@@ -108,7 +110,7 @@ mast.downloadImagery(
 
         // WCS information
         let wcsImages = metadataList.filter { $0.crval1 != nil && $0.crval2 != nil }
-        print("\n🌍 World Coordinate System:")
+        print("\n World Coordinate System:")
         print("  - Images with WCS: \(wcsImages.count)/\(metadataList.count)")
 
         // Pixel scales
@@ -121,7 +123,7 @@ mast.downloadImagery(
     }
 
     print("\n" + String(repeating: "=", count: 80))
-    print("✨ Test complete! Check FITS_METADATA_GUIDE.md for field explanations")
+    print(" Test complete! Check FITS_METADATA_GUIDE.md for field explanations")
     print(String(repeating: "=", count: 80) + "\n")
 
     exit(0)
