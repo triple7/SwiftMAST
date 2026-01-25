@@ -29,7 +29,7 @@ mast.downloadImagery(
     print("\nDownload complete!")
     print("Downloaded \(urls.count) FITS files\n")
 
-    print('')
+    print("")
 
     // Print all the URLs with their metadata
     for (index, url) in urls.enumerated() {
@@ -37,6 +37,39 @@ mast.downloadImagery(
 
         // Get metadata for this specific URL
         if let metadata = mast.getFitsMetadata(target: targetName, forUrl: url) {
+            // Write metadata to a JSON file
+            let encoder = JSONEncoder()
+            encoder.outputFormatting = .prettyPrinted
+            if let data = try? encoder.encode(metadata) {
+                let fileName = url.lastPathComponent.replacingOccurrences(
+                    of: ".fits", with: "_metadata.json")
+                let fileURL = URL(fileURLWithPath: fileName)
+                try? data.write(to: fileURL)
+                print("    Metadata written to \(fileName)")
+            }
+            // Write raw metadata to a file
+            print(metadata.rawMetadata)
+            let rawMetadata = metadata.rawMetadata
+            let rawMetatdataEncoder = JSONEncoder()
+            rawMetatdataEncoder.outputFormatting = .prettyPrinted
+            if let rawData = try? rawMetatdataEncoder.encode(rawMetadata) {
+                let rawFileName = "m31_metadata.txt"
+                let rawFileURL = URL(fileURLWithPath: rawFileName)
+                do {
+                    if FileManager.default.fileExists(atPath: rawFileURL.path) {
+                        let fileHandle = try FileHandle(forWritingTo: rawFileURL)
+                        fileHandle.seekToEndOfFile()
+                        fileHandle.write(rawData)
+                        fileHandle.write("\n---\n".data(using: .utf8)!)
+                        try fileHandle.close()
+                    } else {
+                        try rawData.write(to: rawFileURL)
+                    }
+                    print("    Raw metadata appended to \(rawFileName)")
+                } catch {
+                    print("    Error writing raw metadata: \(error)")
+                }
+            }
             print(
                 "    NAXIS: \(metadata.naxis ?? 0), Dimensions: \(metadata.dimensionDescription)")
             if let filter = metadata.filter {
@@ -45,6 +78,8 @@ mast.downloadImagery(
             if let expTime = metadata.exposureTime {
                 print("    Exposure: \(String(format: "%.2f", expTime))s")
             }
+        } else {
+            print("   No metadata found for this file.  ")
         }
     }
 
@@ -57,10 +92,19 @@ mast.downloadImagery(
 
     // Get metadata as dictionary keyed by URL
     let metadataByUrl = mast.getFitsMetadata(target: targetName, forUrls: urls)
+
     print("\n Metadata lookup by URL: \(metadataByUrl.count)/\(urls.count) URLs have metadata")
 
     // Access the metadata programmatically
     if let metadataList = mast.getFitsMetadata(target: targetName) {
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = .prettyPrinted
+        if let data = try? encoder.encode(metadataList) {
+            let fileURL = URL(fileURLWithPath: "extracted_metadata.json")
+            try? data.write(to: fileURL)
+            print("Metadata list written to extracted_metadata.json")
+        }
+
         print("\n" + String(repeating: "=", count: 80))
         print(" METADATA STATISTICS")
         print(String(repeating: "=", count: 80) + "\n")

@@ -182,21 +182,22 @@ extension SwiftMAST {
 
             // Add the fits or jpeg data to the target
             if productType == .Fits {
-                let fits = FitsFile.read(try! Data(contentsOf: saveUrl))!
-                let rawMetadata = getFitsMetaData(fits: fits)
-                let structuredMetadata = FITSMetadata(
-                    fileIdentifier: saveUrl.lastPathComponent, metadata: rawMetadata)
+                // Convert FITS to JPEG for viewing
+                let jpegUrl = MASTDirectory.appendingPathComponent(
+                    fileExtension.replacingOccurrences(of: ".Fits", with: ".jpg"))
+                let fitsData = convertFitsToJpeg(url: saveUrl, writeToUrl: jpegUrl)
 
-                // Log the metadata
-                // print("✨ Extracted FITS metadata:")
-                // print(structuredMetadata.description)
-
-                let fitsData = FitsData(
-                    metadata: rawMetadata, url: saveUrl, structuredMetadata: structuredMetadata)
+                // Store the FITS metadata
                 self.appendFitsData(target: targetName, fitsData: fitsData)
-            }
-            DispatchQueue.main.async {
-                completion(saveUrl)
+
+                // Return the JPEG URL for viewing (FITS file is already saved)
+                DispatchQueue.main.async {
+                    completion(jpegUrl)
+                }
+            } else {
+                DispatchQueue.main.async {
+                    completion(saveUrl)
+                }
             }
         } catch let error {
             self.sysLog.append(MASTSyslog(log: .RequestError, message: error.localizedDescription))
@@ -221,9 +222,6 @@ extension SwiftMAST {
         print("getFitsMetaData: HDU count \(fits.HDUs.count)")
         for hdu in fits.HDUs {
             print("HDU: \n \(hdu.description)")
-            for header in hdu.headerUnit {
-                // print("\(header.keyword): \(header.value)")
-            }
         }
 
         // get the metadata from the hdu primary header unit

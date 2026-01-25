@@ -66,7 +66,7 @@ extension SwiftMAST {
     }
 
     /** Make a cone search for data products in the MAST archives
-    
+
      */
     public func getConeSearch(
         targetId: String, ra: Float, dec: Float, radius: Float = 0.2, preview: Bool = false,
@@ -112,7 +112,7 @@ extension SwiftMAST {
     }
 
     /** Make a filtered cone search for data products in the MAST archives
-    
+
      */
     public func getFilteredConeSearch(
         ra: Float, dec: Float, radius: Float = 0.2,
@@ -502,27 +502,45 @@ extension SwiftMAST {
 
     /** Select a target by name and download all selectively filtered images
      to the documents folder under MAST/target_name/instrument_name/
-    
+
      Parameters:
      * targetName: String - Name of the astronomical target (e.g., "M31", "NGC 1234")
      * productType: ProductType - .Fits or .Jpeg (default: .Jpeg)
+       - When .Fits is selected: Downloads FITS files, extracts metadata, converts to JPEG for viewing
+       - When .Jpeg is selected: Downloads JPEG preview images directly
      * filterOptions: ImageryFilterOptions - Filter criteria for the search (default: science images)
      * pageSize: Int - Number of results per page (default: 50)
      * token: String? - MAST authentication token for proprietary data
-     * completion: Closure returning array of downloaded URLs
-    
+     * completion: Closure returning array of downloaded image URLs (JPEG format)
+
+     Note: When using productType .Fits, the function:
+     1. Filters for FITS files in the MAST archive
+     2. Downloads and saves FITS files
+     3. Extracts comprehensive metadata (accessible via getFitsMetadata())
+     4. Converts FITS to JPEG for easy viewing
+     5. Returns JPEG URLs in the completion handler
+
      Example usage:
      ```swift
      // Download UV-only imagery
      mast.downloadImagery(targetName: "M31", filterOptions: .uvOnly) { urls in
          print("Downloaded \(urls.count) UV images")
      }
-    
+
      // Download Hubble images only
      mast.downloadImagery(targetName: "NGC 1234", filterOptions: .hubbleOnly) { urls in
          print("Downloaded \(urls.count) HST images")
      }
-    
+
+     // Download FITS files with metadata extraction
+     mast.downloadImagery(targetName: "M31", productType: .Fits, filterOptions: .defaultScience) { urls in
+         print("Downloaded \(urls.count) images (converted from FITS)")
+         // Access metadata
+         if let metadata = mast.getFitsMetadata(target: "M31") {
+             print("Extracted metadata from \(metadata.count) FITS files")
+         }
+     }
+
      // Custom filter: JWST infrared images
      let customFilter = ImageryFilterOptions(
          wavelengthRegions: ["INFRARED"],
