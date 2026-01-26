@@ -106,6 +106,7 @@ extension SwiftMAST {
             let fileUrl = MASTDirectory.appendingPathComponent(fileExtension)
 
             try data.write(to: fileUrl)
+            print("saveAsset: FITS file saved to \(fileUrl)")
 
             let jpegUrl = MASTDirectory.appendingPathComponent(
                 fileExtension.replacingOccurrences(of: "fits", with: "jpg"))
@@ -114,8 +115,20 @@ extension SwiftMAST {
             // Store the FITS metadata
             self.appendFitsData(target: targetName, fitsData: fitsData)
 
+            // If JPEG conversion succeeded, use the JPEG URL; otherwise use the FITS file URL
+            let resultUrl = fitsData.url ?? fileUrl
+            let resultFitsData = FitsData(
+                metadata: fitsData.metadata, url: resultUrl,
+                structuredMetadata: fitsData.structuredMetadata)
+
+            if fitsData.url != nil {
+                print("saveAsset: JPEG image saved to \(jpegUrl)")
+            } else {
+                print("saveAsset: JPEG conversion failed, returning FITS URL instead")
+            }
+
             DispatchQueue.main.async {
-                completion(fitsData)
+                completion(resultFitsData)
             }
         } catch let error {
             self.sysLog.append(MASTSyslog(log: .RequestError, message: error.localizedDescription))
@@ -182,17 +195,27 @@ extension SwiftMAST {
 
             // Add the fits or jpeg data to the target
             if productType == .Fits {
+                print("saveTempUrlToFile: FITS file saved to \(saveUrl)")
+
                 // Convert FITS to JPEG for viewing
                 let jpegUrl = MASTDirectory.appendingPathComponent(
-                    fileExtension.replacingOccurrences(of: ".Fits", with: ".jpg"))
+                    fileExtension.replacingOccurrences(of: ".fits", with: ".jpg"))
                 let fitsData = convertFitsToJpeg(url: saveUrl, writeToUrl: jpegUrl)
 
                 // Store the FITS metadata
                 self.appendFitsData(target: targetName, fitsData: fitsData)
 
-                // Return the JPEG URL for viewing (FITS file is already saved)
+                // Return the JPEG URL if conversion succeeded, otherwise return the FITS file URL
+                let resultUrl = fitsData.url ?? saveUrl
+
+                if fitsData.url != nil {
+                    print("saveTempUrlToFile: JPEG image saved to \(jpegUrl)")
+                } else {
+                    print("saveTempUrlToFile: JPEG conversion failed, returning FITS URL instead")
+                }
+
                 DispatchQueue.main.async {
-                    completion(jpegUrl)
+                    completion(resultUrl)
                 }
             } else {
                 DispatchQueue.main.async {
