@@ -8,26 +8,24 @@
 import Foundation
 import SwiftQValue
 
-public struct FitsData:Codable {
-    let metadata:[String: QValue]
-    var url:URL?
+public struct FitsData: Codable {
+    let metadata: [String: QValue]
+    var url: URL?
+    var structuredMetadata: FITSMetadata?
 }
 
+public struct TargetAsset: Codable {
+    let targetInfo: NameLookupJson
+    var preview: URL?
+    var assets: [CoamResult]?
+    var fitsData: [FitsData]?
 
-public struct TargetAsset:Codable {
-    let targetInfo:NameLookupJson
-    var preview:URL?
-    var assets:[CoamResult]?
-    var fitsData:[FitsData]?
-    
-    
     public mutating func setPreview(url: URL) {
         if self.preview == nil {
             self.preview = url
         }
     }
-    
-    
+
     public mutating func setAssets(assets: [CoamResult]) {
         if self.assets == nil {
             self.assets = assets
@@ -35,7 +33,7 @@ public struct TargetAsset:Codable {
             self.assets!.append(contentsOf: assets)
         }
     }
-    
+
     public mutating func setFitsData(fitsData: FitsData) {
         if self.fitsData == nil {
             self.fitsData = [fitsData]
@@ -43,5 +41,5 @@ public struct TargetAsset:Codable {
             self.fitsData?.append(fitsData)
         }
     }
-    
+
 }

@@ -13,7 +13,13 @@ let package = Package(
         // Products define the executables and libraries a package produces, and make them visible to other packages.
         .library(
             name: "SwiftMAST",
-            targets: ["SwiftMAST"])
+            targets: ["SwiftMAST"]),
+        .executable(
+            name: "TestM31Metadata",
+            targets: ["TestM31Metadata"]),
+        .executable(
+            name: "TestFitsConversion",
+            targets: ["TestFitsConversion"]),
     ],
     dependencies: [
         .package(url: "https://github.com/triple7/SwiftQValue", branch: "main"),
@@ -34,6 +40,17 @@ let package = Package(
                 .product(name: "Numerics", package: "swift-numerics"),
                 .product(name: "Zip", package: "zip"),
             ]),
+        .executableTarget(
+            name: "TestM31Metadata",
+            dependencies: ["SwiftMAST"],
+            path: "Sources/TestM31Metadata"),
+        .executableTarget(
+            name: "TestFitsConversion",
+            dependencies: [
+                .product(name: "SwiftQValue", package: "SwiftQValue"),
+                .product(name: "FITSKit", package: "fitskit"),
+            ],
+            path: "Sources/TestFitsConversion"),
         .testTarget(
             name: "SwiftMASTTests",
             dependencies: ["SwiftMAST"]),

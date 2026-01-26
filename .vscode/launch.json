@@ -1,0 +1,44 @@
+{
+    "configurations": [
+        {
+            "type": "swift",
+            "request": "launch",
+            "args": [],
+            "cwd": "${workspaceFolder:SwiftMAST}",
+            "name": "Debug TestM31Metadata",
+            "target": "TestM31Metadata",
+            "configuration": "debug",
+            "preLaunchTask": "swift: Build Debug TestM31Metadata"
+        },
+        {
+            "type": "swift",
+            "request": "launch",
+            "args": [],
+            "cwd": "${workspaceFolder:SwiftMAST}",
+            "name": "Release TestM31Metadata",
+            "target": "TestM31Metadata",
+            "configuration": "release",
+            "preLaunchTask": "swift: Build Release TestM31Metadata"
+        },
+        {
+            "type": "swift",
+            "request": "launch",
+            "args": [],
+            "cwd": "${workspaceFolder:SwiftMAST}",
+            "name": "Debug TestFitsConversion",
+            "target": "TestFitsConversion",
+            "configuration": "debug",
+            "preLaunchTask": "swift: Build Debug TestFitsConversion"
+        },
+        {
+            "type": "swift",
+            "request": "launch",
+            "args": [],
+            "cwd": "${workspaceFolder:SwiftMAST}",
+            "name": "Release TestFitsConversion",
+            "target": "TestFitsConversion",
+            "configuration": "release",
+            "preLaunchTask": "swift: Build Release TestFitsConversion"
+        }
+    ]
+}
