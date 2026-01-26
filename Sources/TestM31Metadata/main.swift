@@ -13,7 +13,7 @@ print("Starting FITS Metadata Extraction Test\n")
 let mast = SwiftMAST()
 
 // Test targets
-let targetNames = ["NGC 253", "NGC 224", "NGC 1772"]
+let targetNames = ["M31"]
 var currentIndex = 0
 
 func processTarget(_ targetName: String, completion: @escaping () -> Void) {
@@ -29,7 +29,7 @@ func processTarget(_ targetName: String, completion: @escaping () -> Void) {
         targetName: targetName,
         productType: .Fits,  // Download FITS files and convert to JPEG
         filterOptions: .defaultScience,
-        pageSize: 3,  // Limit to 3 per target for testing
+        pageSize: 2,  // Limit to 2 per target for testing
         token: nil
     ) { urls in
         print("\nDownload complete for \(targetName)!")
