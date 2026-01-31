@@ -235,20 +235,27 @@ extension SwiftMAST {
      * productType: ProductType - .Fits or .Jpeg (default: .Fits)
      * filterOptions: ImageryFilterOptions - Filter criteria for the search (default: science images)
      * pageSize: Int - Number of results per page (default: 50)
+     * page: Int - Page number for pagination (default: 1)
      * token: String? - MAST authentication token
      * result: Closure returning array of downloaded URLs
      */
     public func getScienceImageProducts(
         targetName: String, ra: Float, dec: Float, radius: Float, productType: ProductType = .Fits,
-        filterOptions: ImageryFilterOptions = .defaultScience, pageSize: Int = 50, token: String?,
-        result: @escaping ([URL]) -> Void
+        filterOptions: ImageryFilterOptions = .defaultScience, pageSize: Int = 50, page: Int = 1,
+        token: String?, result: @escaping ([URL]) -> Void
     ) {
+        self.log(
+            .OK,
+            message:
+                "getScienceImageProducts: Starting search for \(targetName) at RA=\(ra), Dec=\(dec), radius=\(radius), page=\(page), pageSize=\(pageSize)"
+        )
 
         let service = Service.Mast_Caom_Filtered_Position
         var params = service.serviceRequest(requestType: .advancedSearch)
 
         params.setGeneralParameters(params: MAP.values.defaultGeneralParameters())
         params.setParameter(param: MAP.pagesize, value: pageSize)
+        params.setParameter(param: MAP.page, value: page)
         let filterParams = filterOptions.toMASTFilters()
         params.setFilterParameters(params: filterParams)
         params.setParameters(params: [MAP.columns: "*", MAP.position: "\(ra), \(dec), \(radius)"])
@@ -258,12 +265,20 @@ extension SwiftMAST {
             service: service, params: params, returnType: .json,
             { success in
                 let end = CACurrentMediaTime()
-                print("getScienceImageProducts: search results downloaded in \(end - start)")
+                self.log(
+                    .OK,
+                    message:
+                        "getScienceImageProducts: Search completed in \(String(format: "%.2f", end - start))s"
+                )
                 // we are looking for the targetId set previously
                 let table = self.targets[targetName]!
                 var coamResults = table.getCoamResults()
                 coamResults.sort()
-                print("getScienceImageProducts: Got list of \(coamResults.count) data products.")
+                self.log(
+                    .OK,
+                    message:
+                        "getScienceImageProducts: Found \(coamResults.count) data products on page \(page)"
+                )
                 let uniqueFilters = table.getUniqueString(for: Coam.filters.id)
 
                 self.printUniqueSets(table: table)
@@ -288,18 +303,24 @@ extension SwiftMAST {
                     }
                 }
 
-                print("There are \(allFilterProducts.count) filtered products.")
+                self.log(
+                    .OK,
+                    message:
+                        "getScienceImageProducts: \(allFilterProducts.count) unique filter products to download"
+                )
                 // Some products are meant to be ddirect downloads
                 let directDownloadproducts = allFilterProducts.filter {
                     (productType == .Fits ? $0.dataURL : $0.jpegURL).contains("http")
                 }
 
-                print("There are \(directDownloadproducts.count) direct downloads.")
+                self.log(
+                    .OK,
+                    message:
+                        "getScienceImageProducts: \(directDownloadproducts.count) direct downloads, \(allFilterProducts.count - directDownloadproducts.count) MAST downloads"
+                )
                 let mastDownloadProducts = allFilterProducts.filter {
                     !(productType == .Fits ? $0.dataURL : $0.jpegURL).contains("http")
                 }
-
-                print("There are \(mastDownloadProducts.count) mast download products.")
                 // Get the MAST query url downloads and return the URLs
                 self.getDataproducts(
                     targetName: targetName, service: .Download_file, products: mastDownloadProducts,
@@ -510,6 +531,7 @@ extension SwiftMAST {
        - When .Jpeg is selected: Downloads JPEG preview images directly
      * filterOptions: ImageryFilterOptions - Filter criteria for the search (default: science images)
      * pageSize: Int - Number of results per page (default: 50)
+     * page: Int - Page number for pagination (default: 1, first page)
      * token: String? - MAST authentication token for proprietary data
      * completion: Closure returning array of downloaded image URLs (JPEG format)
 
@@ -549,26 +571,41 @@ extension SwiftMAST {
      mast.downloadImagery(targetName: "M42", filterOptions: customFilter) { urls in
          print("Downloaded \(urls.count) JWST IR images")
      }
+
+     // Pagination: Download page 2 of results
+     mast.downloadImagery(targetName: "M31", pageSize: 10, page: 2) { urls in
+         print("Downloaded \(urls.count) images from page 2")
+     }
      ```
      */
     public func downloadImagery(
         targetName: String, productType: ProductType = .Jpeg,
         filterOptions: ImageryFilterOptions = .defaultScience, pageSize: Int = 50,
-        token: String? = nil, completion: @escaping ([URL]) -> Void
+        page: Int = 1, token: String? = nil, completion: @escaping ([URL]) -> Void
     ) {
-        print("downloadImagery: \(targetName) with filters: \(filterOptions)")
+        self.log(
+            .OK,
+            message:
+                "downloadImagery: Starting for '\(targetName)' with page=\(page), pageSize=\(pageSize)"
+        )
         let targetStart = CACurrentMediaTime()
         self.setTargetId(targetId: targetName)
         self.lookupTargetByName(
             targetName: targetName,
             result: { targetLookup in
                 guard !targetLookup.isEmpty, let table = self.targets[targetName] else {
-                    print("Could not resolve \(targetName)")
+                    self.log(
+                        .RequestError,
+                        message: "downloadImagery: Could not resolve target '\(targetName)'")
                     completion([])
                     return
                 }
                 let targetEnd = CACurrentMediaTime()
-                print("downloadImagery: Target found in \(targetEnd - targetStart)")
+                self.log(
+                    .OK,
+                    message:
+                        "downloadImagery: Target '\(targetName)' resolved in \(String(format: "%.2f", targetEnd - targetStart))s"
+                )
                 let resolved = table.getNameLookupResults().first!
                 // Save the initial target info
                 self.setTargetAssets(target: targetName, targetInfo: resolved)
@@ -578,8 +615,13 @@ extension SwiftMAST {
                 self.getScienceImageProducts(
                     targetName: targetName, ra: resolved.ra, dec: resolved.dec,
                     radius: resolved.radius, productType: productType, filterOptions: filterOptions,
-                    pageSize: pageSize, token: token
+                    pageSize: pageSize, page: page, token: token
                 ) { urls in
+                    self.log(
+                        .OK,
+                        message:
+                            "downloadImagery: Completed with \(urls.count) images for '\(targetName)'"
+                    )
                     completion(urls)
                 }
 

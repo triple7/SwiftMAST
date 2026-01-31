@@ -478,4 +478,132 @@ final class SwiftMASTTests: XCTestCase {
 
         print("MASTSyslog description test passed")
     }
+
+    // MARK: - Pagination Tests
+
+    /// Test that downloadImagery accepts page parameter and logs are generated
+    func testDownloadImageryWithPaginationLogs() {
+        let mast = SwiftMAST()
+        var receivedLogs: [MASTSyslog] = []
+
+        // Subscribe to capture logs
+        mast.subscribeToLogs(id: "paginationTest") { logEntry in
+            receivedLogs.append(logEntry)
+        }
+
+        // Trigger downloadImagery with pagination parameters
+        // This will log the start message immediately
+        let expectation = XCTestExpectation(description: "downloadImagery should log start message")
+
+        // Call with page parameter - this triggers immediate logging
+        mast.downloadImagery(
+            targetName: "InvalidTargetForTest123",
+            pageSize: 10,
+            page: 2
+        ) { _ in
+            expectation.fulfill()
+        }
+
+        wait(for: [expectation], timeout: 30.0)
+
+        // Verify that at least the start log was generated with pagination info
+        let startLogs = receivedLogs.filter {
+            $0.message.contains("page=2") && $0.message.contains("pageSize=10")
+        }
+        XCTAssertGreaterThan(startLogs.count, 0, "Should have logged pagination parameters")
+
+        print("Download imagery with pagination logs test passed")
+    }
+
+    /// Test that page parameter defaults to 1
+    func testDownloadImageryDefaultPage() {
+        let mast = SwiftMAST()
+        var receivedLogs: [MASTSyslog] = []
+
+        mast.subscribeToLogs(id: "defaultPageTest") { logEntry in
+            receivedLogs.append(logEntry)
+        }
+
+        let expectation = XCTestExpectation(
+            description: "downloadImagery should use default page=1")
+
+        mast.downloadImagery(targetName: "InvalidTargetForTest456") { _ in
+            expectation.fulfill()
+        }
+
+        wait(for: [expectation], timeout: 30.0)
+
+        // Verify default page=1 was used
+        let startLogs = receivedLogs.filter { $0.message.contains("page=1") }
+        XCTAssertGreaterThan(startLogs.count, 0, "Should have logged default page=1")
+
+        print("Download imagery default page test passed")
+    }
+
+    /// Test that logs capture error when target cannot be resolved
+    func testDownloadImageryLogsErrorOnInvalidTarget() {
+        let mast = SwiftMAST()
+        var receivedLogs: [MASTSyslog] = []
+
+        mast.subscribeToLogs(id: "errorLogTest") { logEntry in
+            receivedLogs.append(logEntry)
+        }
+
+        let expectation = XCTestExpectation(
+            description: "downloadImagery should log error for invalid target")
+
+        mast.downloadImagery(targetName: "CompletelyInvalidTarget999XYZ") { urls in
+            XCTAssertEqual(urls.count, 0, "Should return empty array for invalid target")
+            expectation.fulfill()
+        }
+
+        wait(for: [expectation], timeout: 30.0)
+
+        // Check for error log
+        let errorLogs = receivedLogs.filter { $0.log == .RequestError }
+        XCTAssertGreaterThan(errorLogs.count, 0, "Should have logged an error for invalid target")
+
+        print("Download imagery logs error on invalid target test passed")
+    }
+
+    /// Test getScienceImageProducts page parameter is passed correctly in the log
+    func testGetScienceImageProductsPageParameter() {
+        let mast = SwiftMAST()
+        var receivedLogs: [MASTSyslog] = []
+        let logExpectation = XCTestExpectation(description: "Should log page parameter")
+
+        mast.subscribeToLogs(id: "scienceProductsPageTest") { logEntry in
+            receivedLogs.append(logEntry)
+            // Fulfill as soon as we see the page=3 log
+            if logEntry.message.contains("page=3") {
+                logExpectation.fulfill()
+            }
+        }
+
+        // Set target first (required by getScienceImageProducts)
+        mast.setTargetId(targetId: "TestTarget")
+
+        // Call getScienceImageProducts directly with specific page
+        // We don't need to wait for completion, just for the log
+        mast.getScienceImageProducts(
+            targetName: "TestTarget",
+            ra: 10.68,
+            dec: 41.27,
+            radius: 0.2,
+            pageSize: 5,
+            page: 3,
+            token: nil
+        ) { _ in
+            // We don't need to wait for this
+        }
+
+        // Wait for the log with page=3 to appear (should be almost immediate)
+        wait(for: [logExpectation], timeout: 5.0)
+
+        // Verify page=3 was logged
+        let pageLogs = receivedLogs.filter { $0.message.contains("page=3") }
+        XCTAssertGreaterThan(pageLogs.count, 0, "Should have logged page=3 parameter")
+
+        print("getScienceImageProducts page parameter test passed")
+    }
 }
