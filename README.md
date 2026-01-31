@@ -18,4 +18,54 @@ The main format being used is the [FITS](https://www.loc.gov/preservation/digita
 
 This package depends on [FITSCore](https://github.com/brampf/fitscore) for opening/processing/saving data to and from FITS and other image formats.
 
+## Log Subscriber API
+
+SwiftMAST provides a logging system that allows external applications to subscribe to log events. This is useful for monitoring download progress, debugging, or integrating with your app's logging infrastructure.
+
+### Subscribing to Logs
+
+```swift
+let mast = SwiftMAST()
+
+// Subscribe to all log events
+mast.subscribeToLogs(id: "myAppLogger") { logEntry in
+    print("[\(logEntry.log)] \(logEntry.message) at \(logEntry.timecode)")
+}
+
+// Perform operations - your callback will receive log events
+mast.downloadImagery(targetName: "M31", productType: .Jpeg) { urls in
+    print("Downloaded \(urls.count) images")
+}
+```
+
+### Filtering Log Events
+
+You can filter logs by type in your callback:
+
+```swift
+mast.subscribeToLogs(id: "errorLogger") { logEntry in
+    // Only handle errors
+    if logEntry.log == .RequestError || logEntry.log == .Cancelled {
+        print("Error: \(logEntry.message)")
+    }
+}
+```
+
+### Unsubscribing
+
+```swift
+// Unsubscribe a specific subscriber
+mast.unsubscribeFromLogs(id: "myAppLogger")
+
+// Or remove all subscribers
+mast.clearLogSubscribers()
+```
+
+### MASTSyslog Structure
+
+Each log entry contains:
+- `log`: The log type (`MASTError` enum - `.OK`, `.RequestError`, `.Cancelled`, etc.)
+- `message`: The log message string
+- `timecode`: Formatted timestamp string
+- `date`: The `Date` object when the log was created
 

@@ -279,7 +279,7 @@ final class SwiftMASTTests: XCTestCase {
         XCTAssertEqual(fitsMetadata.ctype1, "RA---TAN")
         XCTAssertEqual(fitsMetadata.ctype2, "DEC--TAN")
 
-        print("✅ FITSMetadata extraction test passed")
+        print("FITSMetadata extraction test passed")
         print(fitsMetadata.description)
     }
 
@@ -303,7 +303,7 @@ final class SwiftMASTTests: XCTestCase {
         XCTAssertEqual(fitsMetadata.telescope, "JWST")
         XCTAssertEqual(fitsMetadata.instrument, "NIRSpec")
 
-        print("✅ FITSMetadata 3D test passed")
+        print("FITSMetadata 3D test passed")
     }
 
     func testFITSMetadataStore() {
@@ -338,6 +338,144 @@ final class SwiftMASTTests: XCTestCase {
         print("\n=== Testing metadata print output ===")
         mast.printFitsMetadata(target: "M31")
 
-        print("✅ FITSMetadata store test passed")
+        print("FITSMetadata store test passed")
+    }
+
+    // MARK: - Log Subscriber Tests
+
+    func testSubscribeToLogs() {
+        let mast = SwiftMAST()
+        let expectation = XCTestExpectation(
+            description: "Log subscriber callback should be invoked")
+        var receivedLog: MASTSyslog?
+
+        mast.subscribeToLogs(id: "testSubscriber") { logEntry in
+            receivedLog = logEntry
+            expectation.fulfill()
+        }
+
+        // Trigger a log entry
+        mast.log(.OK, message: "Test log message")
+
+        wait(for: [expectation], timeout: 2.0)
+
+        XCTAssertNotNil(receivedLog)
+        XCTAssertEqual(receivedLog?.log, .OK)
+        XCTAssertEqual(receivedLog?.message, "Test log message")
+
+        print("Subscribe to logs test passed")
+    }
+
+    func testLogAppendsToSysLog() {
+        let mast = SwiftMAST()
+
+        // Log a message
+        mast.log(.RequestError, message: "Test error message")
+
+        // Verify it's in sysLog
+        XCTAssertEqual(mast.sysLog.count, 1)
+        XCTAssertEqual(mast.sysLog[0].log, .RequestError)
+        XCTAssertEqual(mast.sysLog[0].message, "Test error message")
+
+        print("Log appends to sysLog test passed")
+    }
+
+    func testMultipleSubscribers() {
+        let mast = SwiftMAST()
+        var callbackCount = 0
+        let expectation = XCTestExpectation(description: "Both subscribers should be called")
+        expectation.expectedFulfillmentCount = 2
+
+        mast.subscribeToLogs(id: "subscriber1") { _ in
+            callbackCount += 1
+            expectation.fulfill()
+        }
+
+        mast.subscribeToLogs(id: "subscriber2") { _ in
+            callbackCount += 1
+            expectation.fulfill()
+        }
+
+        mast.log(.OK, message: "Test message")
+
+        wait(for: [expectation], timeout: 2.0)
+        XCTAssertEqual(callbackCount, 2)
+
+        print("Multiple subscribers test passed")
+    }
+
+    func testUnsubscribeFromLogs() {
+        let mast = SwiftMAST()
+        var callbackInvoked = false
+
+        mast.subscribeToLogs(id: "toRemove") { _ in
+            callbackInvoked = true
+        }
+
+        // Unsubscribe
+        mast.unsubscribeFromLogs(id: "toRemove")
+
+        // Wait a bit for the barrier to complete
+        let expectation = XCTestExpectation(description: "Wait for async unsubscribe")
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+            // Log a message after unsubscribing
+            mast.log(.OK, message: "Should not trigger callback")
+            expectation.fulfill()
+        }
+
+        wait(for: [expectation], timeout: 2.0)
+
+        // The callback should NOT have been invoked
+        XCTAssertFalse(callbackInvoked)
+
+        print("Unsubscribe from logs test passed")
+    }
+
+    func testClearLogSubscribers() {
+        let mast = SwiftMAST()
+        var callbackCount = 0
+
+        mast.subscribeToLogs(id: "sub1") { _ in callbackCount += 1 }
+        mast.subscribeToLogs(id: "sub2") { _ in callbackCount += 1 }
+        mast.subscribeToLogs(id: "sub3") { _ in callbackCount += 1 }
+
+        // Clear all subscribers
+        mast.clearLogSubscribers()
+
+        // Wait for the barrier to complete
+        let expectation = XCTestExpectation(description: "Wait for async clear")
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+            // Log a message after clearing
+            mast.log(.OK, message: "Should not trigger any callbacks")
+            expectation.fulfill()
+        }
+
+        wait(for: [expectation], timeout: 2.0)
+
+        // No callbacks should have been invoked
+        XCTAssertEqual(callbackCount, 0)
+
+        print("Clear log subscribers test passed")
+    }
+
+    func testSubscribeToLogsReturnsId() {
+        let mast = SwiftMAST()
+
+        let returnedId = mast.subscribeToLogs(id: "myUniqueId") { _ in }
+
+        XCTAssertEqual(returnedId, "myUniqueId")
+
+        print("Subscribe returns ID test passed")
+    }
+
+    func testMASTSyslogDescription() {
+        let entry = MASTSyslog(log: .OK, message: "Test message")
+
+        let description = entry.description
+        XCTAssertTrue(description.contains("MAST:"))
+        XCTAssertTrue(description.contains("OK"))
+        XCTAssertTrue(description.contains("Test message"))
+
+        print("MASTSyslog description test passed")
     }
 }
