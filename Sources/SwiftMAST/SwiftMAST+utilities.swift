@@ -38,8 +38,7 @@ extension SwiftMAST {
                     for: .documentDirectory, in: .userDomainMask
                 ).first
             else {
-                self.sysLog.append(
-                    MASTSyslog(log: .RequestError, message: "Unable to open Documents folder"))
+                self.log(.RequestError, message: "Unable to open Documents folder")
                 completion([])
                 return
             }
@@ -75,8 +74,7 @@ extension SwiftMAST {
                     completion(unzippedFiles.map { Foundation.URL(fileURLWithPath: $0) })
                 }
             } catch let error {
-                self.sysLog.append(
-                    MASTSyslog(log: .RequestError, message: error.localizedDescription))
+                self.log(.RequestError, message: error.localizedDescription)
                 DispatchQueue.main.async {
                     completion([])
                 }
@@ -131,7 +129,7 @@ extension SwiftMAST {
                 completion(resultFitsData)
             }
         } catch let error {
-            self.sysLog.append(MASTSyslog(log: .RequestError, message: error.localizedDescription))
+            self.log(.RequestError, message: error.localizedDescription)
             DispatchQueue.main.async {
                 completion(nil)
             }
@@ -169,7 +167,7 @@ extension SwiftMAST {
             return imageUrl
 
         } catch let error {
-            self.sysLog.append(MASTSyslog(log: .RequestError, message: error.localizedDescription))
+            self.log(.RequestError, message: error.localizedDescription)
             return nil
         }
     }
@@ -228,7 +226,7 @@ extension SwiftMAST {
                 }
             }
         } catch let error {
-            self.sysLog.append(MASTSyslog(log: .RequestError, message: error.localizedDescription))
+            self.log(.RequestError, message: error.localizedDescription)
             DispatchQueue.main.async {
                 completion(nil)
             }
