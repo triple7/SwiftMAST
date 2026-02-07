@@ -71,27 +71,31 @@ Each log entry contains:
 
 ## Science Image Query Utilities
 
-You can query for filtered science image results without downloading, then build a URL for a single result.
+You can resolve target coordinates, query for filtered science image results without downloading, then build a URL for a single result.
 
 ```swift
 let mast = SwiftMAST()
 
-mast.getScienceImageQueryResults(
-    targetName: "M31",
-    ra: 10.6847083,
-    dec: 41.26875,
-    radius: 0.1,
-    filterOptions: .defaultScience,
-    pageSize: 5,
-    page: 1
-) { results in
-    print("Query returned \(results.count) products")
+mast.lookupTargetCoordinates(targetName: "M31") { coordinates in
+    guard let coordinates = coordinates else {
+        print("Could not resolve target")
+        return
+    }
 
-    if let first = results.first,
-       let url = mast.getScienceImageProductUrl(result: first, productType: .Fits) {
-        print("Download URL: \(url)")
-    } else {
-        print("No URL available for first result")
+    mast.getScienceImageQueryResults(
+        targetName: "M31",
+        filterOptions: .defaultScience,
+        pageSize: 5,
+        page: 1
+    ) { results in
+        print("Query returned \(results.count) products")
+
+        if let first = results.first,
+           let url = mast.getScienceImageProductUrl(result: first, productType: .Fits) {
+            print("Download URL: \(url)")
+        } else {
+            print("No URL available for first result")
+        }
     }
 }
 ```

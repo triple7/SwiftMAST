@@ -290,6 +290,22 @@ final class SwiftMASTTests: XCTestCase {
         wait(for: [expectation], timeout: 120.0)
     }
 
+    /// Test resolving target coordinates for M31
+    func testLookupTargetCoordinates() {
+        let expectation = XCTestExpectation(description: "Lookup target coordinates")
+        let mast = SwiftMAST()
+
+        mast.lookupTargetCoordinates(targetName: "M31") { coordinates in
+            XCTAssertNotNil(coordinates)
+            if let coordinates = coordinates {
+                XCTAssertGreaterThan(coordinates.radius, 0.0)
+            }
+            expectation.fulfill()
+        }
+
+        wait(for: [expectation], timeout: 60.0)
+    }
+
     /// Test querying science image results for M31
     func testGetScienceImageQueryResults() {
         let expectation = XCTestExpectation(description: "Get science image query results")
@@ -297,9 +313,6 @@ final class SwiftMASTTests: XCTestCase {
 
         mast.getScienceImageQueryResults(
             targetName: "M31",
-            ra: 10.6847083,
-            dec: 41.26875,
-            radius: 0.1,
             filterOptions: .defaultScience,
             pageSize: 5,
             page: 1

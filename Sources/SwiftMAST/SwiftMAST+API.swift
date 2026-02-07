@@ -8,6 +8,8 @@
 import Foundation
 import QuartzCore
 
+public typealias TargetCoordinates = (ra: Float, dec: Float, radius: Float)
+
 /// SwiftMAST common API calls
 /// These convenience functions allow quick access to some of the more interesting MAST API data requests.
 /// The MAST portal can be very complex to navigate, however most users would be looking to do the following investigations:
@@ -41,6 +43,39 @@ extension SwiftMAST {
                     output += resolved
                 }
                 result(output)
+            })
+    }
+
+    /** Lookup a target by name and return its coordinates
+     Parameters:
+     * targetName: String
+     * result: Closure returning TargetCoordinates or nil if unresolved
+     */
+    public func lookupTargetCoordinates(
+        targetName: String, result: @escaping (TargetCoordinates?) -> Void
+    ) {
+        self.setTargetId(targetId: targetName)
+        let targetStart = CACurrentMediaTime()
+        self.lookupTargetByName(
+            targetName: targetName,
+            result: { targetLookup in
+                guard !targetLookup.isEmpty, let table = self.targets[targetName] else {
+                    self.log(
+                        .RequestError,
+                        message: "lookupTargetCoordinates: Could not resolve target '\(targetName)'"
+                    )
+                    result(nil)
+                    return
+                }
+                let targetEnd = CACurrentMediaTime()
+                self.log(
+                    .OK,
+                    message:
+                        "lookupTargetCoordinates: Target '\(targetName)' resolved in \(String(format: "%.2f", targetEnd - targetStart))s"
+                )
+                let resolved = table.getNameLookupResults().first!
+                self.setTargetAssets(target: targetName, targetInfo: resolved)
+                result((ra: resolved.ra, dec: resolved.dec, radius: resolved.radius))
             })
     }
 
@@ -280,6 +315,36 @@ extension SwiftMAST {
                     result(secondaryUrls + directUrls)
                 }
             }
+        }
+    }
+
+    /** Make a Science image only cone search and return filtered results
+     Parameters:
+     * targetName: String - the target identifier
+     * filterOptions: ImageryFilterOptions - Filter criteria for the search (default: science images)
+     * pageSize: Int - Number of results per page (default: 50)
+     * page: Int - Page number for pagination (default: 1)
+     * result: Closure returning filtered CoamResult entries
+     */
+    public func getScienceImageQueryResults(
+        targetName: String, filterOptions: ImageryFilterOptions = .defaultScience,
+        pageSize: Int = 50, page: Int = 1, result: @escaping ([CoamResult]) -> Void
+    ) {
+        self.lookupTargetCoordinates(targetName: targetName) { coordinates in
+            guard let coordinates = coordinates else {
+                result([])
+                return
+            }
+            self.getScienceImageQueryResults(
+                targetName: targetName,
+                ra: coordinates.ra,
+                dec: coordinates.dec,
+                radius: coordinates.radius,
+                filterOptions: filterOptions,
+                pageSize: pageSize,
+                page: page,
+                result: result
+            )
         }
     }
 
@@ -636,34 +701,21 @@ extension SwiftMAST {
             message:
                 "downloadImagery: Starting for '\(targetName)' with page=\(page), pageSize=\(pageSize)"
         )
-        let targetStart = CACurrentMediaTime()
-        self.setTargetId(targetId: targetName)
-        self.lookupTargetByName(
+        self.lookupTargetCoordinates(
             targetName: targetName,
-            result: { targetLookup in
-                guard !targetLookup.isEmpty, let table = self.targets[targetName] else {
+            result: { coordinates in
+                guard let coordinates = coordinates else {
                     self.log(
                         .RequestError,
                         message: "downloadImagery: Could not resolve target '\(targetName)'")
                     completion([])
                     return
                 }
-                let targetEnd = CACurrentMediaTime()
-                self.log(
-                    .OK,
-                    message:
-                        "downloadImagery: Target '\(targetName)' resolved in \(String(format: "%.2f", targetEnd - targetStart))s"
-                )
-                let resolved = table.getNameLookupResults().first!
-                // Save the initial target info
-                self.setTargetAssets(target: targetName, targetInfo: resolved)
 
-                // Get the images
-                // And save them in the targets dictionary for future downloads if required
                 self.getScienceImageProducts(
-                    targetName: targetName, ra: resolved.ra, dec: resolved.dec,
-                    radius: resolved.radius, productType: productType, filterOptions: filterOptions,
-                    pageSize: pageSize, page: page, token: token
+                    targetName: targetName, ra: coordinates.ra, dec: coordinates.dec,
+                    radius: coordinates.radius, productType: productType,
+                    filterOptions: filterOptions, pageSize: pageSize, page: page, token: token
                 ) { urls in
                     self.log(
                         .OK,
@@ -672,7 +724,6 @@ extension SwiftMAST {
                     )
                     completion(urls)
                 }
-
             })
     }
 
