@@ -30,6 +30,7 @@ extension SwiftMAST {
     {
         print("lookupTargetByName: \(targetName)")
         var output: [NameLookupJson] = []
+        self.setTargetId(targetId: targetName)
         let service = Service.Mast_Name_Lookup
         var params = service.serviceRequest(requestType: .lookup)
         params.setParameter(param: .input, value: targetName)
@@ -37,9 +38,8 @@ extension SwiftMAST {
         self.queryMast(
             service: service, params: params, returnType: .json,
             { success in
-                for target in self.targets.keys {
-                    let table = self.targets[target]
-                    let resolved = table!.getNameLookupResults()
+                if let table = self.targets[targetName] {
+                    let resolved = table.getNameLookupResults()
                     output += resolved
                 }
                 result(output)
