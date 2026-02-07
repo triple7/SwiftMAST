@@ -74,26 +74,45 @@ extension SwiftMAST {
         let session = URLSession(configuration: configuration, delegate: self, delegateQueue: queue)
 
         let task = session.dataTask(with: url) { [weak self] data, response, error in
-
-            if self!.requestIsValid(error: error, response: response) {
-                var table: MASTTable!
-                switch returnType {
-                case .json:
-                    table = self?.parseJson(data: data!)
-                case .xml:
-                    table = self?.parseXml(data: data!)
-                default:
-                    self?.log(
-                        .RequestError, message: "Return type not recognized or not yet available")
-                    closure(false)
-                    return
-                }
-
-                self?.targets[self!.currentTargetId!] = table
-                closure(true)
+            guard let self = self else {
+                closure(false)
                 return
             }
-            closure(false)
+            guard self.requestIsValid(error: error, response: response) else {
+                closure(false)
+                return
+            }
+            guard let data = data else {
+                self.log(.RequestError, message: "No data returned from MAST request")
+                closure(false)
+                return
+            }
+
+            var table: MASTTable?
+            switch returnType {
+            case .json:
+                table = self.parseJson(data: data)
+            case .xml:
+                table = self.parseXml(data: data)
+            default:
+                self.log(
+                    .RequestError, message: "Return type not recognized or not yet available")
+                closure(false)
+                return
+            }
+
+            guard let targetId = self.currentTargetId else {
+                self.log(.RequestError, message: "Target id not set before queryMast")
+                closure(false)
+                return
+            }
+            if let table = table {
+                self.targets[targetId] = table
+                closure(true)
+            } else {
+                self.log(.RequestError, message: "Failed to parse response table")
+                closure(false)
+            }
         }
         task.resume()
     }
