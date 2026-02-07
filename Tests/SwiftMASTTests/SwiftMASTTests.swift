@@ -5,6 +5,45 @@ import XCTest
 
 final class SwiftMASTTests: XCTestCase {
 
+    private func makeCoamResult(dataURL: String = "", jpegURL: String = "") -> CoamResult {
+        return CoamResult(
+            calib_level: 3,
+            dataRights: "PUBLIC",
+            dataURL: dataURL,
+            dataproduct_type: "IMAGE",
+            distance: 0,
+            em_max: 0,
+            em_min: 0,
+            filters: "F606W",
+            instrument_name: "ACS",
+            intentType: "science",
+            jpegURL: jpegURL,
+            mtFlag: false,
+            objID: 1,
+            obs_collection: "HST",
+            obs_id: "obs-1",
+            obs_title: "Test Observation",
+            obsid: 1,
+            project: "Test",
+            proposal_id: "1",
+            proposal_pi: "PI",
+            proposal_type: "TEST",
+            provenance_name: "MAST",
+            s_dec: QValue(value: "0.0"),
+            s_ra: QValue(value: "0.0"),
+            s_region: "",
+            sequence_number: 0,
+            srcDen: 0,
+            t_exptime: 0.0,
+            t_max: 0.0,
+            t_min: 0.0,
+            t_obs_release: 0.0,
+            target_classification: "",
+            target_name: "M31",
+            wavelength_region: "OPTICAL"
+        )
+    }
+
     // MARK: - ImageryFilterOptions Tests
 
     func testDefaultFilterOptions() {
@@ -128,6 +167,31 @@ final class SwiftMASTTests: XCTestCase {
         XCTAssertTrue(paramNames.contains("filters"))
     }
 
+    func testGetScienceImageProductUrlReturnsNilForMissingUrl() {
+        let mast = SwiftMAST()
+        let coamResult = makeCoamResult()
+
+        XCTAssertNil(mast.getScienceImageProductUrl(result: coamResult, productType: .Fits))
+        XCTAssertNil(mast.getScienceImageProductUrl(result: coamResult, productType: .Jpeg))
+    }
+
+    func testGetScienceImageProductUrlReturnsDirectUrl() {
+        let mast = SwiftMAST()
+        let coamResult = makeCoamResult(dataURL: "http://example.com/file.fits")
+
+        let url = mast.getScienceImageProductUrl(result: coamResult, productType: .Fits)
+        XCTAssertEqual(url?.absoluteString, "https://example.com/file.fits")
+    }
+
+    func testGetScienceImageProductUrlReturnsMastUrlForNonDirect() {
+        let mast = SwiftMAST()
+        let coamResult = makeCoamResult(dataURL: "mast:TEST_FILE")
+
+        let url = mast.getScienceImageProductUrl(result: coamResult, productType: .Fits)
+        XCTAssertNotNil(url)
+        XCTAssertTrue(url!.absoluteString.contains("Download/file?uri=mast:TEST_FILE"))
+    }
+
     // MARK: - Integration Tests (requires network)
 
     /// Test downloading UV-only imagery for M31
@@ -224,6 +288,28 @@ final class SwiftMASTTests: XCTestCase {
         }
 
         wait(for: [expectation], timeout: 120.0)
+    }
+
+    /// Test querying science image results for M31
+    func testGetScienceImageQueryResults() {
+        let expectation = XCTestExpectation(description: "Get science image query results")
+        let mast = SwiftMAST()
+
+        mast.getScienceImageQueryResults(
+            targetName: "M31",
+            ra: 10.6847083,
+            dec: 41.26875,
+            radius: 0.1,
+            filterOptions: .defaultScience,
+            pageSize: 5,
+            page: 1
+        ) { results in
+            print("Query Results: \(results.count) products")
+            XCTAssertFalse(results.isEmpty)
+            expectation.fulfill()
+        }
+
+        wait(for: [expectation], timeout: 60.0)
     }
 
     // MARK: - FITSMetadata Tests

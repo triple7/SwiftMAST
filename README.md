@@ -69,3 +69,30 @@ Each log entry contains:
 - `timecode`: Formatted timestamp string
 - `date`: The `Date` object when the log was created
 
+## Science Image Query Utilities
+
+You can query for filtered science image results without downloading, then build a URL for a single result.
+
+```swift
+let mast = SwiftMAST()
+
+mast.getScienceImageQueryResults(
+    targetName: "M31",
+    ra: 10.6847083,
+    dec: 41.26875,
+    radius: 0.1,
+    filterOptions: .defaultScience,
+    pageSize: 5,
+    page: 1
+) { results in
+    print("Query returned \(results.count) products")
+
+    if let first = results.first,
+       let url = mast.getScienceImageProductUrl(result: first, productType: .Fits) {
+        print("Download URL: \(url)")
+    } else {
+        print("No URL available for first result")
+    }
+}
+```
+

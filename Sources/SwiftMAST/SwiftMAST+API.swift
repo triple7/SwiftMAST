@@ -244,12 +244,68 @@ extension SwiftMAST {
         filterOptions: ImageryFilterOptions = .defaultScience, pageSize: Int = 50, page: Int = 1,
         token: String?, result: @escaping ([URL]) -> Void
     ) {
+        self.getScienceImageQueryResults(
+            targetName: targetName, ra: ra, dec: dec, radius: radius,
+            filterOptions: filterOptions, pageSize: pageSize, page: page
+        ) { allFilterProducts in
+
+            // Some products are meant to be direct downloads
+            let directDownloadproducts = allFilterProducts.filter {
+                (productType == .Fits ? $0.dataURL : $0.jpegURL).contains("http")
+            }
+
+            self.log(
+                .OK,
+                message:
+                    "getScienceImageProducts: \(directDownloadproducts.count) direct downloads, \(allFilterProducts.count - directDownloadproducts.count) MAST downloads"
+            )
+            let mastDownloadProducts = allFilterProducts.filter {
+                !(productType == .Fits ? $0.dataURL : $0.jpegURL).contains("http")
+            }
+            // Get the MAST query url downloads and return the URLs
+            self.getDataproducts(
+                targetName: targetName, service: .Download_file, products: mastDownloadProducts,
+                productType: productType, token: token
+            ) { allFitsDataResults in
+
+                let existingUrls = allFitsDataResults.filter { $0.url != nil }
+                let secondaryUrls = existingUrls.map { $0.url! }
+
+                // Secondary non MAST direct downloads
+                self.getDirectDataproducts(
+                    targetName: targetName, service: .Download_file,
+                    products: directDownloadproducts, productType: productType, token: token
+                ) { directUrls in
+
+                    result(secondaryUrls + directUrls)
+                }
+            }
+        }
+    }
+
+    /** Make a Science image only cone search and return filtered results
+     Parameters:
+     * targetName: String - the target identifier
+     * ra: Float - Right Ascension
+     * dec: Float - Declination
+     * radius: Float - Search radius
+     * filterOptions: ImageryFilterOptions - Filter criteria for the search (default: science images)
+     * pageSize: Int - Number of results per page (default: 50)
+     * page: Int - Page number for pagination (default: 1)
+     * result: Closure returning filtered CoamResult entries
+     */
+    public func getScienceImageQueryResults(
+        targetName: String, ra: Float, dec: Float, radius: Float,
+        filterOptions: ImageryFilterOptions = .defaultScience, pageSize: Int = 50, page: Int = 1,
+        result: @escaping ([CoamResult]) -> Void
+    ) {
         self.log(
             .OK,
             message:
-                "getScienceImageProducts: Starting search for \(targetName) at RA=\(ra), Dec=\(dec), radius=\(radius), page=\(page), pageSize=\(pageSize)"
+                "getScienceImageQueryResults: Starting search for \(targetName) at RA=\(ra), Dec=\(dec), radius=\(radius), page=\(page), pageSize=\(pageSize)"
         )
 
+        self.setTargetId(targetId: targetName)
         let service = Service.Mast_Caom_Filtered_Position
         var params = service.serviceRequest(requestType: .advancedSearch)
 
@@ -268,7 +324,7 @@ extension SwiftMAST {
                 self.log(
                     .OK,
                     message:
-                        "getScienceImageProducts: Search completed in \(String(format: "%.2f", end - start))s"
+                        "getScienceImageQueryResults: Search completed in \(String(format: "%.2f", end - start))s"
                 )
                 // we are looking for the targetId set previously
                 let table = self.targets[targetName]!
@@ -277,69 +333,61 @@ extension SwiftMAST {
                 self.log(
                     .OK,
                     message:
-                        "getScienceImageProducts: Found \(coamResults.count) data products on page \(page)"
+                        "getScienceImageQueryResults: Found \(coamResults.count) data products on page \(page)"
                 )
                 let uniqueFilters = table.getUniqueString(for: Coam.filters.id)
 
                 self.printUniqueSets(table: table)
-                //            self.printUrls(table: table)
                 // dictionary of products by filter
                 self.pruneProductsByFilterBand(results: coamResults)
                 var products = [String: [CoamResult]]()
-                for result in coamResults {
-                    let filter = result.filters
+                for coamResult in coamResults {
+                    let filter = coamResult.filters
                     if let filterList = products[filter] {
-                        products[filter] = filterList + [result]
+                        products[filter] = filterList + [coamResult]
                     } else {
-                        products[filter] = [result]
+                        products[filter] = [coamResult]
                     }
                 }
                 // Append the first image of each filter
                 var allFilterProducts = [CoamResult]()
                 for filter in uniqueFilters {
-                    let coamResult = products[filter]!
-                    if coamResult.count > 0 {
-                        allFilterProducts.append(coamResult.first!)
+                    if let coamResult = products[filter], !coamResult.isEmpty {
+                        allFilterProducts.append(coamResult[0])
                     }
                 }
 
                 self.log(
                     .OK,
                     message:
-                        "getScienceImageProducts: \(allFilterProducts.count) unique filter products to download"
+                        "getScienceImageQueryResults: \(allFilterProducts.count) unique filter products returned"
                 )
-                // Some products are meant to be ddirect downloads
-                let directDownloadproducts = allFilterProducts.filter {
-                    (productType == .Fits ? $0.dataURL : $0.jpegURL).contains("http")
-                }
-
-                self.log(
-                    .OK,
-                    message:
-                        "getScienceImageProducts: \(directDownloadproducts.count) direct downloads, \(allFilterProducts.count - directDownloadproducts.count) MAST downloads"
-                )
-                let mastDownloadProducts = allFilterProducts.filter {
-                    !(productType == .Fits ? $0.dataURL : $0.jpegURL).contains("http")
-                }
-                // Get the MAST query url downloads and return the URLs
-                self.getDataproducts(
-                    targetName: targetName, service: .Download_file, products: mastDownloadProducts,
-                    productType: productType, token: token
-                ) { allFitsDataResults in
-
-                    let existingUrls = allFitsDataResults.filter { $0.url != nil }
-                    let secondaryUrls = existingUrls.map { $0.url! }
-
-                    // Secondary non MAST direct downloads
-                    self.getDirectDataproducts(
-                        targetName: targetName, service: .Download_file,
-                        products: directDownloadproducts, productType: productType, token: token
-                    ) { directUrls in
-
-                        result(secondaryUrls + directUrls)
-                    }
-                }
+                result(allFilterProducts)
             })
+    }
+
+    /** Get a download URL for a single science image query result
+     Parameters:
+     * result: CoamResult - a single query result
+     * productType: ProductType - .Fits or .Jpeg (default: .Fits)
+     * returns: URL or nil when no URL is available
+     */
+    public func getScienceImageProductUrl(
+        result: CoamResult, productType: ProductType = .Fits
+    ) -> URL? {
+        let productUrl = productType == .Fits ? result.dataURL : result.jpegURL
+        guard !productUrl.isEmpty else {
+            return nil
+        }
+        if productUrl.contains("http") {
+            let securedUrl =
+                productUrl.contains("https")
+                ? productUrl
+                : productUrl.replacingOccurrences(of: "http", with: "https")
+            return URL(string: securedUrl)
+        }
+        return MASTRequest(searchType: .image).getFileDownloadUrl(
+            service: .Download_file, parameters: ["uri": productUrl])
     }
 
     /** Get GAIA crossmatch

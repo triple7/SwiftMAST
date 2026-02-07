@@ -47,18 +47,18 @@ func analyzeAndConvertFits(filePath: String) {
     let url = URL(fileURLWithPath: filePath)
 
     guard FileManager.default.fileExists(atPath: filePath) else {
-        print("❌ File does not exist")
+        print("File does not exist")
         return
     }
 
     guard let data = try? Data(contentsOf: url),
         let fits = FitsFile.read(data)
     else {
-        print("❌ Failed to read FITS file")
+        print("Failed to read FITS file")
         return
     }
 
-    print("\n📊 HDU Summary:")
+    print("\n HDU Summary:")
     print("   Total HDUs (extensions): \(fits.HDUs.count)")
 
     // First check the primary HDU
@@ -85,7 +85,7 @@ func analyzeAndConvertFits(filePath: String) {
     print("      Is Image: \(isPrimaryImage)")
 
     if isPrimaryImage {
-        print("      🖼️ Attempting conversion of PRIMARY HDU...")
+        print("      Attempting conversion of PRIMARY HDU...")
 
         let baseName = url.deletingPathExtension().lastPathComponent
         let outputPath = url.deletingLastPathComponent()
@@ -100,15 +100,16 @@ func analyzeAndConvertFits(filePath: String) {
             }
 
             if saveCGImageToFile(image: image, to: outputPath) {
-                print("      ✅ SUCCESS! Saved: \(outputPath.lastPathComponent)")
+                print("      SUCCESS! Saved: \(outputPath.lastPathComponent)")
+                print("         Full path: \(outputPath.path)")
                 print("         Size: \(image.width) x \(image.height)")
                 return
             } else {
-                print("      ❌ Failed to save image")
+                print("      Failed to save image")
             }
 
         } catch {
-            print("      ❌ Conversion failed: \(error)")
+            print("      Conversion failed: \(error)")
         }
     }
 
@@ -148,7 +149,7 @@ func analyzeAndConvertFits(filePath: String) {
         // Try to convert the first ImageHDU extension
         if isExtensionImage && !convertedOne {
             if let imageHDU = hdu as? ImageHDU {
-                print("      🖼️ Attempting conversion of Extension[\(index)]...")
+                print("     Attempting conversion of Extension[\(index)]...")
 
                 let baseName = url.deletingPathExtension().lastPathComponent
                 let outputPath = url.deletingLastPathComponent()
@@ -163,24 +164,25 @@ func analyzeAndConvertFits(filePath: String) {
                     }
 
                     if saveCGImageToFile(image: image, to: outputPath) {
-                        print("      ✅ SUCCESS! Saved: \(outputPath.lastPathComponent)")
+                        print("      SUCCESS! Saved: \(outputPath.lastPathComponent)")
+                        print("         Full path: \(outputPath.path)")
                         print("         Size: \(image.width) x \(image.height)")
                         convertedOne = true
                     } else {
-                        print("      ❌ Failed to save image")
+                        print("      Failed to save image")
                     }
 
                 } catch {
-                    print("      ❌ Conversion failed: \(error)")
+                    print("      Conversion failed: \(error)")
                 }
             } else {
-                print("      ⚠️ HDU is not an ImageHDU, cannot convert")
+                print("       HDU is not an ImageHDU, cannot convert")
             }
         }
     }
 
     if !convertedOne && !isPrimaryImage {
-        print("\n   ⚠️ No convertible image data found in this file")
+        print("\n    No convertible image data found in this file")
     }
 }
 
