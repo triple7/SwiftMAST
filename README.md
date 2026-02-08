@@ -90,11 +90,20 @@ mast.lookupTargetCoordinates(targetName: "M31") { coordinates in
     ) { results in
         print("Query returned \(results.count) products")
 
-        if let first = results.first,
-           let url = mast.getScienceImageProductUrl(result: first, productType: .Fits) {
-            print("Download URL: \(url)")
+        if let first = results.first {
+            mast.getScienceImageProductUrl(
+                targetName: "M31",
+                result: first,
+                productType: .Fits
+            ) { url in
+                if let url = url {
+                    print("Download URL: \(url)")
+                } else {
+                    print("No URL available for first result")
+                }
+            }
         } else {
-            print("No URL available for first result")
+            print("No results returned")
         }
     }
 }

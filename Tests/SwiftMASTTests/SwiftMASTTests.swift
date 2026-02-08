@@ -168,28 +168,20 @@ final class SwiftMASTTests: XCTestCase {
     }
 
     func testGetScienceImageProductUrlReturnsNilForMissingUrl() {
+        let expectation = XCTestExpectation(description: "Missing product url returns nil")
         let mast = SwiftMAST()
         let coamResult = makeCoamResult()
 
-        XCTAssertNil(mast.getScienceImageProductUrl(result: coamResult, productType: .Fits))
-        XCTAssertNil(mast.getScienceImageProductUrl(result: coamResult, productType: .Jpeg))
-    }
+        mast.getScienceImageProductUrl(
+            targetName: "M31",
+            result: coamResult,
+            productType: .Fits
+        ) { url in
+            XCTAssertNil(url)
+            expectation.fulfill()
+        }
 
-    func testGetScienceImageProductUrlReturnsDirectUrl() {
-        let mast = SwiftMAST()
-        let coamResult = makeCoamResult(dataURL: "http://example.com/file.fits")
-
-        let url = mast.getScienceImageProductUrl(result: coamResult, productType: .Fits)
-        XCTAssertEqual(url?.absoluteString, "https://example.com/file.fits")
-    }
-
-    func testGetScienceImageProductUrlReturnsMastUrlForNonDirect() {
-        let mast = SwiftMAST()
-        let coamResult = makeCoamResult(dataURL: "mast:TEST_FILE")
-
-        let url = mast.getScienceImageProductUrl(result: coamResult, productType: .Fits)
-        XCTAssertNotNil(url)
-        XCTAssertTrue(url!.absoluteString.contains("Download/file?uri=mast:TEST_FILE"))
+        wait(for: [expectation], timeout: 10.0)
     }
 
     // MARK: - Integration Tests (requires network)
@@ -323,6 +315,36 @@ final class SwiftMASTTests: XCTestCase {
         }
 
         wait(for: [expectation], timeout: 60.0)
+    }
+
+    /// Test downloading a single product URL for M31
+    func testGetScienceImageProductUrl() {
+        let expectation = XCTestExpectation(description: "Get science image product url")
+        let mast = SwiftMAST()
+
+        mast.getScienceImageQueryResults(
+            targetName: "M31",
+            filterOptions: .defaultScience,
+            pageSize: 1,
+            page: 1
+        ) { results in
+            guard let first = results.first else {
+                XCTFail("No results returned")
+                expectation.fulfill()
+                return
+            }
+
+            mast.getScienceImageProductUrl(
+                targetName: "M31",
+                result: first,
+                productType: .Fits
+            ) { url in
+                XCTAssertNotNil(url)
+                expectation.fulfill()
+            }
+        }
+
+        wait(for: [expectation], timeout: 120.0)
     }
 
     // MARK: - FITSMetadata Tests

@@ -431,28 +431,42 @@ extension SwiftMAST {
             })
     }
 
-    /** Get a download URL for a single science image query result
+    /** Download a single science image query result and return its saved URL
      Parameters:
+     * targetName: String - the target identifier
      * result: CoamResult - a single query result
      * productType: ProductType - .Fits or .Jpeg (default: .Fits)
-     * returns: URL or nil when no URL is available
+     * token: String? - MAST authentication token
+     * completion: Closure returning the saved URL or nil when unavailable
      */
     public func getScienceImageProductUrl(
-        result: CoamResult, productType: ProductType = .Fits
-    ) -> URL? {
+        targetName: String, result: CoamResult, productType: ProductType = .Fits,
+        token: String? = nil,
+        completion: @escaping (URL?) -> Void
+    ) {
         let productUrl = productType == .Fits ? result.dataURL : result.jpegURL
         guard !productUrl.isEmpty else {
-            return nil
+            completion(nil)
+            return
         }
+
         if productUrl.contains("http") {
-            let securedUrl =
-                productUrl.contains("https")
-                ? productUrl
-                : productUrl.replacingOccurrences(of: "http", with: "https")
-            return URL(string: securedUrl)
+            self.getDirectDataproducts(
+                targetName: targetName, service: .Download_file, products: [result],
+                productType: productType, token: token
+            ) { urls in
+                completion(urls.first)
+            }
+            return
         }
-        return MASTRequest(searchType: .image).getFileDownloadUrl(
-            service: .Download_file, parameters: ["uri": productUrl])
+
+        self.getDataproducts(
+            targetName: targetName, service: .Download_file, products: [result],
+            productType: productType, token: token
+        ) { allFitsDataResults in
+            let url = allFitsDataResults.first { $0.url != nil }?.url
+            completion(url)
+        }
     }
 
     /** Get GAIA crossmatch
