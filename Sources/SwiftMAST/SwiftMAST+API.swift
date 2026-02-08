@@ -392,7 +392,13 @@ extension SwiftMAST {
                         "getScienceImageQueryResults: Search completed in \(String(format: "%.2f", end - start))s"
                 )
                 // we are looking for the targetId set previously
-                let table = self.targets[targetName]!
+                guard let table = self.targets[targetName] else {
+                    self.log(
+                        .RequestError,
+                        message: "getScienceImageQueryResults: No target table for '\(targetName)'")
+                    result([])
+                    return
+                }
                 var coamResults = table.getCoamResults()
                 coamResults.sort()
                 self.log(

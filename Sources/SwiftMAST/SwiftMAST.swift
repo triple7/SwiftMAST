@@ -134,13 +134,21 @@ public class SwiftMAST: NSObject {
     /** Save the preview image for the first PS1 cutout
      */
     public func setPreviewImage(target: String, url: URL) {
+        guard self.targetAssets[target] != nil else {
+            print("setPreviewImage: No target asset for '\(target)', skipping preview")
+            return
+        }
         self.targetAssets[target]!.setPreview(url: url)
     }
 
     /** Append new fits data
      */
     public func appendFitsData(target: String, fitsData: FitsData) {
-        self.targetAssets[target]!.setFitsData(fitsData: fitsData)
+        if self.targetAssets[target] == nil {
+            print("appendFitsData: No target asset for '\(target)', storing metadata only")
+        } else {
+            self.targetAssets[target]!.setFitsData(fitsData: fitsData)
+        }
 
         // Store structured metadata if available
         if let metadata = fitsData.structuredMetadata {
