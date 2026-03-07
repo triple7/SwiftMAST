@@ -475,6 +475,128 @@ extension SwiftMAST {
         }
     }
 
+    /** Download and extract science products from a CoamResult.
+
+     Downloads the product (FITS or image) for the given CoamResult and returns
+     an array of `ScienceProduct` objects. For FITS files, each image HDU produces
+     a separate entry with:
+       - The image saved as JPEG and its location
+       - The source FITS file location
+       - Merged headers (primary HDU headers as base, overridden by individual HDU headers)
+       - The original CoamResult
+
+     For non-FITS (JPEG) results, a single `ScienceProduct` is returned with the
+     downloaded image location.
+
+     Parameters:
+     * targetName: String - the target identifier
+     * coamResult: CoamResult - the query result to download and extract
+     * token: String? - MAST authentication token
+     * completion: Closure returning array of ScienceProduct
+     */
+    public func extractScienceProducts(
+        targetName: String, coamResult: CoamResult, token: String? = nil,
+        completion: @escaping ([ScienceProduct]) -> Void
+    ) {
+        let hasFits = !coamResult.dataURL.isEmpty
+        let hasJpeg = !coamResult.jpegURL.isEmpty
+
+        // Prefer FITS for richer metadata; fall back to JPEG
+        let productType: ProductType = hasFits ? .Fits : .Jpeg
+
+        guard hasFits || hasJpeg else {
+            self.log(
+                .RequestError,
+                message: "extractScienceProducts: No download URL for \(coamResult.obs_id)")
+            completion([])
+            return
+        }
+
+        let productUrl = productType == .Fits ? coamResult.dataURL : coamResult.jpegURL
+
+        // Choose download path based on URL type
+        if productUrl.contains("http") {
+            // Direct download
+            self.getDirectDataproducts(
+                targetName: targetName, service: .Download_file, products: [coamResult],
+                productType: productType, token: token
+            ) { urls in
+                guard let savedUrl = urls.first else {
+                    completion([])
+                    return
+                }
+                self.buildScienceProducts(
+                    savedUrl: savedUrl, productType: productType,
+                    coamResult: coamResult, completion: completion
+                )
+            }
+        } else {
+            // MAST download
+            self.getDataproducts(
+                targetName: targetName, service: .Download_file, products: [coamResult],
+                productType: productType, token: token
+            ) { fitsDataResults in
+                guard let fitsData = fitsDataResults.first, let savedUrl = fitsData.url else {
+                    completion([])
+                    return
+                }
+                self.buildScienceProducts(
+                    savedUrl: savedUrl, productType: productType,
+                    coamResult: coamResult, completion: completion
+                )
+            }
+        }
+    }
+
+    /// Internal helper: builds ScienceProduct array from a downloaded file.
+    private func buildScienceProducts(
+        savedUrl: URL, productType: ProductType, coamResult: CoamResult,
+        completion: @escaping ([ScienceProduct]) -> Void
+    ) {
+        if productType == .Fits {
+            // Find the original FITS file — savedUrl may be the converted JPEG
+            let fitsUrl: URL
+            if savedUrl.pathExtension.lowercased() == "fits" {
+                fitsUrl = savedUrl
+            } else {
+                // The FITS file should be alongside the JPEG with .fits extension
+                let fitsPath = savedUrl.deletingPathExtension().appendingPathExtension("fits")
+                if FileManager.default.fileExists(atPath: fitsPath.path) {
+                    fitsUrl = fitsPath
+                } else {
+                    // Fall back to what we have
+                    completion([
+                        ScienceProduct(
+                            name: savedUrl.deletingPathExtension().lastPathComponent,
+                            imageLocation: savedUrl,
+                            sourceFileLocation: savedUrl,
+                            headers: [:],
+                            coamResult: coamResult
+                        )
+                    ])
+                    return
+                }
+            }
+            let outputDir = fitsUrl.deletingLastPathComponent()
+            let products = self.extractScienceProductsFromFits(
+                fitsUrl: fitsUrl, outputDirectory: outputDir, coamResult: coamResult
+            )
+            completion(products)
+        } else {
+            // JPEG — single product, no FITS metadata
+            let name = savedUrl.deletingPathExtension().lastPathComponent
+            completion([
+                ScienceProduct(
+                    name: name,
+                    imageLocation: savedUrl,
+                    sourceFileLocation: savedUrl,
+                    headers: [:],
+                    coamResult: coamResult
+                )
+            ])
+        }
+    }
+
     /** Get GAIA crossmatch
      parameters:
      * ra: Float
