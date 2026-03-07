@@ -570,7 +570,7 @@ extension SwiftMAST {
                             name: savedUrl.deletingPathExtension().lastPathComponent,
                             imageLocation: savedUrl,
                             sourceFileLocation: savedUrl,
-                            headers: [:],
+                            headers: [],
                             coamResult: coamResult
                         )
                     ])
@@ -590,7 +590,7 @@ extension SwiftMAST {
                     name: name,
                     imageLocation: savedUrl,
                     sourceFileLocation: savedUrl,
-                    headers: [:],
+                    headers: [],
                     coamResult: coamResult
                 )
             ])

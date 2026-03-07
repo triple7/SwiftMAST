@@ -410,43 +410,120 @@ extension SwiftMAST {
 
     // MARK: - FITS HDU Extraction for ScienceProduct
 
-    /// Extract headers from a single HDU as a `[String: QValue]` dictionary.
-    private func extractHDUHeaders(_ headerUnit: HeaderUnit) -> [String: QValue] {
-        var headers = [String: QValue]()
+    /// Convert a raw FITS HeaderUnit into an array of structured ``FITSHeaderUnit`` entries.
+    ///
+    /// Each ``HeaderBlock`` in the HDU is converted to a ``FITSHeaderUnit`` with:
+    /// - The keyword name
+    /// - A typed ``FITSHeaderValue`` (parsed from the raw string)
+    /// - The FITS comment field
+    ///
+    /// - Parameter headerUnit: The raw `HeaderUnit` from fitscore
+    /// - Returns: Array of structured header units
+    internal func extractHeaderUnits(_ headerUnit: HeaderUnit) -> [FITSHeaderUnit] {
+        var units = [FITSHeaderUnit]()
         for block in headerUnit {
-            headers[block.keyword.rawValue] = QValue(
-                value: (block.value != nil) ? block.value!.toString : "")
+            let keyword = block.keyword.rawValue
+            let rawString = block.value?.toString ?? ""
+            let value = Self.parseFITSValue(rawString)
+            let comment = block.comment ?? ""
+            units.append(
+                FITSHeaderUnit(
+                    keyword: keyword, value: value, comment: comment
+                ))
         }
-        return headers
+        return units
     }
 
-    /// Merge primary headers with individual HDU headers.
-    /// Individual HDU headers override primary headers when keys conflict.
-    private func mergeHeaders(primary: [String: QValue], hdu: [String: QValue]) -> [String: QValue]
-    {
-        var merged = primary
-        for (key, value) in hdu {
-            merged[key] = value
+    /// Merge primary HDU headers with extension HDU headers.
+    /// Extension headers override primary headers when keywords conflict.
+    /// Keywords that appear multiple times (COMMENT, HISTORY) are kept from both.
+    ///
+    /// - Parameters:
+    ///   - primary: Headers from the primary HDU
+    ///   - hdu: Headers from an extension HDU
+    /// - Returns: Merged array of header units
+    internal func mergeHeaderUnits(
+        primary: [FITSHeaderUnit], hdu: [FITSHeaderUnit]
+    ) -> [FITSHeaderUnit] {
+        let multiKeys: Set<String> = ["COMMENT", "HISTORY", ""]
+        var merged = [String: FITSHeaderUnit]()
+        var orderedKeys = [String]()
+        var multiEntries = [FITSHeaderUnit]()
+
+        // Add primary headers as base
+        for unit in primary {
+            if multiKeys.contains(unit.keyword) {
+                multiEntries.append(unit)
+            } else if merged[unit.keyword] == nil {
+                merged[unit.keyword] = unit
+                orderedKeys.append(unit.keyword)
+            }
         }
-        return merged
+
+        // Override with extension HDU headers
+        for unit in hdu {
+            if multiKeys.contains(unit.keyword) {
+                multiEntries.append(unit)
+            } else {
+                if merged[unit.keyword] == nil {
+                    orderedKeys.append(unit.keyword)
+                }
+                merged[unit.keyword] = unit
+            }
+        }
+
+        var result = orderedKeys.compactMap { merged[$0] }
+        result.append(contentsOf: multiEntries)
+        return result
     }
 
-    /// Helper to get a string from a QValue
-    private func qvalueString(_ qvalue: QValue?) -> String {
-        guard let qv = qvalue else { return "" }
-        return String(describing: qv.value)
+    /// Parse a raw FITS value string into a typed ``FITSHeaderValue``.
+    internal static func parseFITSValue(_ raw: String) -> FITSHeaderValue {
+        let trimmed = raw.trimmingCharacters(in: .whitespaces)
+
+        // Boolean: FITS uses T and F
+        if trimmed == "T" || trimmed == "true" { return .bool(true) }
+        if trimmed == "F" || trimmed == "false" { return .bool(false) }
+
+        // Integer
+        if let intVal = Int(trimmed) {
+            return .integer(intVal)
+        }
+
+        // Double (floating-point, including scientific notation)
+        if let dblVal = Double(trimmed) {
+            return .double(dblVal)
+        }
+
+        // String value (strip FITS quoting)
+        let unquoted =
+            trimmed
+            .replacingOccurrences(of: "'", with: "")
+            .trimmingCharacters(in: .whitespaces)
+        return .string(unquoted.isEmpty ? trimmed : unquoted)
+    }
+
+    /// Look up a header value by keyword from an array of header units.
+    private func headerValue(_ keyword: String, in headers: [FITSHeaderUnit]) -> FITSHeaderValue? {
+        headers.first { $0.keyword == keyword }?.value
+    }
+
+    /// Convenience: get an integer value from headers, returning 0 if missing or non-integer.
+    private func headerInt(_ keyword: String, in headers: [FITSHeaderUnit]) -> Int {
+        headerValue(keyword, in: headers)?.intValue ?? 0
     }
 
     /// Determine whether an HDU contains renderable image data based on its headers and data size.
-    private func hduContainsImage(headers: [String: QValue], dataSize: Int) -> Bool {
-        let naxis = Int(qvalueString(headers["NAXIS"])) ?? 0
-        let naxis1 = Int(qvalueString(headers["NAXIS1"])) ?? 0
-        let naxis2 = Int(qvalueString(headers["NAXIS2"])) ?? 0
+    private func hduContainsImage(headers: [FITSHeaderUnit], dataSize: Int) -> Bool {
+        let naxis = headerInt("NAXIS", in: headers)
+        let naxis1 = headerInt("NAXIS1", in: headers)
+        let naxis2 = headerInt("NAXIS2", in: headers)
         return naxis >= 2 && naxis1 > 0 && naxis2 > 0 && dataSize > 0
     }
 
     /// Extract science products from a local FITS file.
-    /// Each image HDU becomes a `ScienceProduct` with the image saved as JPEG.
+    /// Each image HDU becomes a `ScienceProduct` with the image saved as JPEG
+    /// and structured ``FITSHeaderUnit`` headers.
     /// - Parameters:
     ///   - fitsUrl: Local URL of the FITS file
     ///   - outputDirectory: Directory in which to save converted images
@@ -466,14 +543,14 @@ extension SwiftMAST {
         }
 
         let baseName = fitsUrl.deletingPathExtension().lastPathComponent
-        let primaryHeaders = extractHDUHeaders(fits.prime.headerUnit)
+        let primaryHeaders = extractHeaderUnits(fits.prime.headerUnit)
         var products = [ScienceProduct]()
 
         // Check Primary HDU for image data
         let primeDataSize = fits.prime.dataUnit?.count ?? 0
         if hduContainsImage(headers: primaryHeaders, dataSize: primeDataSize) {
-            let naxis = Int(qvalueString(primaryHeaders["NAXIS"])) ?? 0
-            let naxis3 = Int(qvalueString(primaryHeaders["NAXIS3"])) ?? 0
+            let naxis = headerInt("NAXIS", in: primaryHeaders)
+            let naxis3 = headerInt("NAXIS3", in: primaryHeaders)
             let name = "\(baseName)_primary"
             let jpegUrl = outputDirectory.appendingPathComponent("\(name).jpg")
 
@@ -503,28 +580,21 @@ extension SwiftMAST {
 
         // Check Extension HDUs for image data
         for (index, hdu) in fits.HDUs.enumerated() {
-            let hduHeaders = extractHDUHeaders(hdu.headerUnit)
-            let xtension = qvalueString(hduHeaders["XTENSION"])
-                .lowercased()
-                .trimmingCharacters(in: .whitespaces)
-                .replacingOccurrences(of: "'", with: "")
-                .trimmingCharacters(in: .whitespaces)
+            let hduHeaders = extractHeaderUnits(hdu.headerUnit)
+            let xtension = (headerValue("XTENSION", in: hduHeaders)?.rawString ?? "").lowercased()
 
             guard xtension == "image", let imageHDU = hdu as? ImageHDU else { continue }
 
             let hduDataSize = imageHDU.dataUnit?.count ?? 0
             guard hduContainsImage(headers: hduHeaders, dataSize: hduDataSize) else { continue }
 
-            let naxis = Int(qvalueString(hduHeaders["NAXIS"])) ?? 0
-            let naxis3 = Int(qvalueString(hduHeaders["NAXIS3"])) ?? 0
-            let extName = qvalueString(hduHeaders["EXTNAME"])
-                .trimmingCharacters(in: .whitespaces)
-                .replacingOccurrences(of: "'", with: "")
-                .trimmingCharacters(in: .whitespaces)
+            let naxis = headerInt("NAXIS", in: hduHeaders)
+            let naxis3 = headerInt("NAXIS3", in: hduHeaders)
+            let extName = headerValue("EXTNAME", in: hduHeaders)?.rawString ?? ""
             let suffix = extName.isEmpty ? "ext\(index)" : extName
             let name = "\(baseName)_\(suffix)"
             let jpegUrl = outputDirectory.appendingPathComponent("\(name).jpg")
-            let mergedHeaders = mergeHeaders(primary: primaryHeaders, hdu: hduHeaders)
+            let mergedHeaders = mergeHeaderUnits(primary: primaryHeaders, hdu: hduHeaders)
 
             do {
                 let image: CGImage
