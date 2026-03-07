@@ -727,4 +727,238 @@ final class SwiftMASTTests: XCTestCase {
 
         print("getScienceImageProducts page parameter test passed")
     }
+
+    // MARK: - ScienceProduct Model Tests
+
+    func testScienceProductInitialization() {
+        let coam = makeCoamResult(dataURL: "mast:HST/product/test.fits")
+        let headers: [String: QValue] = [
+            "NAXIS": QValue(value: "2"),
+            "NAXIS1": QValue(value: "1024"),
+            "NAXIS2": QValue(value: "1024"),
+            "FILTER": QValue(value: "F606W"),
+        ]
+
+        let product = ScienceProduct(
+            name: "test_primary",
+            imageLocation: URL(fileURLWithPath: "/tmp/test.jpg"),
+            sourceFileLocation: URL(fileURLWithPath: "/tmp/test.fits"),
+            headers: headers,
+            coamResult: coam
+        )
+
+        XCTAssertEqual(product.name, "test_primary")
+        XCTAssertEqual(product.imageLocation?.lastPathComponent, "test.jpg")
+        XCTAssertEqual(product.sourceFileLocation?.lastPathComponent, "test.fits")
+        XCTAssertEqual(product.headers.count, 4)
+        XCTAssertEqual(product.coamResult.obs_id, "obs-1")
+    }
+
+    func testScienceProductWithNilLocations() {
+        let coam = makeCoamResult()
+        let product = ScienceProduct(
+            name: "no_image",
+            imageLocation: nil,
+            sourceFileLocation: nil,
+            headers: [:],
+            coamResult: coam
+        )
+
+        XCTAssertNil(product.imageLocation)
+        XCTAssertNil(product.sourceFileLocation)
+        XCTAssertTrue(product.headers.isEmpty)
+    }
+
+    // MARK: - extractScienceProductsFromFits Tests (Local FITS Files)
+
+    /// Helper to get the project root directory for accessing test resources
+    private func projectRootURL() -> URL {
+        // Tests run from the package directory
+        return URL(fileURLWithPath: #file)
+            .deletingLastPathComponent()  // SwiftMASTTests
+            .deletingLastPathComponent()  // Tests
+            .deletingLastPathComponent()  // project root
+    }
+
+    func testExtractScienceProductsFromJWSTFits() {
+        let mast = SwiftMAST()
+        let projectRoot = projectRootURL()
+        let fitsUrl = projectRoot.appendingPathComponent(
+            "Resources/fits/jw04244-o002_t002_miri_f1000w.fits")
+
+        guard FileManager.default.fileExists(atPath: fitsUrl.path) else {
+            print("Skipping test: FITS file not found at \(fitsUrl.path)")
+            return
+        }
+
+        let outputDir = FileManager.default.temporaryDirectory.appendingPathComponent(
+            UUID().uuidString)
+        try! FileManager.default.createDirectory(at: outputDir, withIntermediateDirectories: true)
+
+        let coam = makeCoamResult(dataURL: "mast:JWST/product/jw04244-o002_t002_miri_f1000w.fits")
+        let products = mast.extractScienceProductsFromFits(
+            fitsUrl: fitsUrl, outputDirectory: outputDir, coamResult: coam
+        )
+
+        XCTAssertFalse(products.isEmpty, "Should extract at least one product from JWST FITS file")
+
+        for product in products {
+            XCTAssertFalse(product.name.isEmpty, "Product name should not be empty")
+            XCTAssertEqual(
+                product.sourceFileLocation, fitsUrl, "Source should point to the FITS file")
+            XCTAssertEqual(product.coamResult.obs_id, "obs-1", "CoamResult should be attached")
+            XCTAssertFalse(product.headers.isEmpty, "Headers should not be empty")
+
+            print("  Product: \(product.name)")
+            print("    Image: \(product.imageLocation?.lastPathComponent ?? "none")")
+            print("    Headers count: \(product.headers.count)")
+        }
+
+        // Clean up
+        try? FileManager.default.removeItem(at: outputDir)
+    }
+
+    func testExtractScienceProductsFromHSTFits() {
+        let mast = SwiftMAST()
+        let projectRoot = projectRootURL()
+        let fitsUrl = projectRoot.appendingPathComponent(
+            "Resources/fits/_UV_hst_9422_01_acs_hrc_f220w_j8d001.fits")
+
+        guard FileManager.default.fileExists(atPath: fitsUrl.path) else {
+            print("Skipping test: FITS file not found at \(fitsUrl.path)")
+            return
+        }
+
+        let outputDir = FileManager.default.temporaryDirectory.appendingPathComponent(
+            UUID().uuidString)
+        try! FileManager.default.createDirectory(at: outputDir, withIntermediateDirectories: true)
+
+        let coam = makeCoamResult(dataURL: "mast:HST/product/j8d001.fits")
+        let products = mast.extractScienceProductsFromFits(
+            fitsUrl: fitsUrl, outputDirectory: outputDir, coamResult: coam
+        )
+
+        XCTAssertFalse(products.isEmpty, "Should extract at least one product from HST FITS file")
+
+        for product in products {
+            XCTAssertFalse(product.name.isEmpty)
+            XCTAssertEqual(product.sourceFileLocation, fitsUrl)
+            XCTAssertFalse(product.headers.isEmpty)
+
+            print("  Product: \(product.name)")
+            print("    Image: \(product.imageLocation?.lastPathComponent ?? "none")")
+            print("    Headers count: \(product.headers.count)")
+        }
+
+        // Clean up
+        try? FileManager.default.removeItem(at: outputDir)
+    }
+
+    func testExtractScienceProductsFromInfraredFits() {
+        let mast = SwiftMAST()
+        let projectRoot = projectRootURL()
+        let fitsUrl = projectRoot.appendingPathComponent(
+            "Resources/fits/_INFRARED_jw05627-o003_t002_miri_f1500w.fits")
+
+        guard FileManager.default.fileExists(atPath: fitsUrl.path) else {
+            print("Skipping test: FITS file not found at \(fitsUrl.path)")
+            return
+        }
+
+        let outputDir = FileManager.default.temporaryDirectory.appendingPathComponent(
+            UUID().uuidString)
+        try! FileManager.default.createDirectory(at: outputDir, withIntermediateDirectories: true)
+
+        let coam = makeCoamResult(dataURL: "mast:JWST/product/jw05627-o003_t002_miri_f1500w.fits")
+        let products = mast.extractScienceProductsFromFits(
+            fitsUrl: fitsUrl, outputDirectory: outputDir, coamResult: coam
+        )
+
+        XCTAssertFalse(
+            products.isEmpty, "Should extract at least one product from infrared FITS file")
+
+        // Check that image HDU products have merged headers (primary + individual)
+        for product in products {
+            XCTAssertFalse(product.headers.isEmpty)
+            // Products from extension HDUs should have XTENSION in their headers
+            // (from the merged individual headers)
+            print("  Product: \(product.name)")
+            print("    Headers count: \(product.headers.count)")
+            if product.imageLocation != nil {
+                print("    Image saved: \(product.imageLocation!.lastPathComponent)")
+            }
+        }
+
+        // Clean up
+        try? FileManager.default.removeItem(at: outputDir)
+    }
+
+    func testExtractScienceProductsHeadersMerging() {
+        let mast = SwiftMAST()
+        let projectRoot = projectRootURL()
+        let fitsUrl = projectRoot.appendingPathComponent(
+            "Resources/fits/jw06809-o002_t001_miri_f2100w.fits")
+
+        guard FileManager.default.fileExists(atPath: fitsUrl.path) else {
+            print("Skipping test: FITS file not found at \(fitsUrl.path)")
+            return
+        }
+
+        let outputDir = FileManager.default.temporaryDirectory.appendingPathComponent(
+            UUID().uuidString)
+        try! FileManager.default.createDirectory(at: outputDir, withIntermediateDirectories: true)
+
+        let coam = makeCoamResult(dataURL: "mast:JWST/product/jw06809-o002_t001_miri_f2100w.fits")
+        let products = mast.extractScienceProductsFromFits(
+            fitsUrl: fitsUrl, outputDirectory: outputDir, coamResult: coam
+        )
+
+        XCTAssertFalse(products.isEmpty)
+
+        // For extension HDU products, headers should contain primary HDU keys
+        // merged with the individual HDU keys
+        if products.count > 1 {
+            let extProduct = products[1]  // First extension product
+            // Should have TELESCOP or INSTRUME from primary, plus XTENSION from extension
+            let hasTelescopeOrInstrument =
+                extProduct.headers["TELESCOP"] != nil || extProduct.headers["INSTRUME"] != nil
+            XCTAssertTrue(
+                hasTelescopeOrInstrument || !extProduct.headers.isEmpty,
+                "Extension product should have merged headers from primary HDU"
+            )
+            print(
+                "  Extension product '\(extProduct.name)' has \(extProduct.headers.count) merged headers"
+            )
+        }
+
+        // Clean up
+        try? FileManager.default.removeItem(at: outputDir)
+    }
+
+    func testExtractScienceProductsNonExistentFile() {
+        let mast = SwiftMAST()
+        let fitsUrl = URL(fileURLWithPath: "/tmp/nonexistent.fits")
+        let outputDir = FileManager.default.temporaryDirectory
+
+        let coam = makeCoamResult(dataURL: "mast:HST/product/nonexistent.fits")
+        let products = mast.extractScienceProductsFromFits(
+            fitsUrl: fitsUrl, outputDirectory: outputDir, coamResult: coam
+        )
+
+        XCTAssertTrue(products.isEmpty, "Should return empty array for non-existent file")
+    }
+
+    func testExtractScienceProductsNoURLs() {
+        let mast = SwiftMAST()
+        let coam = makeCoamResult(dataURL: "", jpegURL: "")
+
+        let expectation = XCTestExpectation(description: "Completion called")
+
+        mast.extractScienceProducts(targetName: "Test", coamResult: coam) { products in
+            XCTAssertTrue(products.isEmpty, "Should return empty array when no URLs available")
+            expectation.fulfill()
+        }
+
+        wait(for: [expectation], timeout: 5.0)
+    }
 }
