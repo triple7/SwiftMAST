@@ -408,4 +408,162 @@ extension SwiftMAST {
         }
     }
 
+    // MARK: - FITS HDU Extraction for ScienceProduct
+
+    /// Extract headers from a single HDU as a `[String: QValue]` dictionary.
+    private func extractHDUHeaders(_ headerUnit: HeaderUnit) -> [String: QValue] {
+        var headers = [String: QValue]()
+        for block in headerUnit {
+            headers[block.keyword.rawValue] = QValue(
+                value: (block.value != nil) ? block.value!.toString : "")
+        }
+        return headers
+    }
+
+    /// Merge primary headers with individual HDU headers.
+    /// Individual HDU headers override primary headers when keys conflict.
+    private func mergeHeaders(primary: [String: QValue], hdu: [String: QValue]) -> [String: QValue]
+    {
+        var merged = primary
+        for (key, value) in hdu {
+            merged[key] = value
+        }
+        return merged
+    }
+
+    /// Helper to get a string from a QValue
+    private func qvalueString(_ qvalue: QValue?) -> String {
+        guard let qv = qvalue else { return "" }
+        return String(describing: qv.value)
+    }
+
+    /// Determine whether an HDU contains renderable image data based on its headers and data size.
+    private func hduContainsImage(headers: [String: QValue], dataSize: Int) -> Bool {
+        let naxis = Int(qvalueString(headers["NAXIS"])) ?? 0
+        let naxis1 = Int(qvalueString(headers["NAXIS1"])) ?? 0
+        let naxis2 = Int(qvalueString(headers["NAXIS2"])) ?? 0
+        return naxis >= 2 && naxis1 > 0 && naxis2 > 0 && dataSize > 0
+    }
+
+    /// Extract science products from a local FITS file.
+    /// Each image HDU becomes a `ScienceProduct` with the image saved as JPEG.
+    /// - Parameters:
+    ///   - fitsUrl: Local URL of the FITS file
+    ///   - outputDirectory: Directory in which to save converted images
+    ///   - coamResult: The originating CoamResult
+    /// - Returns: Array of `ScienceProduct` for each image found in the FITS file
+    internal func extractScienceProductsFromFits(
+        fitsUrl: URL, outputDirectory: URL, coamResult: CoamResult
+    ) -> [ScienceProduct] {
+        guard let data = try? Data(contentsOf: fitsUrl),
+            let fits = FitsFile.read(data)
+        else {
+            log(
+                .RequestError,
+                message:
+                    "extractScienceProductsFromFits: Unable to read \(fitsUrl.lastPathComponent)")
+            return []
+        }
+
+        let baseName = fitsUrl.deletingPathExtension().lastPathComponent
+        let primaryHeaders = extractHDUHeaders(fits.prime.headerUnit)
+        var products = [ScienceProduct]()
+
+        // Check Primary HDU for image data
+        let primeDataSize = fits.prime.dataUnit?.count ?? 0
+        if hduContainsImage(headers: primaryHeaders, dataSize: primeDataSize) {
+            let naxis = Int(qvalueString(primaryHeaders["NAXIS"])) ?? 0
+            let naxis3 = Int(qvalueString(primaryHeaders["NAXIS3"])) ?? 0
+            let name = "\(baseName)_primary"
+            let jpegUrl = outputDirectory.appendingPathComponent("\(name).jpg")
+
+            do {
+                let image: CGImage
+                if naxis == 3 && naxis3 == 3 {
+                    image = try fits.prime.decode(RGB_Decoder<RGB>.self, ())
+                } else {
+                    image = try fits.prime.decode(GrayscaleDecoder.self, ())
+                }
+                let savedUrl = saveCGImageToUrl(image: image, toURL: jpegUrl)
+                products.append(
+                    ScienceProduct(
+                        name: name,
+                        imageLocation: savedUrl,
+                        sourceFileLocation: fitsUrl,
+                        headers: primaryHeaders,
+                        coamResult: coamResult
+                    ))
+            } catch {
+                log(
+                    .RequestError,
+                    message:
+                        "extractScienceProductsFromFits: Failed to decode primary HDU: \(error)")
+            }
+        }
+
+        // Check Extension HDUs for image data
+        for (index, hdu) in fits.HDUs.enumerated() {
+            let hduHeaders = extractHDUHeaders(hdu.headerUnit)
+            let xtension = qvalueString(hduHeaders["XTENSION"])
+                .lowercased()
+                .trimmingCharacters(in: .whitespaces)
+                .replacingOccurrences(of: "'", with: "")
+                .trimmingCharacters(in: .whitespaces)
+
+            guard xtension == "image", let imageHDU = hdu as? ImageHDU else { continue }
+
+            let hduDataSize = imageHDU.dataUnit?.count ?? 0
+            guard hduContainsImage(headers: hduHeaders, dataSize: hduDataSize) else { continue }
+
+            let naxis = Int(qvalueString(hduHeaders["NAXIS"])) ?? 0
+            let naxis3 = Int(qvalueString(hduHeaders["NAXIS3"])) ?? 0
+            let extName = qvalueString(hduHeaders["EXTNAME"])
+                .trimmingCharacters(in: .whitespaces)
+                .replacingOccurrences(of: "'", with: "")
+                .trimmingCharacters(in: .whitespaces)
+            let suffix = extName.isEmpty ? "ext\(index)" : extName
+            let name = "\(baseName)_\(suffix)"
+            let jpegUrl = outputDirectory.appendingPathComponent("\(name).jpg")
+            let mergedHeaders = mergeHeaders(primary: primaryHeaders, hdu: hduHeaders)
+
+            do {
+                let image: CGImage
+                if naxis == 3 && naxis3 == 3 {
+                    image = try imageHDU.decode(RGB_Decoder<RGB>.self, ())
+                } else {
+                    image = try imageHDU.decode(GrayscaleDecoder.self, ())
+                }
+                let savedUrl = saveCGImageToUrl(image: image, toURL: jpegUrl)
+                products.append(
+                    ScienceProduct(
+                        name: name,
+                        imageLocation: savedUrl,
+                        sourceFileLocation: fitsUrl,
+                        headers: mergedHeaders,
+                        coamResult: coamResult
+                    ))
+            } catch {
+                log(
+                    .RequestError,
+                    message:
+                        "extractScienceProductsFromFits: Failed to decode Extension[\(index)]: \(error)"
+                )
+            }
+        }
+
+        // If no images were extracted, still return a product with headers only
+        if products.isEmpty {
+            products.append(
+                ScienceProduct(
+                    name: baseName,
+                    imageLocation: nil,
+                    sourceFileLocation: fitsUrl,
+                    headers: primaryHeaders,
+                    coamResult: coamResult
+                ))
+        }
+
+        return products
+    }
+
 }
