@@ -1,3 +1,4 @@
+import FITS
 import SwiftQValue
 import XCTest
 
@@ -732,11 +733,12 @@ final class SwiftMASTTests: XCTestCase {
 
     func testScienceProductInitialization() {
         let coam = makeCoamResult(dataURL: "mast:HST/product/test.fits")
-        let headers: [String: QValue] = [
-            "NAXIS": QValue(value: "2"),
-            "NAXIS1": QValue(value: "1024"),
-            "NAXIS2": QValue(value: "1024"),
-            "FILTER": QValue(value: "F606W"),
+        let headers: [FITSHeaderUnit] = [
+            FITSHeaderUnit(
+                keyword: "NAXIS", value: .integer(2), comment: "number of array dimensions"),
+            FITSHeaderUnit(keyword: "NAXIS1", value: .integer(1024), comment: ""),
+            FITSHeaderUnit(keyword: "NAXIS2", value: .integer(1024), comment: ""),
+            FITSHeaderUnit(keyword: "FILTER", value: .string("F606W"), comment: "filter used"),
         ]
 
         let product = ScienceProduct(
@@ -752,6 +754,16 @@ final class SwiftMASTTests: XCTestCase {
         XCTAssertEqual(product.sourceFileLocation?.lastPathComponent, "test.fits")
         XCTAssertEqual(product.headers.count, 4)
         XCTAssertEqual(product.coamResult.obs_id, "obs-1")
+
+        // Test header(forKeyword:) lookup
+        let naxisHeader = product.header(forKeyword: "NAXIS")
+        XCTAssertNotNil(naxisHeader)
+        XCTAssertEqual(naxisHeader?.value, .integer(2))
+        XCTAssertEqual(naxisHeader?.keywordDescription, "Number of data array dimensions")
+
+        let filterHeader = product.header(forKeyword: "FILTER")
+        XCTAssertNotNil(filterHeader)
+        XCTAssertEqual(filterHeader?.value.rawString, "F606W")
     }
 
     func testScienceProductWithNilLocations() {
@@ -760,13 +772,14 @@ final class SwiftMASTTests: XCTestCase {
             name: "no_image",
             imageLocation: nil,
             sourceFileLocation: nil,
-            headers: [:],
+            headers: [],
             coamResult: coam
         )
 
         XCTAssertNil(product.imageLocation)
         XCTAssertNil(product.sourceFileLocation)
         XCTAssertTrue(product.headers.isEmpty)
+        XCTAssertNil(product.header(forKeyword: "NAXIS"))
     }
 
     // MARK: - extractScienceProductsFromFits Tests (Local FITS Files)
@@ -809,6 +822,14 @@ final class SwiftMASTTests: XCTestCase {
             XCTAssertEqual(product.coamResult.obs_id, "obs-1", "CoamResult should be attached")
             XCTAssertFalse(product.headers.isEmpty, "Headers should not be empty")
 
+            // Verify structured headers have descriptions
+            let bitpixHeader = product.header(forKeyword: "BITPIX")
+            XCTAssertNotNil(bitpixHeader, "Should have BITPIX header")
+            XCTAssertTrue(bitpixHeader!.isCategorical, "BITPIX should be categorical")
+            XCTAssertNotNil(
+                bitpixHeader!.valueDescription, "BITPIX value should have a description")
+            XCTAssertEqual(bitpixHeader!.keywordDescription, "Number of bits per data pixel")
+
             print("  Product: \(product.name)")
             print("    Image: \(product.imageLocation?.lastPathComponent ?? "none")")
             print("    Headers count: \(product.headers.count)")
@@ -844,7 +865,8 @@ final class SwiftMASTTests: XCTestCase {
             XCTAssertFalse(product.name.isEmpty)
             XCTAssertEqual(product.sourceFileLocation, fitsUrl)
             XCTAssertFalse(product.headers.isEmpty)
-
+            // Verify keyword lookups work
+            XCTAssertNotNil(product.header(forKeyword: "NAXIS"))
             print("  Product: \(product.name)")
             print("    Image: \(product.imageLocation?.lastPathComponent ?? "none")")
             print("    Headers count: \(product.headers.count)")
@@ -921,11 +943,22 @@ final class SwiftMASTTests: XCTestCase {
             let extProduct = products[1]  // First extension product
             // Should have TELESCOP or INSTRUME from primary, plus XTENSION from extension
             let hasTelescopeOrInstrument =
-                extProduct.headers["TELESCOP"] != nil || extProduct.headers["INSTRUME"] != nil
+                extProduct.header(forKeyword: "TELESCOP") != nil
+                || extProduct.header(forKeyword: "INSTRUME") != nil
             XCTAssertTrue(
                 hasTelescopeOrInstrument || !extProduct.headers.isEmpty,
                 "Extension product should have merged headers from primary HDU"
             )
+
+            // Verify XTENSION is categorical and has correct description
+            let xtensionHeader = extProduct.header(forKeyword: "XTENSION")
+            if let xt = xtensionHeader {
+                XCTAssertTrue(xt.isCategorical)
+                XCTAssertEqual(xt.value.rawString.uppercased(), "IMAGE")
+                XCTAssertNotNil(xt.valueDescription)
+                XCTAssertNotNil(xt.categoricalOptions)
+            }
+
             print(
                 "  Extension product '\(extProduct.name)' has \(extProduct.headers.count) merged headers"
             )
@@ -960,5 +993,309 @@ final class SwiftMASTTests: XCTestCase {
         }
 
         wait(for: [expectation], timeout: 5.0)
+    }
+
+    // MARK: - FITSHeaderValue Tests
+
+    func testFITSHeaderValueParsing() {
+        // Integer
+        let intVal = SwiftMAST.parseFITSValue("42")
+        XCTAssertEqual(intVal, .integer(42))
+        XCTAssertEqual(intVal.intValue, 42)
+        XCTAssertEqual(intVal.doubleValue, 42.0)
+
+        // Negative integer (BITPIX-style)
+        let negInt = SwiftMAST.parseFITSValue("-32")
+        XCTAssertEqual(negInt, .integer(-32))
+
+        // Double
+        let dblVal = SwiftMAST.parseFITSValue("3.14159")
+        XCTAssertEqual(dblVal, .double(3.14159))
+        XCTAssertEqual(dblVal.doubleValue, 3.14159)
+        XCTAssertNil(dblVal.intValue)
+
+        // Scientific notation double
+        let sciVal = SwiftMAST.parseFITSValue("1.5e-06")
+        if case .double(let d) = sciVal {
+            XCTAssertEqual(d, 1.5e-06, accuracy: 1e-12)
+        } else {
+            XCTFail("Expected .double for scientific notation")
+        }
+
+        // Boolean T/F
+        let trueVal = SwiftMAST.parseFITSValue("T")
+        XCTAssertEqual(trueVal, .bool(true))
+        let falseVal = SwiftMAST.parseFITSValue("F")
+        XCTAssertEqual(falseVal, .bool(false))
+
+        // String (FITS quoted)
+        let strVal = SwiftMAST.parseFITSValue("'IMAGE   '")
+        XCTAssertEqual(strVal, .string("IMAGE"))
+        XCTAssertEqual(strVal.rawString, "IMAGE")
+
+        // Plain string
+        let plainStr = SwiftMAST.parseFITSValue("SOME_VALUE")
+        XCTAssertEqual(plainStr, .string("SOME_VALUE"))
+    }
+
+    func testFITSHeaderValueRawString() {
+        XCTAssertEqual(FITSHeaderValue.string("IMAGE").rawString, "IMAGE")
+        XCTAssertEqual(FITSHeaderValue.integer(-32).rawString, "-32")
+        XCTAssertEqual(FITSHeaderValue.double(3.14).rawString, "3.14")
+        XCTAssertEqual(FITSHeaderValue.bool(true).rawString, "T")
+        XCTAssertEqual(FITSHeaderValue.bool(false).rawString, "F")
+    }
+
+    func testFITSHeaderValueCodable() throws {
+        let values: [FITSHeaderValue] = [
+            .string("IMAGE"),
+            .integer(-32),
+            .double(1.5e-06),
+            .bool(true),
+        ]
+
+        let encoder = JSONEncoder()
+        let decoder = JSONDecoder()
+
+        for original in values {
+            let data = try encoder.encode(original)
+            let decoded = try decoder.decode(FITSHeaderValue.self, from: data)
+            XCTAssertEqual(decoded, original, "Round-trip failed for \(original)")
+        }
+    }
+
+    // MARK: - FITSHeaderUnit Tests
+
+    func testFITSHeaderUnitKeywordDescription() {
+        let unit = FITSHeaderUnit(
+            keyword: "BITPIX", value: .integer(-32), comment: "array data type"
+        )
+        XCTAssertEqual(unit.keywordDescription, "Number of bits per data pixel")
+
+        let unknown = FITSHeaderUnit(
+            keyword: "ZZUNKNOWN", value: .string("x"), comment: ""
+        )
+        XCTAssertEqual(unknown.keywordDescription, "FITS header keyword")
+    }
+
+    func testFITSHeaderUnitCategorical() {
+        // BITPIX is categorical
+        let bitpix = FITSHeaderUnit(
+            keyword: "BITPIX", value: .integer(-32), comment: "array data type"
+        )
+        XCTAssertTrue(bitpix.isCategorical)
+        XCTAssertNotNil(bitpix.categoricalOptions)
+        XCTAssertEqual(bitpix.categoricalOptions?.count, FITSBitpix.allCases.count)
+        XCTAssertNotNil(bitpix.valueDescription)
+        XCTAssertTrue(bitpix.valueDescription!.contains("single-precision"))
+
+        // XTENSION is categorical
+        let xt = FITSHeaderUnit(
+            keyword: "XTENSION", value: .string("IMAGE"), comment: ""
+        )
+        XCTAssertTrue(xt.isCategorical)
+        XCTAssertNotNil(xt.valueDescription)
+
+        // TELESCOP is NOT categorical
+        let telescop = FITSHeaderUnit(
+            keyword: "TELESCOP", value: .string("JWST"), comment: ""
+        )
+        XCTAssertFalse(telescop.isCategorical)
+        XCTAssertNil(telescop.categoricalOptions)
+        XCTAssertNil(telescop.valueDescription)
+    }
+
+    func testFITSHeaderUnitCodableRoundTrip() throws {
+        let units = [
+            FITSHeaderUnit(keyword: "BITPIX", value: .integer(-32), comment: "data type"),
+            FITSHeaderUnit(keyword: "TELESCOP", value: .string("JWST"), comment: "telescope"),
+            FITSHeaderUnit(keyword: "SIMPLE", value: .bool(true), comment: "conforms"),
+            FITSHeaderUnit(keyword: "CRVAL1", value: .double(83.633), comment: "RA"),
+        ]
+
+        let encoder = JSONEncoder()
+        let decoder = JSONDecoder()
+
+        let data = try encoder.encode(units)
+        let decoded = try decoder.decode([FITSHeaderUnit].self, from: data)
+        XCTAssertEqual(decoded.count, units.count)
+        for (orig, dec) in zip(units, decoded) {
+            XCTAssertEqual(dec.keyword, orig.keyword)
+            XCTAssertEqual(dec.value, orig.value)
+            XCTAssertEqual(dec.comment, orig.comment)
+        }
+    }
+
+    // MARK: - FITSHeaderEnums Tests
+
+    func testFITSBitpixEnum() {
+        // CaseIterable
+        XCTAssertEqual(FITSBitpix.allCases.count, 6)
+
+        // Properties
+        XCTAssertEqual(FITSBitpix.float32.rawValue, -32)
+        XCTAssertTrue(FITSBitpix.float32.isFloatingPoint)
+        XCTAssertFalse(FITSBitpix.int16.isFloatingPoint)
+        XCTAssertEqual(FITSBitpix.float64.byteSize, 8)
+        XCTAssertEqual(FITSBitpix.uint8.byteSize, 1)
+
+        // Identifiable
+        XCTAssertEqual(FITSBitpix.int32.id, 32)
+
+        // Description
+        XCTAssertFalse(FITSBitpix.int16.description.isEmpty)
+    }
+
+    func testFITSXtensionEnum() {
+        XCTAssertEqual(FITSXtension.allCases.count, 4)
+        XCTAssertEqual(FITSXtension.image.rawValue, "IMAGE")
+        XCTAssertEqual(FITSXtension.bintable.rawValue, "BINTABLE")
+
+        // Init from FITS value string
+        XCTAssertEqual(FITSXtension(fitsValue: "'IMAGE   '"), .image)
+        XCTAssertEqual(FITSXtension(fitsValue: "BINTABLE"), .bintable)
+        XCTAssertNil(FITSXtension(fitsValue: "UNKNOWN"))
+    }
+
+    func testFITSRaDesysEnum() {
+        XCTAssertEqual(FITSRaDesys.allCases.count, 5)
+        XCTAssertEqual(FITSRaDesys.icrs.rawValue, "ICRS")
+        XCTAssertEqual(FITSRaDesys(fitsValue: "'FK5     '"), .fk5)
+        XCTAssertEqual(FITSRaDesys(fitsValue: "FK4-NO-E"), .fk4NoE)
+        XCTAssertNil(FITSRaDesys(fitsValue: "BOGUS"))
+    }
+
+    func testFITSTimeSysEnum() {
+        XCTAssertEqual(FITSTimeSys.allCases.count, 8)
+        XCTAssertEqual(FITSTimeSys.utc.rawValue, "UTC")
+        XCTAssertEqual(FITSTimeSys(fitsValue: "'UTC     '"), .utc)
+        XCTAssertEqual(FITSTimeSys(fitsValue: "TAI"), .tai)
+        XCTAssertNil(FITSTimeSys(fitsValue: "NOPE"))
+    }
+
+    // MARK: - FITSHeaderKeywords Tests
+
+    func testFITSHeaderKeywordsDescriptions() {
+        // Known keyword
+        XCTAssertEqual(
+            FITSHeaderKeywords.description(for: "NAXIS1"),
+            "Length of data axis 1 (columns)"
+        )
+        // Unknown keyword
+        XCTAssertEqual(
+            FITSHeaderKeywords.description(for: "ZZFAKE"),
+            "FITS header keyword"
+        )
+    }
+
+    func testFITSHeaderKeywordsCategorical() {
+        XCTAssertTrue(FITSHeaderKeywords.isCategorical(keyword: "BITPIX"))
+        XCTAssertTrue(FITSHeaderKeywords.isCategorical(keyword: "XTENSION"))
+        XCTAssertTrue(FITSHeaderKeywords.isCategorical(keyword: "RADESYS"))
+        XCTAssertTrue(FITSHeaderKeywords.isCategorical(keyword: "TIMESYS"))
+        XCTAssertFalse(FITSHeaderKeywords.isCategorical(keyword: "TELESCOP"))
+        XCTAssertFalse(FITSHeaderKeywords.isCategorical(keyword: "NAXIS"))
+    }
+
+    func testFITSHeaderKeywordsValueDescription() {
+        let desc = FITSHeaderKeywords.valueDescription(
+            for: "BITPIX", value: .integer(-32)
+        )
+        XCTAssertNotNil(desc)
+        XCTAssertTrue(desc!.contains("single-precision"))
+
+        let xtDesc = FITSHeaderKeywords.valueDescription(
+            for: "XTENSION", value: .string("IMAGE")
+        )
+        XCTAssertNotNil(xtDesc)
+
+        // Non-categorical keyword returns nil
+        let noDesc = FITSHeaderKeywords.valueDescription(
+            for: "TELESCOP", value: .string("JWST")
+        )
+        XCTAssertNil(noDesc)
+
+        // Categorical keyword with unknown value returns nil
+        let badVal = FITSHeaderKeywords.valueDescription(
+            for: "BITPIX", value: .integer(999)
+        )
+        XCTAssertNil(badVal)
+    }
+
+    // MARK: - Header Extraction & Merge Tests
+
+    func testMergeHeaderUnits() {
+        let mast = SwiftMAST()
+
+        let primary = [
+            FITSHeaderUnit(keyword: "SIMPLE", value: .bool(true), comment: "standard"),
+            FITSHeaderUnit(keyword: "BITPIX", value: .integer(8), comment: "primary"),
+            FITSHeaderUnit(keyword: "TELESCOP", value: .string("JWST"), comment: ""),
+            FITSHeaderUnit(keyword: "COMMENT", value: .string("Primary comment"), comment: ""),
+        ]
+
+        let ext = [
+            FITSHeaderUnit(keyword: "BITPIX", value: .integer(-32), comment: "extension"),
+            FITSHeaderUnit(keyword: "XTENSION", value: .string("IMAGE"), comment: "ext type"),
+            FITSHeaderUnit(keyword: "COMMENT", value: .string("Ext comment"), comment: ""),
+        ]
+
+        let merged = mast.mergeHeaderUnits(primary: primary, hdu: ext)
+
+        // Extension overrides primary for BITPIX
+        let bitpix = merged.first { $0.keyword == "BITPIX" }
+        XCTAssertNotNil(bitpix)
+        XCTAssertEqual(bitpix?.value, .integer(-32))
+        XCTAssertEqual(bitpix?.comment, "extension")
+
+        // Primary-only keyword preserved
+        let telescop = merged.first { $0.keyword == "TELESCOP" }
+        XCTAssertNotNil(telescop)
+        XCTAssertEqual(telescop?.value, .string("JWST"))
+
+        // Extension-only keyword added
+        let xt = merged.first { $0.keyword == "XTENSION" }
+        XCTAssertNotNil(xt)
+
+        // Both COMMENT entries are kept (multi-key behavior)
+        let comments = merged.filter { $0.keyword == "COMMENT" }
+        XCTAssertEqual(comments.count, 2)
+    }
+
+    func testExtractHeaderUnitsFromRealFITS() {
+        let mast = SwiftMAST()
+        let projectRoot = projectRootURL()
+        let fitsUrl = projectRoot.appendingPathComponent(
+            "Resources/fits/jw04244-o002_t002_miri_f1000w.fits")
+
+        guard FileManager.default.fileExists(atPath: fitsUrl.path) else {
+            print("Skipping test: FITS file not found at \(fitsUrl.path)")
+            return
+        }
+
+        guard let fitsFile = try? FitsFile.read(contentsOf: fitsUrl) else {
+            XCTFail("Failed to read FITS file")
+            return
+        }
+
+        // Extract from primary HDU
+        let primaryHeaders = mast.extractHeaderUnits(fitsFile.prime.headerUnit)
+        XCTAssertFalse(primaryHeaders.isEmpty, "Primary HDU should have headers")
+
+        // Check SIMPLE keyword exists and is boolean true
+        let simple = primaryHeaders.first { $0.keyword == "SIMPLE" }
+        XCTAssertNotNil(simple)
+        XCTAssertEqual(simple?.value, .bool(true))
+        XCTAssertEqual(simple?.keywordDescription, "File conforms to the FITS standard")
+
+        // BITPIX should be present
+        let bitpix = primaryHeaders.first { $0.keyword == "BITPIX" }
+        XCTAssertNotNil(bitpix)
+        XCTAssertTrue(bitpix!.isCategorical)
+
+        // NAXIS should be integer
+        let naxis = primaryHeaders.first { $0.keyword == "NAXIS" }
+        XCTAssertNotNil(naxis)
+        XCTAssertNotNil(naxis?.value.intValue)
     }
 }
