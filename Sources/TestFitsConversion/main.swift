@@ -15,13 +15,33 @@ import UniformTypeIdentifiers
 
 print("Testing FITS to JPEG Conversion\n")
 
+// Ensure FITS files are available in Resources/fits
+let fitsDir = "Resources/fits"
+let fileManager = FileManager.default
+if let contents = try? fileManager.contentsOfDirectory(atPath: fitsDir) {
+    let fitsFiles = contents.filter { $0.hasSuffix(".fits") }
+    print("Available FITS files in \(fitsDir):")
+    for file in fitsFiles {
+        print(" - \(file)")
+    }
+    print()
+} else {
+    print("Warning: \(fitsDir) directory not found or empty. Please ensure FITS files are placed in \(fitsDir)/")
+}
+
 // FITS files to test - mix of different types
-let testFiles = [
-    "/Users/dayo/Documents/MAST/M31/HST/F255W/_UV_u27h0901t.fits",
-    "/Users/dayo/Documents/MAST/NGC 253/JWST/F1500W/_INFRARED_jw05627-o003_t002_miri_f1500w.fits",
-    "/Users/dayo/Documents/MAST/M31/HST/F220W/_UV_hst_9422_01_acs_hrc_f220w_j8d001.fits",
-    "/Users/dayo/Documents/MAST/Aldebaran/PS1/Aldebaran_PS1_i_2287753.fits",
-]
+// For experimenting, you can pass filenames as command line arguments, e.g., swift run TestFitsConversion _UV_u27h0901t.fits
+var testFiles: [String]
+if CommandLine.arguments.count > 1 {
+    testFiles = CommandLine.arguments.dropFirst().map { "Resources/fits/\($0)" }
+} else {
+    testFiles = [
+        "Resources/fits/_UV_u27h0901t.fits",
+        "Resources/fits/_INFRARED_jw05627-o003_t002_miri_f1500w.fits",
+        "Resources/fits/_UV_hst_9422_01_acs_hrc_f220w_j8d001.fits",
+        "Resources/fits/Aldebaran_PS1_i_2287753.fits",
+    ]
+}
 
 func getStringValue(_ qvalue: QValue?) -> String {
     guard let qv = qvalue else { return "" }
