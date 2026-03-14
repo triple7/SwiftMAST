@@ -185,3 +185,97 @@ public enum FITSTimeSys: String, Codable, CaseIterable, Identifiable {
         self.init(rawValue: cleaned)
     }
 }
+
+// MARK: - HeaderKeywordCategory
+
+/// The category of a FITS header keyword.
+///
+/// Groups both general FITS structural, scaling, WCS, time, and coordinate keywords
+/// as well as JWST-specific keywords from the MAST Instrument Keyword Dictionary at:
+/// https://mast.stsci.edu/api/v0/_jwst_inst_keywd.html
+///
+/// Use ``FITSHeaderKeywords/category(for:)`` or ``FITSHeaderUnit/keywordCategory``
+/// to retrieve the category for a given keyword string.
+///
+/// Example:
+/// ```swift
+/// let unit = FITSHeaderUnit(keyword: "INSTRUME", value: .string("MIRI"), comment: "")
+/// print(unit.keywordCategory)  // instrument
+/// ```
+public enum HeaderKeywordCategory: String, Codable, CaseIterable, Identifiable {
+    /// FITS file and HDU structure (SIMPLE, BITPIX, NAXIS, XTENSION, NEXTEND, etc.)
+    case structural    = "Structural"
+    /// Data value scaling and physical units (BSCALE, BZERO, BUNIT, BTYPE, etc.)
+    case dataScaling   = "Data Scaling"
+    /// Proposal title, principal investigator, and program classification
+    case program       = "Program"
+    /// Observation, visit, and exposure identifier keywords
+    case observation   = "Observation"
+    /// Visit scheduling, execution status, and configuration flags
+    case visit         = "Visit"
+    /// Target coordinates, proper motion, and source classification
+    case target        = "Target"
+    /// Instrument, detector, and optical element configuration
+    case instrument    = "Instrument"
+    /// Exposure duration, readout pattern, and detector parameters
+    case exposure      = "Exposure"
+    /// Date, time, time-scale, and barycentric/heliocentric corrections
+    case time          = "Time"
+    /// World Coordinate System and spatial footprint keywords
+    case wcs           = "WCS"
+    /// Calibration software, reference files, and pipeline provenance
+    case calibration   = "Calibration"
+    /// Detector subarray name, start position, and pixel dimensions
+    case subarray      = "Subarray"
+    /// Dither pattern type, individual offsets, and step parameters
+    case dither        = "Dither"
+    /// Guide star catalog identifier, coordinates, and pointing quality
+    case guideStar     = "Guide Star"
+    /// Sky background level and subtraction status
+    case background    = "Background"
+    /// Science aperture name and configuration
+    case aperture      = "Aperture"
+    /// Pipeline association pool and table file references
+    case association   = "Association"
+    /// Resampled product total exposure time and source catalog filenames
+    case resampling    = "Resampling"
+    /// Instrument mechanism, IFU cube construction, and WFS&C parameters
+    case engineering   = "Engineering"
+    /// Archive product release, access restrictions, and file metadata
+    case product       = "Product"
+    /// FITS comment, history, and blank header cards
+    case comments      = "Comments"
+    /// Keyword not assigned to a specific category
+    case unknown       = "Unknown"
+
+    public var id: String { rawValue }
+
+    /// Human-readable description of this keyword category.
+    public var description: String {
+        switch self {
+        case .structural:  return "FITS file and HDU structural keywords"
+        case .dataScaling: return "Data value scaling and physical unit keywords"
+        case .program:     return "Proposal title, principal investigator, and program classification"
+        case .observation: return "Observation, visit, and exposure identifier keywords"
+        case .visit:       return "Visit scheduling, execution status, and configuration flags"
+        case .target:      return "Target coordinates, proper motion, and source classification"
+        case .instrument:  return "Instrument, detector, and optical element configuration"
+        case .exposure:    return "Exposure duration, readout pattern, and detector parameters"
+        case .time:        return "Date, time, time-scale, and barycentric/heliocentric corrections"
+        case .wcs:         return "World Coordinate System and spatial footprint keywords"
+        case .calibration: return "Calibration software, reference files, and pipeline provenance"
+        case .subarray:    return "Detector subarray name, start position, and pixel dimensions"
+        case .dither:      return "Dither pattern type, individual offsets, and step parameters"
+        case .guideStar:   return "Guide star catalog identifier, coordinates, and pointing quality"
+        case .background:  return "Sky background level and subtraction status"
+        case .aperture:    return "Science aperture name and configuration"
+        case .association: return "Pipeline association pool and table file references"
+        case .resampling:  return "Resampled product total exposure time and source catalog filenames"
+        case .engineering: return "Instrument mechanism, IFU cube construction, and WFS&C parameters"
+        case .product:     return "Archive product release, access restrictions, and file metadata"
+        case .comments:    return "FITS comment, history, and blank header cards"
+        case .unknown:     return "Keyword not assigned to a specific category"
+        }
+    }
+}
+

@@ -1298,4 +1298,188 @@ final class SwiftMASTTests: XCTestCase {
         XCTAssertNotNil(naxis)
         XCTAssertNotNil(naxis?.value.intValue)
     }
+
+    // MARK: - HeaderKeywordCategory Tests
+
+    func testHeaderKeywordCategoryEnum() {
+        // All cases should be reachable
+        XCTAssertGreaterThanOrEqual(HeaderKeywordCategory.allCases.count, 22)
+
+        // Every case should have a non-empty description
+        for category in HeaderKeywordCategory.allCases {
+            XCTAssertFalse(
+                category.description.isEmpty,
+                "Category \(category.rawValue) has an empty description"
+            )
+        }
+
+        // Identifiable conformance
+        XCTAssertEqual(HeaderKeywordCategory.structural.id, "Structural")
+        XCTAssertEqual(HeaderKeywordCategory.instrument.id, "Instrument")
+        XCTAssertEqual(HeaderKeywordCategory.unknown.id, "Unknown")
+
+        // Codable round-trip
+        let encoder = JSONEncoder()
+        let decoder = JSONDecoder()
+        XCTAssertNoThrow(
+            try {
+                let data = try encoder.encode(HeaderKeywordCategory.exposure)
+                let decoded = try decoder.decode(HeaderKeywordCategory.self, from: data)
+                XCTAssertEqual(decoded, .exposure)
+            }())
+    }
+
+    func testFITSHeaderUnitKeywordCategory() {
+        // INSTRUME → instrument
+        let instrume = FITSHeaderUnit(keyword: "INSTRUME", value: .string("MIRI"), comment: "")
+        XCTAssertEqual(instrume.keywordCategory, .instrument)
+
+        // TELESCOP → instrument
+        let telescop = FITSHeaderUnit(keyword: "TELESCOP", value: .string("JWST"), comment: "")
+        XCTAssertEqual(telescop.keywordCategory, .instrument)
+
+        // DATAMODL → instrument
+        let datamodl = FITSHeaderUnit(
+            keyword: "DATAMODL", value: .string("ImageModel"), comment: "")
+        XCTAssertEqual(datamodl.keywordCategory, .instrument)
+
+        // DATE-OBS → time
+        let dateObs = FITSHeaderUnit(keyword: "DATE-OBS", value: .string("2023-01-01"), comment: "")
+        XCTAssertEqual(dateObs.keywordCategory, .time)
+
+        // FILTER → instrument
+        let filter = FITSHeaderUnit(keyword: "FILTER", value: .string("F1000W"), comment: "")
+        XCTAssertEqual(filter.keywordCategory, .instrument)
+
+        // EXP_TYPE → exposure
+        let expType = FITSHeaderUnit(keyword: "EXP_TYPE", value: .string("MIR_IMAGE"), comment: "")
+        XCTAssertEqual(expType.keywordCategory, .exposure)
+
+        // TITLE → program
+        let title = FITSHeaderUnit(keyword: "TITLE", value: .string("My Program"), comment: "")
+        XCTAssertEqual(title.keywordCategory, .program)
+
+        // GS_RA → guideStar
+        let gsRa = FITSHeaderUnit(keyword: "GS_RA", value: .double(83.5), comment: "")
+        XCTAssertEqual(gsRa.keywordCategory, .guideStar)
+
+        // BKGLEVEL → background
+        let bkg = FITSHeaderUnit(keyword: "BKGLEVEL", value: .double(0.01), comment: "")
+        XCTAssertEqual(bkg.keywordCategory, .background)
+
+        // S_REGION → wcs
+        let sRegion = FITSHeaderUnit(
+            keyword: "S_REGION", value: .string("CIRCLE ICRS"), comment: "")
+        XCTAssertEqual(sRegion.keywordCategory, .wcs)
+
+        // NAXIS is a general FITS structural keyword
+        let naxis = FITSHeaderUnit(keyword: "NAXIS", value: .integer(2), comment: "")
+        XCTAssertEqual(naxis.keywordCategory, .structural)
+
+        // Completely unknown keyword → unknown
+        let unk = FITSHeaderUnit(keyword: "ZZFAKE99", value: .string("x"), comment: "")
+        XCTAssertEqual(unk.keywordCategory, .unknown)
+    }
+
+    func testFITSHeaderKeywordsCategory() {
+        // General FITS structural keywords
+        XCTAssertEqual(FITSHeaderKeywords.category(for: "NAXIS"), .structural)
+        XCTAssertEqual(FITSHeaderKeywords.category(for: "BITPIX"), .structural)
+        XCTAssertEqual(FITSHeaderKeywords.category(for: "NEXTEND"), .structural)
+
+        // WCS keywords
+        XCTAssertEqual(FITSHeaderKeywords.category(for: "CRVAL1"), .wcs)
+        XCTAssertEqual(FITSHeaderKeywords.category(for: "S_REGION"), .wcs)
+
+        // Instrument keywords (including formerly-basic TELESCOP/DATAMODL)
+        XCTAssertEqual(FITSHeaderKeywords.category(for: "TELESCOP"), .instrument)
+        XCTAssertEqual(FITSHeaderKeywords.category(for: "INSTRUME"), .instrument)
+        XCTAssertEqual(FITSHeaderKeywords.category(for: "DETECTOR"), .instrument)
+        XCTAssertEqual(FITSHeaderKeywords.category(for: "FILTER"), .instrument)
+        XCTAssertEqual(FITSHeaderKeywords.category(for: "MSASTATE"), .instrument)
+
+        // Calibration keywords (including formerly-basic CAL_VER; formerly-referenceFile CRDS_VER)
+        XCTAssertEqual(FITSHeaderKeywords.category(for: "CAL_VER"), .calibration)
+        XCTAssertEqual(FITSHeaderKeywords.category(for: "CRDS_VER"), .calibration)
+
+        // Engineering keywords (formerly ifuCube/nirspecEngineering/focusAdjust)
+        XCTAssertEqual(FITSHeaderKeywords.category(for: "WPOWER"), .engineering)
+        XCTAssertEqual(FITSHeaderKeywords.category(for: "RMA_POS"), .engineering)
+        XCTAssertEqual(FITSHeaderKeywords.category(for: "FAM_LA1"), .engineering)
+
+        // Program keywords
+        XCTAssertEqual(FITSHeaderKeywords.category(for: "TITLE"), .program)
+        XCTAssertEqual(FITSHeaderKeywords.category(for: "SCICAT"), .program)
+
+        // Observation identifiers
+        XCTAssertEqual(FITSHeaderKeywords.category(for: "OBS_ID"), .observation)
+
+        // Time keywords (including formerly-observationIdentifiers DATE-OBS; formerly-timeInformation BARTDELT)
+        XCTAssertEqual(FITSHeaderKeywords.category(for: "DATE-OBS"), .time)
+        XCTAssertEqual(FITSHeaderKeywords.category(for: "BARTDELT"), .time)
+
+        // Visit
+        XCTAssertEqual(FITSHeaderKeywords.category(for: "VISITYPE"), .visit)
+
+        // Target
+        XCTAssertEqual(FITSHeaderKeywords.category(for: "TARGNAME"), .target)
+        XCTAssertEqual(FITSHeaderKeywords.category(for: "TARG_RA"), .target)
+
+        // Exposure parameters
+        XCTAssertEqual(FITSHeaderKeywords.category(for: "EXP_TYPE"), .exposure)
+        XCTAssertEqual(FITSHeaderKeywords.category(for: "NGROUPS"), .exposure)
+        XCTAssertEqual(FITSHeaderKeywords.category(for: "READPATT"), .exposure)
+
+        // Unchanged categories
+        XCTAssertEqual(FITSHeaderKeywords.category(for: "ASNPOOL"), .association)
+        XCTAssertEqual(FITSHeaderKeywords.category(for: "ASNTABLE"), .association)
+        XCTAssertEqual(FITSHeaderKeywords.category(for: "SUBARRAY"), .subarray)
+        XCTAssertEqual(FITSHeaderKeywords.category(for: "FASTAXIS"), .subarray)
+        XCTAssertEqual(FITSHeaderKeywords.category(for: "PATTTYPE"), .dither)
+        XCTAssertEqual(FITSHeaderKeywords.category(for: "NUMDTHPT"), .dither)
+        XCTAssertEqual(FITSHeaderKeywords.category(for: "APERNAME"), .aperture)
+        XCTAssertEqual(FITSHeaderKeywords.category(for: "TEXPTIME"), .resampling)
+        XCTAssertEqual(FITSHeaderKeywords.category(for: "GS_RA"), .guideStar)
+        XCTAssertEqual(FITSHeaderKeywords.category(for: "PCS_MODE"), .guideStar)
+        XCTAssertEqual(FITSHeaderKeywords.category(for: "BKGLEVEL"), .background)
+        XCTAssertEqual(FITSHeaderKeywords.category(for: "MASTERBG"), .background)
+
+        // Completely unknown keyword
+        XCTAssertEqual(FITSHeaderKeywords.category(for: "ZZFAKE"), .unknown)
+
+        print("FITSHeaderKeywords category test passed")
+    }
+
+    func testJWSTKeywordDescriptionsAdded() {
+        // Verify newly added JWST descriptions are present
+        XCTAssertEqual(FITSHeaderKeywords.description(for: "NEXTEND"), "Number of file extensions")
+        XCTAssertEqual(
+            FITSHeaderKeywords.description(for: "NGROUPS"), "Number of groups per integration")
+        XCTAssertEqual(
+            FITSHeaderKeywords.description(for: "READPATT"),
+            "Readout pattern name (pre-defined NFRAMES, GROUPGAP, NRESETS combination)")
+        XCTAssertEqual(
+            FITSHeaderKeywords.description(for: "MSASTATE"),
+            "NIRSpec MSA state: ALLOPEN, ALLCLOSED, or CONFIGURED")
+        XCTAssertEqual(
+            FITSHeaderKeywords.description(for: "GS_RA"),
+            "ICRS right ascension of the guide star (degrees)")
+        XCTAssertEqual(
+            FITSHeaderKeywords.description(for: "BKGLEVEL"),
+            "Overall background signal level computed by the skymatch pipeline step")
+        XCTAssertEqual(
+            FITSHeaderKeywords.description(for: "CRDS_CTX"),
+            "Version of the CRDS context (PMAP) controlling reference file selection")
+        XCTAssertEqual(
+            FITSHeaderKeywords.description(for: "SUBARRAY"),
+            "Subarray name (FULL or named subarray up to 9 characters)")
+        XCTAssertEqual(
+            FITSHeaderKeywords.description(for: "APERNAME"),
+            "S&OC PRD aperture name used for telescope pointing")
+
+        // Unknown keywords still return the fallback
+        XCTAssertEqual(FITSHeaderKeywords.description(for: "ZZUNKNOWN"), "FITS header keyword")
+
+        print("JWST keyword descriptions test passed")
+    }
 }

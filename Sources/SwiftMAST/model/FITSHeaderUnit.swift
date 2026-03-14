@@ -54,6 +54,14 @@ public struct FITSHeaderUnit: Codable, Identifiable, Equatable, Hashable {
     public var valueDescription: String? {
         FITSHeaderKeywords.valueDescription(for: keyword, value: value)
     }
+
+    /// The category for this header keyword.
+    ///
+    /// Covers general FITS structural, scaling, WCS, and time keywords as well as
+    /// JWST-specific keywords. Returns `.unknown` for unrecognised keywords.
+    public var keywordCategory: HeaderKeywordCategory {
+        FITSHeaderKeywords.category(for: keyword)
+    }
 }
 
 // MARK: - FITSHeaderValue
