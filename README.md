@@ -109,3 +109,81 @@ mast.lookupTargetCoordinates(targetName: "M31") { coordinates in
 }
 ```
 
+## Science Product Extraction
+
+The `extractScienceProducts` API downloads a FITS file from MAST and extracts individual image HDUs into `ScienceProduct` objects, each with converted JPEG imagery and structured FITS headers.
+
+### Basic Usage
+
+```swift
+let mast = SwiftMAST()
+let coamResult = ... // from a MAST query
+
+mast.extractScienceProducts(targetName: "M31", coamResult: coamResult) { products in
+    for product in products {
+        print(product.name)
+        print("Image: \(product.imageLocation?.path ?? "none")")
+        print("Headers: \(product.headers.count)")
+    }
+}
+```
+
+### ScienceProduct
+
+Each `ScienceProduct` contains:
+- `name` — display name derived from the source file and HDU index
+- `imageLocation` — local URL of the saved JPEG (converted from the FITS image HDU)
+- `sourceFileLocation` — local URL of the original FITS file
+- `headers` — array of structured `FITSHeaderUnit` entries (primary + extension merged)
+- `coamResult` — the originating `CoamResult`
+
+### Structured FITS Headers (FITSHeaderUnit)
+
+Headers are represented as an array of `FITSHeaderUnit` structs rather than raw dictionaries. Each entry provides typed values, keyword descriptions, and categorical enum metadata.
+
+```swift
+for header in product.headers {
+    print("\(header.keyword): \(header.value) — \(header.keywordDescription)")
+
+    if header.isCategorical, let desc = header.valueDescription {
+        print("  Value meaning: \(desc)")
+    }
+    if let options = header.categoricalOptions {
+        print("  Valid values: \(options.map { $0.value })")
+    }
+}
+
+// Look up a specific header
+if let bitpix = product.header(forKeyword: "BITPIX") {
+    print(bitpix.value.intValue!)        // -32
+    print(bitpix.keywordDescription)     // "Number of bits per data pixel"
+    print(bitpix.valueDescription!)      // "IEEE 754 single-precision floating-point (32-bit)"
+}
+```
+
+`FITSHeaderValue` is a typed enum (`.string`, `.integer`, `.double`, `.bool`) with convenience accessors `rawString`, `intValue`, and `doubleValue`. All header types are `Codable`.
+
+### Categorical Enums
+
+Four FITS standard keywords have well-defined categorical values, each modeled as a `Codable`, `CaseIterable`, `Identifiable` enum:
+
+| Keyword | Enum | Values |
+|---------|------|--------|
+| `XTENSION` | `FITSXtension` | IMAGE, BINTABLE, TABLE, IUEIMAGE |
+| `BITPIX` | `FITSBitpix` | 8, 16, 32, 64, -32, -64 |
+| `RADESYS` | `FITSRaDesys` | ICRS, FK5, FK4, FK4-NO-E, GAPPT |
+| `TIMESYS` | `FITSTimeSys` | UTC, UT1, TAI, TT, TDB, TCG, TCB, GPS |
+
+```swift
+// Enumerate all valid BITPIX values
+for bp in FITSBitpix.allCases {
+    print("\(bp.rawValue): \(bp.description) — \(bp.byteSize) bytes")
+}
+
+// Initialize from a raw FITS value
+if let radesys = FITSRaDesys(fitsValue: "'ICRS    '") {
+    print(radesys.description)
+    // "International Celestial Reference System (current IAU standard)"
+}
+```
+
