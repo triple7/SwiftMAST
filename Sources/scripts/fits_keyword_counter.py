@@ -19,6 +19,7 @@ import os
 import json
 import time
 from collections import Counter
+from dataclasses import dataclass, field
 from urllib.parse import quote as urlencode
 
 import requests
@@ -39,8 +40,13 @@ _REPO_ROOT = os.path.dirname(os.path.dirname(_SCRIPT_DIR))
 COUNTER_FILE = os.path.join(_REPO_ROOT, "Resources", "results", "headers_counter.json")
 DOWNLOAD_DIR = os.path.join(_REPO_ROOT, "Resources", "fits")
 
-# Maximum number of targets to actually process in one run
-MAX_TARGETS = 2
+# Maximum total FITS files to analyse across all targets in one run.
+# The traversal is round-robin: one file per target per round, so every
+# target is sampled before any target gets a second file.
+MAX_FILES = 4
+
+# Number of observation rows to request per MAST page
+PAGESIZE = 50
 
 # File extensions considered valid FITS files (including gzipped)
 FITS_EXTENSIONS = (".fits", ".fits.gz")
@@ -120,19 +126,26 @@ def resolve_target(object_name: str) -> dict | None:
     return {"ra": coord["ra"], "dec": coord["decl"]}
 
 
-def search_by_target_name(name: str, pagesize: int = 50) -> list[dict]:
+def search_by_target_name(name: str, page: int = 1, pagesize: int = PAGESIZE) -> list[dict]:
     """
     Search MAST observations using a freeText target_name filter via
     Mast.Caom.Filtered. This avoids range/spatial queries that can hit
     server-side database contention issues.
 
-    Returns a list of observation row dicts.
+    Parameters
+    ----------
+    name     : target name to search for (wrapped in SQL wildcards).
+    page     : 1-based page number for paginated results.
+    pagesize : number of rows per page.
+
+    Returns a list of observation row dicts, or [] when the page is empty or
+    on error.
     """
     request = {
         "service": "Mast.Caom.Filtered",
         "format": "json",
         "pagesize": pagesize,
-        "page": 1,
+        "page": page,
         "params": {
             "columns": "*",
             "filters": [
@@ -263,6 +276,65 @@ def download_fits_file(observation: dict) -> str | None:
 
 
 # ---------------------------------------------------------------------------
+# Per-target traversal state
+# ---------------------------------------------------------------------------
+
+@dataclass
+class TargetState:
+    """Tracks pagination and record position for one target across rounds."""
+    name: str
+    # Next MAST page to fetch (1-based). Incremented after each successful fetch.
+    next_page: int = 1
+    # FITS-filtered records from the most-recently fetched page.
+    page_records: list = field(default_factory=list)
+    # Index of the next record to try inside page_records.
+    record_index: int = 0
+    # Set to True when MAST returns an empty page – no more data for this target.
+    exhausted: bool = False
+    # Total FITS files successfully analysed for this target.
+    files_processed: int = 0
+
+
+def advance_target(state: TargetState) -> str | None:
+    """
+    Return the local path of the next analysable FITS file for *state*,
+    advancing page_records / fetching the next MAST page as needed.
+
+    - Skips records where the download fails.
+    - Fetches successive pages when the current page's records are exhausted.
+    - Sets state.exhausted = True and returns None when no more pages remain.
+    """
+    while not state.exhausted:
+        # Try remaining records on the current page.
+        while state.record_index < len(state.page_records):
+            record = state.page_records[state.record_index]
+            state.record_index += 1
+            local_path = download_fits_file(record)
+            if local_path and os.path.exists(local_path):
+                return local_path
+            # Download failed; try next record on same page.
+
+        # All records on the current page tried – fetch the next page.
+        print(f"    [{state.name}] Fetching MAST page {state.next_page}...")
+        raw_records = search_by_target_name(state.name, page=state.next_page)
+        state.next_page += 1
+
+        if not raw_records:
+            print(f"    [{state.name}] No more pages – target exhausted.")
+            state.exhausted = True
+            return None
+
+        # Prefer records with a direct FITS URL; fall back to all records so
+        # the products-based download strategy can be attempted.
+        fits_records = filter_fits_observations(raw_records)
+        state.page_records = fits_records if fits_records else raw_records
+        state.record_index = 0
+        # Loop back to try the newly loaded records.
+
+    return None
+
+
+# ---------------------------------------------------------------------------
 # FITS header extraction
 # ---------------------------------------------------------------------------
 
@@ -317,59 +389,70 @@ def save_counter(counter: Counter, path: str) -> None:
 # Main orchestration
 # ---------------------------------------------------------------------------
 
-def process_target(name: str, counter: Counter) -> bool:
+def run(targets: list[str], max_files: int = MAX_FILES) -> None:
     """
-    Search MAST by target name, download the first FITS hit, and update
-    *counter* with the extracted header keywords.
+    Main entry point.
 
-    Returns True if the target was successfully processed.
-    """
-    print(f"  Searching MAST for '{name}'...")
-    observations = search_by_target_name(name)
-    if not observations:
-        print(f"    No observations found for '{name}'.")
-        return False
+    Analyses up to *max_files* FITS files in round-robin order across all
+    *targets*:
 
-    fits_obs = filter_fits_observations(observations)
-    if not fits_obs:
-        # Fall back to first observation and try products
-        fits_obs = observations[:1]
+      Round 1 : one file from target[0], one from target[1], …
+      Round 2 : next untouched file from target[0], next from target[1], …
+      …
 
-    print(f"    Found {len(fits_obs)} FITS observation(s). Attempting download...")
-    local_path = download_fits_file(fits_obs[0])
-    if local_path is None or not os.path.exists(local_path):
-        print(f"    Download failed for '{name}'.")
-        return False
-
-    keywords = extract_header_keywords(local_path)
-    counter.update(keywords)
-    print(f"    Extracted {len(keywords)} keyword occurrences from '{os.path.basename(local_path)}'.")
-    return True
-
-
-def run(targets: list[str], max_targets: int = MAX_TARGETS) -> None:
-    """
-    Main entry point: iterate over *targets*, accumulate FITS header
-    keyword counts, and write the sorted result to COUNTER_FILE.
+    Within each target, records are drawn from successive MAST pages so
+    pagination is handled transparently.  The keyword counter is saved after
+    every successful file so progress survives interruption.
     """
     counter = load_counter(COUNTER_FILE)
-    processed = 0
+    total_processed = 0
 
-    print(f"Starting FITS keyword scan for up to {max_targets} targets ...\n")
+    states = [TargetState(name=t) for t in targets]
 
-    for name in targets:
-        if processed >= max_targets:
+    print(f"Starting FITS keyword scan — goal: {max_files} file(s) across "
+          f"{len(targets)} target(s), round-robin.\n")
+
+    round_num = 1
+    while total_processed < max_files:
+        active = [s for s in states if not s.exhausted]
+        if not active:
+            print("All targets exhausted.")
             break
-        print(f"[{processed + 1}/{min(len(targets), max_targets)}] {name}")
-        success = process_target(name, counter)
-        if success:
-            processed += 1
-            # Save incrementally so progress is not lost on interruption
+
+        print(f"--- Round {round_num} ({len(active)} active target(s)) ---")
+        progress_this_round = False
+
+        for state in active:
+            if total_processed >= max_files:
+                break
+
+            print(f"  [{state.name}] Seeking next FITS file "
+                  f"(target total so far: {state.files_processed})...")
+            local_path = advance_target(state)
+
+            if local_path is None:
+                continue  # target exhausted mid-round
+
+            keywords = extract_header_keywords(local_path)
+            counter.update(keywords)
+            total_processed += 1
+            state.files_processed += 1
             save_counter(counter, COUNTER_FILE)
+            progress_this_round = True
+
+            print(f"    Extracted {len(keywords)} keyword(s) from "
+                  f"'{os.path.basename(local_path)}' "
+                  f"[{total_processed}/{max_files} total].")
+
+        if not progress_this_round:
+            print("No progress this round – all remaining targets exhausted.")
+            break
+
+        round_num += 1
 
     save_counter(counter, COUNTER_FILE)
-
-    print(f"\nDone — processed {processed} target(s).")
+    print(f"\nDone — {total_processed} file(s) analysed across "
+          f"{sum(1 for s in states if s.files_processed > 0)} target(s).")
     print(f"Counter saved to '{COUNTER_FILE}' ({len(counter)} unique keywords).\n")
     print_top_keywords(counter)
 
