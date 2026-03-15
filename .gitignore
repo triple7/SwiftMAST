@@ -1,6 +1,8 @@
 .build
 .build/*
+Resources/fits/
 Resources/fits/*.fits
+Resources/fits/*.fits.gz
 
 # Generated results – keep the folder but ignore its contents
 Resources/results/*
