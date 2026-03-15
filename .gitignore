@@ -1,3 +1,7 @@
 .build
 .build/*
 Resources/fits/*.fits
+
+# Generated results – keep the folder but ignore its contents
+Resources/results/*
+!Resources/results/.gitkeep
