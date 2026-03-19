@@ -468,4 +468,4 @@ def print_top_keywords(counter: Counter, n: int = 30) -> None:
 # ---------------------------------------------------------------------------
 
 if __name__ == "__main__":
-    run(TARGETS)
+    run(TARGETS, 20)
