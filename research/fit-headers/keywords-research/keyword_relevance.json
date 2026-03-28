@@ -1,0 +1,2216 @@
+{
+  "SIMPLE": {
+    "content": "This keyword indicates whether the FITS file strictly adheres to the basic FITS standard. A value of 'T' (True) means the file structure is standard, making it compatible with FITS-compliant software. It's a foundational check to ensure proper file parsing.",
+    "relevance_score": 10,
+    "relevance_comment": "This keyword is purely structural, ensuring file readability by software, with no direct information value for end-users.",
+    "user_comment": ""
+  },
+  "BITPIX": {
+    "content": "This keyword specifies the number of bits used to represent each individual pixel's data value (e.g., 16-bit integer, 32-bit floating-point). It defines the fundamental data type and precision of the raw pixel values within the image or data array. Understanding BITPIX can help users interpret the range and fidelity of the stored data.",
+    "relevance_score": 45,
+    "relevance_comment": "While not directly interacted with, knowing the underlying data type can be useful for advanced users interpreting data precision or performing specific analyses.",
+    "user_comment": ""
+  },
+  "NAXIS": {
+    "content": "This keyword indicates the number of dimensions in the data array, such as a 2D image (NAXIS=2) or a 3D data cube (NAXIS=3). It tells the user if they are looking at a simple image, a time series, or a more complex dataset like a spectral cube. This directly impacts how the data is visualized and explored.",
+    "relevance_score": 75,
+    "relevance_comment": "This keyword is important as it defines the fundamental dimensionality of the dataset, directly affecting how an app would display and allow interaction with the data.",
+    "user_comment": ""
+  },
+  "NAXIS1": {
+    "content": "This keyword specifies the size of the first dimension of the data array, which typically represents the number of columns in an image. For a 2D image, this tells you the width of the image in pixels. It's essential for understanding the spatial extent of the data.",
+    "relevance_score": 85,
+    "relevance_comment": "Users frequently need to know the width of an image, making this keyword highly relevant for display and spatial context.",
+    "user_comment": ""
+  },
+  "NAXIS2": {
+    "content": "This keyword specifies the size of the second dimension of the data array, which typically represents the number of rows in an image. For a 2D image, this tells you the height of the image in pixels. It's essential for understanding the spatial extent of the data.",
+    "relevance_score": 85,
+    "relevance_comment": "Users frequently need to know the height of an image, making this keyword highly relevant for display and spatial context.",
+    "user_comment": ""
+  },
+  "NAXIS3": {
+    "content": "This keyword specifies the length or size of the third dimension of the data array. For astronomical data, this often represents distinct elements like different spectral channels, multiple filters, or a time series of images, indicating that the data is a 3D cube rather than a simple 2D image.",
+    "relevance_score": 75,
+    "relevance_comment": "It is commonly useful for users to understand the dimensionality of data cubes, such as the number of spectral channels or filter planes, for analysis and visualization.",
+    "user_comment": ""
+  },
+  "NAXIS4": {
+    "content": "This keyword indicates the size of the fourth dimension of the data array. While less common than 2D or 3D data, a fourth axis can represent additional data aspects like polarization states, dither positions, or multiple data products within a single file.",
+    "relevance_score": 55,
+    "relevance_comment": "While less common than 3D data, knowing the extent of a fourth axis is useful for advanced users working with complex, higher-dimensional datasets.",
+    "user_comment": ""
+  },
+  "EXTEND": {
+    "content": "This boolean keyword, found in the primary header, indicates whether the FITS file might contain standard extensions beyond the primary data array. These extensions are separate HDUs (Header Data Units) that can hold additional data like error maps, data quality flags, or tabular information.",
+    "relevance_score": 10,
+    "relevance_comment": "This structural keyword informs software about the potential for extensions, but users are more interested in the content of specific extensions rather than this general flag.",
+    "user_comment": ""
+  },
+  "NEXTEND": {
+    "content": "This keyword specifies the total number of standard FITS extensions present in the file. It provides a count of how many additional data blocks (which can be images, tables, etc.) are included alongside the primary data.",
+    "relevance_score": 25,
+    "relevance_comment": "While providing a count of extensions, this keyword is primarily for software parsing, and users are typically more interested in the specific types and content of individual extensions.",
+    "user_comment": ""
+  },
+  "PCOUNT": {
+    "content": "This keyword is used in FITS binary tables to specify the number of bytes used for supplemental data, particularly for variable-length array (VLA) columns. It points to the location where the actual variable-length data elements are stored within the data block.",
+    "relevance_score": 5,
+    "relevance_comment": "This keyword is purely internal and structural, used by FITS readers to correctly parse variable-length array data within tables, with no direct relevance for end-users.",
+    "user_comment": ""
+  },
+  "GCOUNT": {
+    "content": "GCOUNT specifies the number of data groups present in a variable-length array FITS file. It is primarily used for specialized FITS structures that contain multiple, often differing, data arrays within a single HDU, rather than a simple image or table.",
+    "relevance_score": 5,
+    "relevance_comment": "This keyword is a low-level structural detail for specialized FITS files and holds almost no direct value for typical end-users.",
+    "user_comment": ""
+  },
+  "XTENSION": {
+    "content": "XTENSION indicates the type of data stored in a FITS extension, such as an IMAGE (for images or multi-dimensional arrays), BINTABLE (for binary tables), or TABLE (for ASCII tables). This keyword helps software understand how to correctly interpret the data structure within that specific FITS High Definition Unit (HDU).",
+    "relevance_score": 65,
+    "relevance_comment": "While structural, XTENSION informs the user about the fundamental type of data (image vs. table) in an HDU, which impacts how they might interact with it.",
+    "user_comment": ""
+  },
+  "EXTNAME": {
+    "content": "EXTNAME provides a descriptive name for a FITS extension, helping to identify its content and purpose within a multi-HDU FITS file. For example, it might be 'SCI' for science data, 'ERR' for error data, or 'DQ' for data quality information.",
+    "relevance_score": 85,
+    "relevance_comment": "EXTNAME is highly useful for users to quickly identify the purpose and content of different data components within a multi-HDU FITS file.",
+    "user_comment": ""
+  },
+  "EXTVER": {
+    "content": "EXTVER specifies a version number for a FITS extension, which is useful when multiple extensions within the same FITS file share the same EXTNAME. This allows for distinguishing between different versions or instances of a particular data type, like 'SCI, EXTVER=1' and 'SCI, EXTVER=2'.",
+    "relevance_score": 60,
+    "relevance_comment": "EXTVER is useful for distinguishing between multiple instances or versions of similarly named data extensions, particularly in complex multi-HDU files.",
+    "user_comment": ""
+  },
+  "EXTLEVEL": {
+    "content": "EXTLEVEL indicates the hierarchical level of a FITS extension, primarily used in more complex FITS structures where data might be nested or organized in a tree-like fashion. It helps define the relationship between extensions within a multi-HDU FITS file.",
+    "relevance_score": 15,
+    "relevance_comment": "EXTLEVEL is a highly technical structural keyword for complex FITS hierarchies and has minimal direct relevance for typical end-users.",
+    "user_comment": ""
+  },
+  "BSCALE": {
+    "content": "This keyword specifies the linear scaling factor used to convert raw, stored pixel values into meaningful physical units. The actual physical value of a pixel is calculated as (BZERO + BSCALE \u00d7 array_value). It is crucial for converting arbitrary digital numbers into scientifically interpretable quantities like flux or intensity.",
+    "relevance_score": 85,
+    "relevance_comment": "It's essential for converting raw pixel counts into meaningful physical units, which is key for quantitative analysis and accurate data display.",
+    "user_comment": ""
+  },
+  "BZERO": {
+    "content": "This keyword represents the zero-point offset applied when converting raw, stored pixel values into physical units. The formula for conversion is (BZERO + BSCALE \u00d7 array_value), meaning BZERO shifts the entire scale. It works in conjunction with BSCALE to ensure pixel values reflect true physical quantities.",
+    "relevance_score": 85,
+    "relevance_comment": "It works with BSCALE to convert raw pixel values into meaningful physical units, critical for quantitative analysis and accurate data representation.",
+    "user_comment": ""
+  },
+  "BUNIT": {
+    "content": "This keyword specifies the physical units of the data array values after they have been scaled by BSCALE and BZERO. Examples include 'Jy/pixel' for flux density, 'MJy/sr' for surface brightness, or 'electrons/s' for count rates. It is absolutely fundamental for understanding what the numbers in the image or table actually represent.",
+    "relevance_score": 95,
+    "relevance_comment": "This keyword directly tells users the physical units of the data, which is fundamental for understanding and interpreting any quantitative measurement.",
+    "user_comment": ""
+  },
+  "BTYPE": {
+    "content": "This keyword provides a high-level description of the type of data contained within the array, such as 'FLUX', 'SURFACE BRIGHTNESS', 'ERROR', or 'DQ' (Data Quality). It helps users quickly understand the nature and purpose of the data, offering context beyond just the units.",
+    "relevance_score": 80,
+    "relevance_comment": "It helps users understand the specific nature or type of data contained in the array, providing crucial context for interpretation.",
+    "user_comment": ""
+  },
+  "BLANK": {
+    "content": "For FITS files storing integer data, this keyword specifies a particular integer value that should be interpreted as 'no data,' 'undefined,' or 'missing.' Pixels with this value are typically ignored in calculations or rendered distinctly in visualizations, preventing erroneous analysis of invalid regions.",
+    "relevance_score": 75,
+    "relevance_comment": "It identifies undefined or invalid pixel values, which is important for accurate data visualization and preventing incorrect analysis of missing information.",
+    "user_comment": ""
+  },
+  "DATAMAX": {
+    "content": "This keyword stores the maximum pixel value found within the image data array. It's important for understanding the range of brightness in an image, helping users set appropriate display scales to visualize features, and quickly identify potentially saturated regions.",
+    "relevance_score": 75,
+    "relevance_comment": "This value is commonly useful for setting display ranges and quickly assessing data quality or dynamic range.",
+    "user_comment": ""
+  },
+  "DATAMIN": {
+    "content": "This keyword stores the minimum pixel value found within the image data array. It helps users understand the lowest brightness levels in an image, useful for setting display scales, identifying background levels, or assessing noise characteristics.",
+    "relevance_score": 75,
+    "relevance_comment": "This value is commonly useful for setting display ranges and quickly assessing data quality or background levels.",
+    "user_comment": ""
+  },
+  "DATE": {
+    "content": "This keyword indicates the UTC date and time when the FITS file itself was created. It's a file system timestamp rather than an observation time, useful for tracking data provenance and understanding when a particular data product was generated or last processed.",
+    "relevance_score": 50,
+    "relevance_comment": "This keyword is moderately useful for data management and provenance tracking, but not directly tied to the astronomical observation itself.",
+    "user_comment": ""
+  },
+  "DATE-OBS": {
+    "content": "This keyword records the UTC date and time when the astronomical observation actually began. It is a fundamental piece of information for any astronomical data, allowing users to know exactly when the celestial event was captured and enabling time-domain studies.",
+    "relevance_score": 95,
+    "relevance_comment": "This is an essential piece of metadata for understanding when the astronomical observation occurred.",
+    "user_comment": ""
+  },
+  "DATE-BEG": {
+    "content": "Similar to DATE-OBS, this keyword specifies the UTC date and time of the observation's beginning, often in a standardized ISO 8601 format. It is crucial for precise timing analyses, correlating observations with other datasets, and placing the observation in its temporal context.",
+    "relevance_score": 95,
+    "relevance_comment": "This is an essential piece of metadata for understanding when the astronomical observation occurred, especially with its precise time component.",
+    "user_comment": ""
+  },
+  "DATE-END": {
+    "content": "This keyword specifies the exact date and time when the observation concluded, formatted according to the ISO 8601 standard. It's crucial for understanding the total duration of an exposure and for precise scheduling or time-series analysis when combined with the start time.",
+    "relevance_score": 85,
+    "relevance_comment": "It is very useful for precise timing, calculating exposure duration, and understanding the full observational window for analysis.",
+    "user_comment": ""
+  },
+  "TIME-OBS": {
+    "content": "This keyword indicates the precise Universal Coordinated Time (UTC) when the astronomical observation officially began, typically in a hh:mm:ss format. It's fundamental for time-stamping data, correlating observations with events, and determining sidereal time at the start of the exposure.",
+    "relevance_score": 95,
+    "relevance_comment": "This keyword is essential for all users to understand the precise start time of the observation.",
+    "user_comment": ""
+  },
+  "TIMESYS": {
+    "content": "This keyword specifies the particular time scale system used for other time-related keywords in the FITS header, such as UTC (Coordinated Universal Time) or TDB (Barycentric Dynamical Time). It's vital for ensuring accurate conversions and comparisons of timing information across different datasets or astronomical calculations.",
+    "relevance_score": 75,
+    "relevance_comment": "This keyword is important for advanced users who need to perform precise time conversions or compare datasets with different time systems.",
+    "user_comment": ""
+  },
+  "TIMEUNIT": {
+    "content": "This keyword defines the standard unit of measure for any numerical time values present in the FITS header that don't explicitly specify their own units, such as 's' for seconds or 'd' for days. It ensures unambiguous interpretation of time-related data.",
+    "relevance_score": 70,
+    "relevance_comment": "This keyword is important for correctly interpreting numerical time values and ensuring proper display or calculation of durations.",
+    "user_comment": ""
+  },
+  "MJD-OBS": {
+    "content": "This keyword provides the Modified Julian Date (MJD) corresponding to the start of the observation, expressed as a floating-point number. MJD is a widely used astronomical time system that simplifies calculations by counting days continuously from a specific epoch, making it ideal for precise timing and long-term event tracking.",
+    "relevance_score": 90,
+    "relevance_comment": "This keyword is highly relevant for precise astronomical timing, calculations, and comparing observation epochs across different datasets.",
+    "user_comment": ""
+  },
+  "MJD-BEG": {
+    "content": "This keyword specifies the exact Modified Julian Date (MJD) when an astronomical observation began. It's crucial for precisely timing events, correlating observations with other data, and accounting for celestial motion or instrumental changes over time.",
+    "relevance_score": 95,
+    "relevance_comment": "Users often need the precise start time of an observation for analysis, correlation, and historical context.",
+    "user_comment": ""
+  },
+  "MJD-MID": {
+    "content": "This keyword gives the Modified Julian Date (MJD) corresponding to the exact midpoint of an astronomical exposure. It's often considered the most representative time for the observation, particularly for objects with changing positions or fluxes.",
+    "relevance_score": 98,
+    "relevance_comment": "The midpoint time is frequently the most representative time for an observation, essential for many astronomical analyses.",
+    "user_comment": ""
+  },
+  "MJD-AVG": {
+    "content": "Similar to MJD-MID, this keyword represents the average or midpoint Modified Julian Date (MJD) of an exposure or data collection period. It provides a single representative timestamp for the observation, important for linking data to ephemerides or other time-variable phenomena.",
+    "relevance_score": 97,
+    "relevance_comment": "This keyword provides a key representative timestamp for the observation, crucial for time-sensitive analysis.",
+    "user_comment": ""
+  },
+  "MJD-END": {
+    "content": "This keyword indicates the Modified Julian Date (MJD) at which an astronomical observation concluded. It's important for calculating the total duration of an exposure and for understanding the temporal boundaries of the collected data.",
+    "relevance_score": 94,
+    "relevance_comment": "The end time of an observation is vital for understanding the observation's duration and its temporal context.",
+    "user_comment": ""
+  },
+  "EXPSTART": {
+    "content": "This keyword provides the start time of the exposure in Modified Julian Date (MJD). It's a fundamental timestamp indicating when data collection began, essential for understanding the temporal context of an observation and for precise astrometric or photometric analysis.",
+    "relevance_score": 96,
+    "relevance_comment": "Users need the precise start time of an observation to understand its temporal context and for accurate data analysis.",
+    "user_comment": ""
+  },
+  "EXPMID": {
+    "content": "This keyword indicates the exact midpoint of the observation's exposure, expressed as a Modified Julian Date (MJD). It's crucial for time-sensitive analyses, such as tracking variable stars, analyzing transient events, or aligning observations with precise ephemeris data. Knowing the precise middle of the exposure provides the most accurate timestamp for the collected photons.",
+    "relevance_score": 85,
+    "relevance_comment": "Provides a precise timestamp for the observation, critical for time-domain astronomy or linking to ephemeris data.",
+    "user_comment": ""
+  },
+  "EXPEND": {
+    "content": "This keyword specifies the exact moment the observation concluded, expressed as a Modified Julian Date (MJD). While EXPMID gives the center point, EXPEND is vital for understanding the full duration of an event, coordinating follow-up observations, or precisely marking the end of data collection in time-sensitive studies. It complements EXPMID and EXPTIME to fully define the observation's temporal bounds.",
+    "relevance_score": 80,
+    "relevance_comment": "Pinpoints the conclusion of the observation, useful for precise event timing and coordinating subsequent data.",
+    "user_comment": ""
+  },
+  "EXPTIME": {
+    "content": "This is a fundamental keyword indicating the total duration, in seconds, that the detector was open and collecting light from the astronomical source. It directly impacts the signal-to-noise ratio and the overall brightness of the captured image, making it essential for understanding the quality and depth of the observation. A longer exposure generally means more light collected and a clearer image.",
+    "relevance_score": 98,
+    "relevance_comment": "A fundamental parameter that directly indicates how long light was collected, crucial for understanding signal strength and data quality.",
+    "user_comment": ""
+  },
+  "EFFEXPTM": {
+    "content": "This keyword represents the 'effective' exposure time, corrected for any periods where the detector was not actively collecting useful photons, known as 'dead time.' This can include time spent on readout, shutter operations, or other instrument overheads. It provides a more accurate measure of the true integration duration for scientific analysis, particularly for precise photometry and flux calculations.",
+    "relevance_score": 75,
+    "relevance_comment": "Provides a more accurate exposure duration by accounting for periods of detector inactivity, important for precise scientific measurements.",
+    "user_comment": ""
+  },
+  "EFFINTTM": {
+    "content": "This keyword specifies the effective integration time, which is the total time the detector was actively accumulating photons, often accounting for instrument-specific readout patterns or multiple non-destructive reads within an exposure. It's particularly relevant for instruments with complex observing strategies, like JWST, to provide a precise measure of the actual photon collection duration, which can differ from the raw exposure time.",
+    "relevance_score": 60,
+    "relevance_comment": "A specialized measure of actual photon collection time, particularly useful for understanding complex instrument readout modes like those on JWST.",
+    "user_comment": ""
+  },
+  "DURATION": {
+    "content": "This keyword indicates the total time the detector was actively collecting light, calculated as the product of the integration time for a single readout and the total number of such integrations. It represents the overall light-gathering duration for the observation, ignoring overheads. This is a fundamental measure of the exposure's depth.",
+    "relevance_score": 95,
+    "relevance_comment": "Users frequently check this value to understand how much light was collected for the observation and its overall depth.",
+    "user_comment": ""
+  },
+  "XPOSURE": {
+    "content": "This keyword provides the effective exposure time in seconds, typically after accounting for any periods where the detector was not actively collecting usable photons (e.g., due to detector resets or non-science frames). It's a refined and often more accurate measure of the actual science exposure duration.",
+    "relevance_score": 98,
+    "relevance_comment": "This value provides the most accurate measure of the effective integration time for the science data, which is crucial for analysis.",
+    "user_comment": ""
+  },
+  "TELAPSE": {
+    "content": "This keyword records the total wall-clock time that elapsed during the entire exposure, from the start of the first integration to the end of the last. It includes not only the photon collection time but also any overheads between integrations or readouts, providing insight into the total observation duration.",
+    "relevance_score": 75,
+    "relevance_comment": "While useful for understanding observation overheads and scheduling, it's less critical for interpreting the direct science content of an individual image compared to effective exposure time.",
+    "user_comment": ""
+  },
+  "TEXPTIME": {
+    "content": "Specific to resampled or combined data products, this keyword indicates the sum of the effective exposure times from all individual input observations that contributed to the final product. It represents the total light-gathering duration accumulated in the combined image, crucial for assessing its signal-to-noise.",
+    "relevance_score": 95,
+    "relevance_comment": "For resampled products, this value is essential for understanding the overall depth and signal-to-noise of the combined image.",
+    "user_comment": ""
+  },
+  "NINTS": {
+    "content": "This keyword specifies the number of individual integrations performed within a single exposure. An integration is a sequence of detector reads, and knowing this value helps understand how the total exposure time was built up and can be important for noise characterization or advanced data processing.",
+    "relevance_score": 85,
+    "relevance_comment": "This parameter is valuable for advanced users interested in data quality, noise properties, and understanding the observation strategy.",
+    "user_comment": ""
+  },
+  "NGROUPS": {
+    "content": "This keyword indicates the number of 'groups' of detector reads collected during a single integration for JWST. A group is an average of several individual frames, and more groups generally lead to longer effective exposure times and improved signal-to-noise ratio in the final data.",
+    "relevance_score": 85,
+    "relevance_comment": "This keyword is crucial for understanding the exposure strategy and effective integration time in non-destructive read modes, directly impacting data quality and analysis.",
+    "user_comment": ""
+  },
+  "NFRAMES": {
+    "content": "This keyword specifies the number of individual 'frames' (single detector reads) that are averaged together to form a single 'group' within a JWST exposure. Increasing the number of frames per group can help reduce read noise but might also influence cosmic ray persistence.",
+    "relevance_score": 80,
+    "relevance_comment": "This keyword defines the number of individual detector reads averaged into each group, directly influencing read noise characteristics and the data acquisition strategy.",
+    "user_comment": ""
+  },
+  "GROUPGAP": {
+    "content": "This keyword indicates the number of individual frames that are skipped or discarded between consecutive 'groups' during a JWST exposure. These skipped frames do not contribute to the final averaged signal but are part of the detector readout sequence.",
+    "relevance_score": 55,
+    "relevance_comment": "This keyword describes skipped frames between groups, affecting the total observation timeline but not directly contributing to the integrated signal, making it more relevant for advanced timing analysis.",
+    "user_comment": ""
+  },
+  "NSAMPLES": {
+    "content": "This keyword denotes the number of analog-to-digital (A/D) samples taken for each pixel read within a single frame. Multiple samples can be averaged to reduce the A/D conversion noise.",
+    "relevance_score": 30,
+    "relevance_comment": "This keyword details the number of A/D samples per pixel read, a low-level detector characteristic primarily relevant for detailed noise analysis or instrument performance studies.",
+    "user_comment": ""
+  },
+  "TSAMPLE": {
+    "content": "This keyword provides the time interval, in microseconds, between consecutive analog-to-digital samples taken for a given pixel. It describes the temporal resolution of the detector's sampling process.",
+    "relevance_score": 25,
+    "relevance_comment": "This keyword indicates the time between A/D samples, a very low-level timing parameter critical for instrument engineers but generally not for typical end-user data interpretation.",
+    "user_comment": ""
+  },
+  "TFRAME": {
+    "content": "This keyword specifies the time duration, in seconds, between the start of one data frame and the start of the next consecutive frame within a multi-frame exposure. It's crucial for understanding the timing of short integrations or how quickly data is read out in certain low-level modes, especially relevant for time-series observations.",
+    "relevance_score": 45,
+    "relevance_comment": "Useful for understanding low-level acquisition details and time-series analysis, but less so for general high-level science users.",
+    "user_comment": ""
+  },
+  "TGROUP": {
+    "content": "This keyword indicates the time, in seconds, from the start of one data group to the start of the next group in a detector ramp. In JWST's non-destructive readout, a \"group\" represents a set of frames combined. This value is fundamental to understanding the sampling rate of the detector ramp and calculating the total integration time per exposure.",
+    "relevance_score": 75,
+    "relevance_comment": "Crucial for understanding the integration time, noise properties, and overall data acquisition structure of JWST ramp data.",
+    "user_comment": ""
+  },
+  "READPATT": {
+    "content": "This keyword specifies the pre-defined name of the detector readout pattern used for the observation (e.g., RAPID, BRIGHT1, MEDIUM8). This pattern dictates parameters like the number of frames per group, gaps between groups, and reset frequency, which directly affect the data sampling strategy, noise characteristics, and dynamic range.",
+    "relevance_score": 85,
+    "relevance_comment": "Essential for understanding the data acquisition mode, noise properties, and potential saturation limits of JWST observations.",
+    "user_comment": ""
+  },
+  "EXP_TYPE": {
+    "content": "This keyword identifies the broad category of the observation, indicating the instrument mode and type of data acquired (e.g., direct imaging, spectroscopy, or coronagraphy). It also specifies which instrument (e.g., MIRI, NIRCam, NIRSpec) was used, making it fundamental for understanding the nature of the observation.",
+    "relevance_score": 98,
+    "relevance_comment": "Provides immediate context about the instrument and scientific purpose of the data, essential for all users.",
+    "user_comment": ""
+  },
+  "EXPRIPAR": {
+    "content": "This keyword indicates whether the observation was the primary (PRIME) observation driving the telescope pointing, a coordinated parallel observation with another instrument, or a pure parallel observation taken opportunistically without dictating pointing. This affects how the observation fits into the overall observing program and its context within other datasets.",
+    "relevance_score": 60,
+    "relevance_comment": "Useful for understanding the observation's role in the overall observing program and assessing its primary science intent and context.",
+    "user_comment": ""
+  },
+  "EXPCOUNT": {
+    "content": "This number indicates the sequence of the current exposure within a larger set of observations taken during a single observing program or 'visit'. It helps users understand if this particular data file represents the first, second, or a subsequent exposure in a series.",
+    "relevance_score": 65,
+    "relevance_comment": "This keyword is useful for advanced users to understand the sequence of observations within a visit or program, aiding in specific analysis workflows.",
+    "user_comment": ""
+  },
+  "DATAMODE": {
+    "content": "This keyword describes the specific readout pattern or post-processing method used by the instrument's detector to acquire the raw data. It influences how the raw data was collected and processed, which can affect its characteristics and quality.",
+    "relevance_score": 45,
+    "relevance_comment": "This is a technical detail about instrument readout that might interest advanced users for specific analysis or understanding data artifacts.",
+    "user_comment": ""
+  },
+  "DATAPROB": {
+    "content": "This boolean flag indicates whether the instrument's internal telemetry detected any significant problems during the acquisition of this specific science data. A 'True' value suggests that there may have been issues with the data collection for this exposure.",
+    "relevance_score": 80,
+    "relevance_comment": "This keyword is highly relevant as it directly indicates potential quality issues with the science data, which is crucial for any user evaluating its reliability.",
+    "user_comment": ""
+  },
+  "DRPFRMS1": {
+    "content": "This keyword indicates the number of individual detector frames that were discarded or 'dropped' by the instrument prior to the very first scientific integration (exposure) beginning. This process is typically done to allow the detector to stabilize before collecting science data.",
+    "relevance_score": 30,
+    "relevance_comment": "This is a very specific, low-level instrument operational detail about detector stabilization, rarely relevant for general or most advanced user analysis.",
+    "user_comment": ""
+  },
+  "DRPFRMS3": {
+    "content": "This keyword reports the number of detector frames dropped by the instrument between consecutive scientific integrations within a longer exposure sequence. Similar to DRPFRMS1, it relates to the internal process of detector stabilization during an observation.",
+    "relevance_score": 30,
+    "relevance_comment": "This is a very specific, low-level instrument operational detail about detector stabilization, rarely relevant for general or most advanced user analysis.",
+    "user_comment": ""
+  },
+  "NRESETS": {
+    "content": "This keyword indicates the number of times the detector pixels were reset between individual data collection periods, known as integrations, within a single observation. It's an internal operational parameter that affects how the detector manages charge and can influence noise properties. While important for instrument experts, it rarely impacts typical data interpretation.",
+    "relevance_score": 35,
+    "relevance_comment": "This is a low-level detector operational detail mostly relevant for instrument specialists or deep noise analysis.",
+    "user_comment": ""
+  },
+  "NRSTSTRT": {
+    "content": "This keyword specifies how many times the detector pixels were reset immediately before the first data integration of an exposure began. It's a fundamental parameter for initializing the detector and managing its dark current and noise characteristics at the start of an observation. Like NRESETS, it's primarily of interest to instrument engineers.",
+    "relevance_score": 35,
+    "relevance_comment": "This is a low-level detector operational detail mostly relevant for instrument specialists or deep noise analysis.",
+    "user_comment": ""
+  },
+  "NOUTPUTS": {
+    "content": "This keyword indicates the number of electronic amplifier channels used to read out the detector's data. Using multiple outputs (e.g., 1, 4, or 5 for JWST) typically allows for faster data acquisition but can introduce specific readout noise patterns or variations across the detector. Understanding this can be important for identifying certain data artifacts or optimizing data processing.",
+    "relevance_score": 60,
+    "relevance_comment": "This instrument configuration detail affects data quality and potential artifacts, useful for advanced users or troubleshooting.",
+    "user_comment": ""
+  },
+  "SCA_NUM": {
+    "content": "This keyword identifies the specific Sensor Chip Assembly (SCA), a physical detector chip, that was used to acquire the data. Many JWST instruments are mosaics made up of multiple SCAs, so this number (1-18) pinpoints which part of the instrument's focal plane collected the observations. It's useful for understanding the instrument's layout and correlating data with specific detector characteristics.",
+    "relevance_score": 80,
+    "relevance_comment": "This identifies the specific detector used, which is commonly useful for understanding instrument context and mosaic data.",
+    "user_comment": ""
+  },
+  "FRMDIVSR": {
+    "content": "This keyword specifies the 'frame divisor' used, which is the number of individual detector frames that were averaged together on-board the spacecraft to form each 'group' of data. This on-board averaging helps reduce read noise but impacts the effective integration time per group and the temporal resolution of the observation. It's crucial for detailed noise modeling and understanding the effective signal-to-noise ratio.",
+    "relevance_score": 75,
+    "relevance_comment": "This parameter is important for understanding the effective integration time, noise properties, and overall data quality, especially for photometry.",
+    "user_comment": ""
+  },
+  "GAINFACT": {
+    "content": "This keyword specifies a scaling factor applied to the data, representing the ratio of a specific detector gain setting (gain=2) to a nominal gain setting (gain=1). It helps in understanding how detector sensitivity might be adjusted or characterized for different observations.",
+    "relevance_score": 45,
+    "relevance_comment": "This keyword provides instrument-specific calibration information, which is useful for advanced users but less critical for general display or common analysis.",
+    "user_comment": ""
+  },
+  "SCTARATE": {
+    "content": "This value indicates a very small adjustment rate applied to the spacecraft's internal clock time, measured in milliseconds per second. It is used internally to maintain highly precise timing for observations, correcting for any minor drift in the onboard clock.",
+    "relevance_score": 15,
+    "relevance_comment": "This is a highly technical, internal spacecraft clock calibration parameter with no direct impact on how an end-user views or interprets the astronomical data.",
+    "user_comment": ""
+  },
+  "ZEROFRAM": {
+    "content": "This boolean keyword indicates whether a 'zero frame' was read out separately from the main exposure. A zero frame is a short exposure taken without light to characterize detector noise and bias, and its separate readout can impact subsequent data processing steps.",
+    "relevance_score": 40,
+    "relevance_comment": "This keyword describes a specific detector readout mode related to calibration, making it relevant for users involved in detailed data processing or quality assessment.",
+    "user_comment": ""
+  },
+  "EXSEGTOT": {
+    "content": "For observations that are split into multiple parts, such as in Time-Series Observations (TSO), this keyword indicates the total number of segments that comprise the complete single exposure. It helps users understand the full scope of a multi-part observation.",
+    "relevance_score": 75,
+    "relevance_comment": "This keyword provides crucial context for segmented observations, helping users understand the total scope of a TSO exposure.",
+    "user_comment": ""
+  },
+  "EXSEGNUM": {
+    "content": "This keyword provides the sequential segment number of the current data file within a multi-segment Time-Series Observation (TSO) exposure. It helps identify which specific part of a larger observation this particular file represents, crucial for ordering and analysis.",
+    "relevance_score": 75,
+    "relevance_comment": "This keyword is essential for identifying and ordering individual data segments within a larger Time-Series Observation.",
+    "user_comment": ""
+  },
+  "INTSTART": {
+    "content": "This keyword specifies the starting integration number included within this particular segmented exposure product. Integrations are individual detector reads that are often combined to form an exposure, and this defines the beginning of the data sequence.",
+    "relevance_score": 70,
+    "relevance_comment": "This keyword is valuable for defining the precise range of integrations included in a data segment, aiding in the detailed analysis of segmented exposures.",
+    "user_comment": ""
+  },
+  "INTEND": {
+    "content": "This keyword specifies the ending integration number included within this particular segmented exposure product. It, along with INTSTART, defines the full range of detector integrations present in the current data segment.",
+    "relevance_score": 70,
+    "relevance_comment": "This keyword complements INTSTART by defining the upper bound of integrations in a data segment, critical for time-series analysis and data subsetting.",
+    "user_comment": ""
+  },
+  "OSF_FILE": {
+    "content": "This keyword provides the filename of the Observatory Status File that was associated with this specific exposure. This file contains detailed engineering and health data about the observatory at the time of observation, used primarily for complex calibration or diagnostic purposes.",
+    "relevance_score": 30,
+    "relevance_comment": "This keyword references an internal diagnostic file primarily useful for instrument teams or specialized calibration processes.",
+    "user_comment": ""
+  },
+  "EXPSTENG": {
+    "content": "This keyword records the precise start time of the exposure as reported by the spacecraft's engineering data stream, expressed in Coordinated Universal Time (UTC). It provides an independent, highly accurate timestamp for when the observation began.",
+    "relevance_score": 70,
+    "relevance_comment": "This provides a highly precise engineering start time, which is valuable for advanced users performing detailed timing analysis or cross-referencing.",
+    "user_comment": ""
+  },
+  "ORIGIN": {
+    "content": "This keyword identifies the institution or organization that originally created or processed this FITS file. It helps users trace the provenance and source of the data, which can be useful for understanding data processing pipelines or for citation purposes.",
+    "relevance_score": 60,
+    "relevance_comment": "This keyword provides important provenance information, which is useful for data attribution and understanding its source.",
+    "user_comment": ""
+  },
+  "TELESCOP": {
+    "content": "This keyword identifies the specific telescope facility used to collect the astronomical data. Knowing the telescope is fundamental for understanding the data's origin, capabilities, and observing conditions.",
+    "relevance_score": 95,
+    "relevance_comment": "Essential for users to understand the origin and capabilities of the observed data.",
+    "user_comment": ""
+  },
+  "INSTRUME": {
+    "content": "This keyword specifies the particular instrument on the telescope that was used for the observation. Different instruments have unique fields of view, sensitivities, and operating modes, which are crucial for interpreting the data.",
+    "relevance_score": 90,
+    "relevance_comment": "Essential for users to understand how the data was acquired and its specific characteristics.",
+    "user_comment": ""
+  },
+  "DETECTOR": {
+    "content": "This keyword identifies the specific detector or sensor array within an instrument that captured the light. This is important for understanding the physical layout of the image, potential detector-specific artifacts, and field of view details.",
+    "relevance_score": 80,
+    "relevance_comment": "Useful for advanced users to understand the specific imaging component and potential detector-specific issues.",
+    "user_comment": ""
+  },
+  "FILTER": {
+    "content": "This keyword names the optical filter element that was in the light path during the observation. The filter defines the specific range of wavelengths (color) of light that reached the detector, which is critical for scientific interpretation of the observed objects.",
+    "relevance_score": 100,
+    "relevance_comment": "Absolutely essential for scientific interpretation, as it defines the observed wavelength range.",
+    "user_comment": ""
+  },
+  "FILTER1": {
+    "content": "For instruments with multiple filter wheels, this keyword specifies the first filter element used. It combines with FILTER2 (if present) to precisely define the total spectral bandpass of the observation.",
+    "relevance_score": 90,
+    "relevance_comment": "Essential for instruments with multiple filter wheels, as it contributes to defining the observed wavelength range.",
+    "user_comment": ""
+  },
+  "FILTER2": {
+    "content": "For instruments with multiple filter wheels, this keyword specifies the second filter element used in conjunction with FILTER1. Together, these two filters determine the exact spectral window observed.",
+    "relevance_score": 90,
+    "relevance_comment": "Essential for instruments with multiple filter wheels, as it contributes to defining the observed wavelength range.",
+    "user_comment": ""
+  },
+  "PUPIL": {
+    "content": "This keyword identifies the optical element in the pupil wheel of an instrument, which can include clear apertures, masks for coronagraphy, or dispersive elements like grisms. It determines how the light path is modified before reaching the detector, impacting the observing mode or field of view.",
+    "relevance_score": 75,
+    "relevance_comment": "Useful for advanced users to understand the specific optical configuration and observing mode, especially for JWST.",
+    "user_comment": ""
+  },
+  "GRATING": {
+    "content": "For spectroscopic observations, this keyword specifies the dispersing element (e.g., grating, prism) used to spread light into its component wavelengths. It's fundamental for understanding the spectral resolution and the range of wavelengths covered by the spectrum.",
+    "relevance_score": 95,
+    "relevance_comment": "Essential for spectroscopic data, as it defines the spectral resolution and wavelength coverage.",
+    "user_comment": ""
+  },
+  "CHANNEL": {
+    "content": "This keyword denotes a specific optical or detector channel within a multi-channel instrument. It helps distinguish data from different parts of an instrument that may have distinct characteristics, such as different wavelength ranges or sensitivities.",
+    "relevance_score": 80,
+    "relevance_comment": "Useful for understanding specific instrument configurations and the associated data characteristics within a complex instrument.",
+    "user_comment": ""
+  },
+  "BAND": {
+    "content": "This keyword describes a broad wavelength band observed, often used in multi-band instruments or for integral field units. It provides a general classification of the spectral region being targeted (e.g., short, medium, long wavelength) and helps categorize the data.",
+    "relevance_score": 85,
+    "relevance_comment": "Very useful for quickly understanding the broad spectral region targeted by the observation.",
+    "user_comment": ""
+  },
+  "MODULE": {
+    "content": "This keyword specifies which of NIRCam's two identical modules (A or B) collected the data, or if both were used for a combined observation. It helps users understand the specific field of view and instrument configuration that produced the data.",
+    "relevance_score": 75,
+    "relevance_comment": "Users often care which module was used, especially for understanding the observation geometry or comparing data from different modules.",
+    "user_comment": ""
+  },
+  "LAMP": {
+    "content": "This keyword indicates whether an internal calibration lamp was active during the observation. It's crucial for distinguishing between actual science data and frames taken for calibration purposes, such as flat fields or lamp spectra.",
+    "relevance_score": 85,
+    "relevance_comment": "This is highly relevant for immediately identifying if the data is a science observation or a calibration frame.",
+    "user_comment": ""
+  },
+  "CORONMSK": {
+    "content": "This keyword identifies the specific coronagraphic mask used for MIRI observations. Coronagraphs block light from a bright central source, which is essential for detecting fainter nearby objects like exoplanets or circumstellar disks.",
+    "relevance_score": 90,
+    "relevance_comment": "This is an essential parameter for users analyzing coronagraphic data, as the mask choice directly impacts the scientific capabilities.",
+    "user_comment": ""
+  },
+  "FXD_SLIT": {
+    "content": "This keyword specifies which of NIRSpec's pre-defined, fixed-width slits was used to collect spectroscopic data. The chosen slit defines the precise spatial region on the sky from which light is dispersed.",
+    "relevance_score": 80,
+    "relevance_comment": "For spectroscopic data, knowing the exact slit used is highly relevant for understanding the spatial resolution and sky coverage.",
+    "user_comment": ""
+  },
+  "OPMODE": {
+    "content": "This keyword describes the overall operational mode of the NIRSpec instrument during data acquisition, such as spectroscopy using the Micro-Shutter Array (MSASPEC), Integral Field Unit (IFU), or fixed slits (FIXEDSLIT), or even simple imaging (IMAGE). It provides a fundamental classification of the data's purpose and format.",
+    "relevance_score": 95,
+    "relevance_comment": "This is an absolutely essential keyword as it immediately tells the user the fundamental nature and type of the observation.",
+    "user_comment": ""
+  },
+  "CCCSTATE": {
+    "content": "This keyword indicates the state of MIRI's contamination control cover, which protects the instrument from particulate contamination. It will typically be 'OPEN' for science observations and 'CLOSED' or 'LOCKED' for protection during non-observing periods.",
+    "relevance_score": 40,
+    "relevance_comment": "It's useful for confirming the validity of science data, but it's an operational state rather than a direct scientific parameter.",
+    "user_comment": ""
+  },
+  "DETMODE": {
+    "content": "This keyword describes the operational state of the detector during data collection, such as 'EXPOSURE' for science data, or 'FLUSH_MODE' or 'TEST_PATTERN' for non-science operations. It indicates whether the detector was actively collecting scientific light.",
+    "relevance_score": 80,
+    "relevance_comment": "This is highly relevant for validating that the data represents a real science exposure and not some other detector operation.",
+    "user_comment": ""
+  },
+  "DATAMODL": {
+    "content": "This keyword specifies the high-level data model used to structure the FITS file's contents, such as 'ImageModel' for a 2D image or 'CubeModel' for a 3D spectral cube. It helps software interpret and present the data correctly.",
+    "relevance_score": 60,
+    "relevance_comment": "It helps the application correctly display the data, which benefits the user by ensuring proper interpretation and interaction.",
+    "user_comment": ""
+  },
+  "FOCUSPOS": {
+    "content": "This keyword records the exact position of the Fine Guidance Sensor's (FGS) focus mechanism in millimeters. It indicates the precise optical focus setting for the FGS at the time of the observation.",
+    "relevance_score": 30,
+    "relevance_comment": "This is an internal instrument detail primarily useful for FGS performance analysis or debugging, not a typical science parameter.",
+    "user_comment": ""
+  },
+  "FWCPOS": {
+    "content": "This keyword indicates the precise mechanical encoder position of the NIRISS instrument's filter wheel in millimeters. This value correlates to which specific filter or disperser element was placed in the optical path.",
+    "relevance_score": 35,
+    "relevance_comment": "While related to the filter, the actual filter name keyword is far more relevant to users than the physical encoder position.",
+    "user_comment": ""
+  },
+  "PWCPOS": {
+    "content": "This keyword indicates the precise physical position of the pupil wheel in the JWST NIRISS instrument, measured in millimeters. It describes the mechanical configuration of the instrument's optical path, affecting how light is routed and processed internally.",
+    "relevance_score": 15,
+    "relevance_comment": "This is a low-level engineering detail for instrument configuration, not directly useful for typical data analysis or display.",
+    "user_comment": ""
+  },
+  "PILIN": {
+    "content": "This boolean keyword indicates whether the pupil imaging lens was actively engaged in the optical path during the observation. This lens is primarily used for specific internal calibration purposes, allowing engineers to monitor the instrument's optical health.",
+    "relevance_score": 45,
+    "relevance_comment": "This keyword indicates a specific instrument configuration often relevant for detailed calibration, not general scientific interpretation.",
+    "user_comment": ""
+  },
+  "MIRNGRPS": {
+    "content": "For JWST's MIRI instrument, this keyword specifies the number of 'groups' acquired for each integration during an observation. A group is a set of non-destructive detector reads combined to reduce noise, forming a fundamental unit of MIRI's data acquisition and directly impacting exposure time and noise.",
+    "relevance_score": 75,
+    "relevance_comment": "This keyword describes a fundamental aspect of the MIRI detector readout, crucial for understanding exposure, noise characteristics, and data quality.",
+    "user_comment": ""
+  },
+  "MIRNFRMS": {
+    "content": "This keyword, specific to the JWST MIRI instrument, records the number of individual 'frames' or non-destructive reads within each 'group' during an observation. It determines how many raw samples contribute to each grouped measurement, directly influencing data quality and noise properties.",
+    "relevance_score": 75,
+    "relevance_comment": "This keyword describes a fundamental aspect of the MIRI detector readout, crucial for understanding exposure, noise characteristics, and data quality.",
+    "user_comment": ""
+  },
+  "PROPAPER": {
+    "content": "This keyword stores the name of the intended or proposed aperture that was planned for use during an observation, reflecting the initial observing strategy. It provides context for the observation setup, especially when compared with the aperture that was actually used.",
+    "relevance_score": 55,
+    "relevance_comment": "This keyword provides context about the planned observation configuration, useful for validating or understanding the final 'APERTURE' used.",
+    "user_comment": ""
+  },
+  "APERTURE": {
+    "content": "This crucial keyword identifies the specific physical aperture, such as a slit, filter wheel position, or detector region, that was actually used during the observation. It defines the instrument's field of view and optical path, directly impacting the observed data and its scientific interpretation.",
+    "relevance_score": 95,
+    "relevance_comment": "This keyword is essential for understanding the actual field of view and optical path used for the observation.",
+    "user_comment": ""
+  },
+  "PREIMAGE": {
+    "content": "This keyword provides the file name or identifier of a reference image that was used to precisely determine the position of a target source prior to the primary observation. This is vital for accurate target acquisition, especially for instruments with small fields of view or integral field units.",
+    "relevance_score": 60,
+    "relevance_comment": "This keyword is useful for advanced users to understand target acquisition and astrometric precision of the observation.",
+    "user_comment": ""
+  },
+  "CMD_TSEL": {
+    "content": "This keyword specifies the type of test pattern applied to the detector during a specific Spacecraft Command and Telemetry System (SCE) test. It indicates whether the test focused on columns, rows, individual frames, or all aspects of the detector readout for engineering purposes.",
+    "relevance_score": 10,
+    "relevance_comment": "This keyword relates to internal engineering tests and offers no direct value for interpreting scientific observations.",
+    "user_comment": ""
+  },
+  "IS_IMPRT": {
+    "content": "This boolean keyword indicates whether the current exposure was specifically taken for 'leakcal' (leakage current calibration) or 'imprint' calibration purposes. These specialized exposures are used to characterize detector characteristics and improve the quality of science data.",
+    "relevance_score": 70,
+    "relevance_comment": "This keyword helps users immediately identify whether an exposure contains science data or is a specific type of calibration frame.",
+    "user_comment": ""
+  },
+  "MSASTATE": {
+    "content": "For JWST's NIRSpec instrument, this keyword describes the state of the Micro-Shutter Array (MSA). It indicates whether all shutters were open (for target acquisition or flat fields), all were closed (for darks), or if a specific configuration was applied to observe multiple targets simultaneously.",
+    "relevance_score": 85,
+    "relevance_comment": "This keyword is crucial for understanding the configuration of the NIRSpec Micro-Shutter Array, directly impacting which objects were observed.",
+    "user_comment": ""
+  },
+  "MSAMETFL": {
+    "content": "This keyword stores the filename of the Micro-Shutter Array (MSA) configuration used for the observation. The MSA allows NIRSpec to observe multiple targets simultaneously, and this file details which shutters were open and where they were pointed, which is critical for understanding the data's scientific context.",
+    "relevance_score": 55,
+    "relevance_comment": "Useful for advanced users needing to trace specific MSA configurations for multi-object spectroscopy, but not essential for general data viewing.",
+    "user_comment": ""
+  },
+  "MSAMETID": {
+    "content": "This integer identifies a specific collection of Micro-Shutter Array (MSA) configurations used within a single observation visit. It helps link the observed data to the precise setup of the MSA, which is crucial for understanding which targets were observed in what order.",
+    "relevance_score": 45,
+    "relevance_comment": "This identifier helps track the specific MSA configuration for advanced analysis, but its direct user utility is limited without context.",
+    "user_comment": ""
+  },
+  "MSACONID": {
+    "content": "This integer provides a unique identifier for the complete set of Micro-Shutter Array (MSA) configurations utilized throughout an entire observation visit. It's a high-level identifier that encompasses all MSA setups planned for a specific observing program visit, allowing researchers to track the overall multi-object spectroscopy strategy.",
+    "relevance_score": 40,
+    "relevance_comment": "This identifier tracks the entire suite of MSA configurations for a visit, offering context for advanced users but not direct utility for general data inspection.",
+    "user_comment": ""
+  },
+  "NRS_NORM": {
+    "content": "This keyword specifies the count of standard, light-sensitive pixels within each block of data read out by the NIRSpec instrument in IRS2 mode. Understanding this value is important for analyzing the raw data structure and potential noise characteristics of the detector.",
+    "relevance_score": 30,
+    "relevance_comment": "This keyword describes an internal detail of the detector readout, primarily relevant for instrument scientists or advanced data processing.",
+    "user_comment": ""
+  },
+  "NRS_REF": {
+    "content": "This keyword indicates the number of dedicated reference pixels interleaved with normal data pixels in each readout block of the NIRSpec instrument in IRS2 mode. These reference pixels do not sense light and are used to monitor and subtract common-mode noise from the adjacent data pixels, critical for data quality.",
+    "relevance_score": 30,
+    "relevance_comment": "This keyword describes an internal detail of the detector readout for noise correction, primarily relevant for instrument scientists or advanced data processing.",
+    "user_comment": ""
+  },
+  "GWA_XTIL": {
+    "content": "This keyword records the averaged reading from a sensor measuring the X-axis tilt of the NIRSpec Grating Wheel Assembly (GWA). This value helps in precisely determining the orientation of the grating, which directly impacts the accuracy of wavelength calibration and spectral resolution.",
+    "relevance_score": 25,
+    "relevance_comment": "This is an engineering diagnostic for instrument health and precise grating positioning, not directly interpreted by typical end-users.",
+    "user_comment": ""
+  },
+  "GWA_YTIL": {
+    "content": "This keyword records the averaged reading from a sensor measuring the Y-axis tilt of the NIRSpec Grating Wheel Assembly (GWA). Like the X-tilt, this value is crucial for monitoring the precise mechanical alignment of the grating, ensuring accurate spectral dispersion and wavelength calibration.",
+    "relevance_score": 25,
+    "relevance_comment": "This is an engineering diagnostic for instrument health and precise grating positioning, not directly interpreted by typical end-users.",
+    "user_comment": ""
+  },
+  "GWA_TILT": {
+    "content": "This keyword represents the calibrated temperature measurement from a sensor on the NIRSpec Grating Wheel Assembly (GWA). Temperature is a critical environmental factor that can affect the mechanical stability and optical performance of the grating, so this value helps engineers monitor instrument conditions.",
+    "relevance_score": 25,
+    "relevance_comment": "This is an engineering diagnostic for instrument health and stability, not directly interpreted by typical end-users.",
+    "user_comment": ""
+  },
+  "GWA_PXAV": {
+    "content": "This keyword stores a REC-averaged (likely a specific internal processing term) and calibrated value for the X-axis tilt of the NIRSpec Grating Wheel Assembly. It's a refined version of the raw X-tilt measurement, used internally for precise instrument alignment and calibration processes.",
+    "relevance_score": 20,
+    "relevance_comment": "This keyword represents a highly processed engineering diagnostic, solely relevant for instrument specialists.",
+    "user_comment": ""
+  },
+  "GWA_PYAV": {
+    "content": "This keyword stores a REC-averaged (likely a specific internal processing term) and calibrated value for the Y-axis tilt of the NIRSpec Grating Wheel Assembly. Similar to GWA_PXAV, it's a refined Y-tilt measurement that is used internally within the instrument's calibration and alignment systems to ensure optimal spectral performance.",
+    "relevance_score": 20,
+    "relevance_comment": "This keyword represents a highly processed engineering diagnostic, solely relevant for instrument specialists.",
+    "user_comment": ""
+  },
+  "GWA_XP_V": {
+    "content": "This keyword indicates the calibrated X-axis tilt position of the Grating Wheel Assembly (GWA) in the NIRSpec instrument on JWST. It's a precise diagnostic value that helps ensure the grating is correctly positioned for spectroscopic measurements.",
+    "relevance_score": 25,
+    "relevance_comment": "This keyword is highly technical and specific to instrument diagnostics, offering little direct value to typical users.",
+    "user_comment": ""
+  },
+  "GWA_YP_V": {
+    "content": "This keyword indicates the calibrated Y-axis tilt position of the Grating Wheel Assembly (GWA) in the NIRSpec instrument on JWST. It's a precise diagnostic value that helps ensure the grating is correctly positioned for spectroscopic measurements.",
+    "relevance_score": 25,
+    "relevance_comment": "This keyword is highly technical and specific to instrument diagnostics, offering little direct value to typical users.",
+    "user_comment": ""
+  },
+  "OBJECT": {
+    "content": "This keyword provides the common name of the celestial object that was observed. It is fundamental for immediately identifying the subject of the astronomical data.",
+    "relevance_score": 100,
+    "relevance_comment": "This keyword is essential as it directly identifies the celestial target, which is fundamental for any user.",
+    "user_comment": ""
+  },
+  "OBS_ID": {
+    "content": "This is a unique, programmatic identifier for a specific observation or dataset. It allows users to consistently track, reference, and retrieve the particular data file within astronomical archives.",
+    "relevance_score": 80,
+    "relevance_comment": "This identifier is highly useful for managing, tracking, and referencing specific datasets within astronomical archives.",
+    "user_comment": ""
+  },
+  "OBSERVTN": {
+    "content": "This keyword specifies the observation number within a broader scientific program. It helps sequentialize and organize data when a program consists of multiple individual observations.",
+    "relevance_score": 75,
+    "relevance_comment": "This keyword helps users understand the sequential order and context of observations within a larger scientific program.",
+    "user_comment": ""
+  },
+  "PROGRAM": {
+    "content": "This keyword indicates the overarching program number or proposal ID under which the observation was executed. It links the data directly to the scientific proposal and research context.",
+    "relevance_score": 95,
+    "relevance_comment": "This keyword is essential for understanding the scientific context and original research proposal associated with the observation.",
+    "user_comment": ""
+  },
+  "VISIT": {
+    "content": "This keyword identifies a specific 'visit' number, which often represents a distinct scheduling block or execution attempt for an observation. It helps manage complex observational campaigns that might be broken into multiple scheduled segments.",
+    "relevance_score": 70,
+    "relevance_comment": "This keyword helps users track specific scheduling blocks or execution attempts within a larger observation, aiding in data organization.",
+    "user_comment": ""
+  },
+  "VISIT_ID": {
+    "content": "This is a comprehensive, unique identifier string for a specific 'visit', often combining various programmatic identifiers. It provides a precise way to reference a particular scheduled observation block.",
+    "relevance_score": 80,
+    "relevance_comment": "This comprehensive identifier is very useful for precise tracking and referencing of specific scheduled observation blocks.",
+    "user_comment": ""
+  },
+  "VISITGRP": {
+    "content": "This keyword identifies a group of visits that were scheduled to be executed simultaneously, often involving multiple instruments or facilities working in parallel. It helps understand coordinated observing strategies.",
+    "relevance_score": 60,
+    "relevance_comment": "This keyword is useful for advanced users to understand coordinated or parallel observations, but less so for general data interpretation.",
+    "user_comment": ""
+  },
+  "SEQ_ID": {
+    "content": "This keyword specifies an identifier for a particular parallel sequence within a visit group. It helps to differentiate components of complex, synchronized observations where multiple steps or instruments are involved.",
+    "relevance_score": 45,
+    "relevance_comment": "This is a specific identifier for components of complex parallel observations, primarily useful for detailed data processing or scheduling analysis.",
+    "user_comment": ""
+  },
+  "ACT_ID": {
+    "content": "This keyword provides an internal identifier for a specific 'activity' or step within a larger, often complex, observation sequence. It helps to uniquely track individual components or actions taken during the data acquisition process.",
+    "relevance_score": 30,
+    "relevance_comment": "This is primarily an internal tracking identifier, rarely offering direct scientific insight for typical users.",
+    "user_comment": ""
+  },
+  "EXPOSURE": {
+    "content": "This keyword denotes the specific request number for a particular exposure within an observation. It helps to differentiate individual frames or captures that might be part of a larger set, such as a dither sequence or a time series.",
+    "relevance_score": 45,
+    "relevance_comment": "Useful for advanced users needing to correlate specific raw exposures, but less critical for general data interpretation.",
+    "user_comment": ""
+  },
+  "TEMPLATE": {
+    "content": "This keyword specifies the high-level observation template used from the Astronomer's Proposal Tool (APT) to define the observation. It provides crucial context about the overall observing strategy, such as 'NIRCam Imaging' or 'MIRI MRS Spectroscopy'.",
+    "relevance_score": 85,
+    "relevance_comment": "Knowing the template provides critical high-level context about the observation's design, purpose, and instrument configuration.",
+    "user_comment": ""
+  },
+  "OBSLABEL": {
+    "content": "This is a descriptive, human-readable label assigned by the astronomer who proposed the observation, often indicating the scientific target or specific goal. It serves as a concise, user-friendly summary of the observation's intent.",
+    "relevance_score": 95,
+    "relevance_comment": "This proposer-defined label provides an immediate and invaluable human-readable summary of the observation's scientific purpose.",
+    "user_comment": ""
+  },
+  "OBSFOLDR": {
+    "content": "This keyword indicates the name of the folder within the Astronomer's Proposal Tool (APT) that grouped this observation with others. It helps organize and categorize related observations within a larger scientific program.",
+    "relevance_score": 55,
+    "relevance_comment": "It helps contextualize an observation within a larger program, which is useful for advanced data exploration and management.",
+    "user_comment": ""
+  },
+  "OBSMODE": {
+    "content": "This keyword describes the specific operational mode of the instrument used for the observation, such as 'IMAGING', 'SPECTROSCOPY', or a more detailed mode like 'WFC3 UVIS Imaging'. It's essential for understanding the data's format and intended use.",
+    "relevance_score": 90,
+    "relevance_comment": "Essential for understanding the instrument configuration and the fundamental nature of the collected data.",
+    "user_comment": ""
+  },
+  "OBSTYPE": {
+    "content": "This keyword provides a broad classification of the astronomical observation, indicating its fundamental nature, such as whether it is an 'IMAGING' observation, 'SPECTROSCOPIC' observation, or a 'CALIBRATION' frame.",
+    "relevance_score": 95,
+    "relevance_comment": "Crucial for immediately understanding the fundamental category of the data, such as whether it is an image or a spectrum.",
+    "user_comment": ""
+  },
+  "BKGDTARG": {
+    "content": "This boolean keyword indicates whether the observed field or target was specifically chosen for measuring background emission rather than being the primary scientific target. This distinction is vital for correctly interpreting and using the data.",
+    "relevance_score": 80,
+    "relevance_comment": "Knowing if an observation is intended for background measurement helps users correctly interpret and utilize the data.",
+    "user_comment": ""
+  },
+  "IS_PSF": {
+    "content": "This boolean keyword indicates if the exposure's primary purpose was to characterize the instrument's Point Spread Function (PSF). PSF reference data is crucial for subsequent image deconvolution, astrometry, and precise photometry of other scientific observations.",
+    "relevance_score": 75,
+    "relevance_comment": "Essential for users performing PSF-related analysis or understanding the calibration context of the observation.",
+    "user_comment": ""
+  },
+  "SELFREF": {
+    "content": "This boolean keyword specifically flags if a coronagraphic observation is designed as a 'self-referencing PSF survey'. This indicates a specialized technique where the observation itself is used to characterize its own PSF for high-contrast imaging.",
+    "relevance_score": 50,
+    "relevance_comment": "This specialized flag is primarily relevant for users engaged in advanced coronagraphic data analysis and calibration.",
+    "user_comment": ""
+  },
+  "ENG_QUAL": {
+    "content": "This flag indicates the overall quality of the engineering data associated with the observation, stating if it's considered \"OK\" or \"SUSPECT\". It's important for understanding the reliability of other engineering parameters used in data processing and for assessing the overall integrity of the observation.",
+    "relevance_score": 55,
+    "relevance_comment": "It's moderately relevant as it provides a high-level indication of data quality that advanced users might check.",
+    "user_comment": ""
+  },
+  "ENGQLPTG": {
+    "content": "This keyword describes the origin and reliability of the spacecraft's pointing information, indicating whether the pointing data is derived from primary sensors or has been refined. Understanding its value helps assess the accuracy of the celestial coordinates associated with the observation.",
+    "relevance_score": 60,
+    "relevance_comment": "This keyword is useful for advanced users to assess the reliability of the pointing information, which impacts astrometric accuracy.",
+    "user_comment": ""
+  },
+  "TARGPROP": {
+    "content": "This is the name given to the astronomical object by the scientist who proposed the observation. It often reflects a specific research interest or a common alias, providing a familiar label for the observed celestial body.",
+    "relevance_score": 95,
+    "relevance_comment": "This keyword is highly relevant as it provides a user-friendly and proposal-specific name for the observed celestial object.",
+    "user_comment": ""
+  },
+  "TARGNAME": {
+    "content": "This keyword provides the primary, often standard catalog, name of the astronomical object observed. It's crucial for identifying the target and linking the data to other observations or catalog entries.",
+    "relevance_score": 100,
+    "relevance_comment": "This is an essential keyword for all users to identify the celestial object captured in the image.",
+    "user_comment": ""
+  },
+  "TARGTYPE": {
+    "content": "This keyword categorizes the nature of the observed target, indicating if it's a \"FIXED\" (stationary), \"MOVING\" (e.g., planet, asteroid), or \"GENERIC\" (undefined) object. This distinction is important for understanding the observational strategy and expected data characteristics.",
+    "relevance_score": 80,
+    "relevance_comment": "This keyword is commonly useful as it informs users whether the observation targeted a stationary object or a moving body, influencing data interpretation.",
+    "user_comment": ""
+  },
+  "TARG_RA": {
+    "content": "This keyword specifies the Right Ascension coordinate of the target at the midpoint of the observation's exposure, expressed in degrees. It's fundamental for locating the object in the sky and for astrometric analysis.",
+    "relevance_score": 100,
+    "relevance_comment": "This is an essential keyword for precisely locating the observed target in the celestial sphere.",
+    "user_comment": ""
+  },
+  "TARG_DEC": {
+    "content": "This keyword specifies the Declination coordinate of the target at the midpoint of the observation's exposure, expressed in degrees. Together with Right Ascension, it provides the target's precise celestial position.",
+    "relevance_score": 100,
+    "relevance_comment": "This is an essential keyword for precisely locating the observed target in the celestial sphere.",
+    "user_comment": ""
+  },
+  "RA_TARG": {
+    "content": "This keyword provides an alternate representation for the Right Ascension coordinate of the observed target, expressed in degrees. It serves the same purpose as TARG_RA, indicating the celestial longitude of the object.",
+    "relevance_score": 98,
+    "relevance_comment": "This is an essential keyword for precisely locating the observed target in the celestial sphere, serving the same function as TARG_RA.",
+    "user_comment": ""
+  },
+  "DEC_TARG": {
+    "content": "This keyword provides an alternate representation for the Declination coordinate of the observed target, expressed in degrees. It serves the same purpose as TARG_DEC, indicating the celestial latitude of the object.",
+    "relevance_score": 98,
+    "relevance_comment": "This is an essential keyword for precisely locating the observed target in the celestial sphere, serving the same function as TARG_DEC.",
+    "user_comment": ""
+  },
+  "TARGURA": {
+    "content": "This keyword quantifies the uncertainty in the Right Ascension coordinate of the target at mid-exposure, given in arcseconds. It's important for assessing the precision of the reported target position, especially for astrometric measurements.",
+    "relevance_score": 65,
+    "relevance_comment": "This keyword is useful for advanced users needing to assess the astrometric precision of the target's Right Ascension.",
+    "user_comment": ""
+  },
+  "TARGUDEC": {
+    "content": "This value indicates how precisely the telescope knows the target's north-south position (declination) at the time of observation, expressed in arcseconds. It's important for assessing the accuracy of astrometric measurements and understanding the limits of positional precision.",
+    "relevance_score": 55,
+    "relevance_comment": "It's useful for assessing data quality and astrometric precision but not a primary display item for most users.",
+    "user_comment": ""
+  },
+  "PROP_RA": {
+    "content": "This keyword stores the Right Ascension (east-west coordinate) of the target as originally requested by the observer in the Astronomer's Proposal Tool (APT). It represents the intended target location before any potential on-board adjustments or refinements during observation.",
+    "relevance_score": 90,
+    "relevance_comment": "It provides the intended target right ascension, which is highly relevant for confirming the observation's purpose.",
+    "user_comment": ""
+  },
+  "PROP_DEC": {
+    "content": "This keyword stores the Declination (north-south coordinate) of the target as originally requested by the observer in the Astronomer's Proposal Tool (APT). It represents the intended target location before any potential on-board adjustments or refinements during observation.",
+    "relevance_score": 90,
+    "relevance_comment": "It provides the intended target declination, which is highly relevant for confirming the observation's purpose.",
+    "user_comment": ""
+  },
+  "MU_RA": {
+    "content": "This specifies the target's proper motion in Right Ascension, detailing how much its position across the sky changes each year in the east-west direction, as provided by the observer. This information is crucial for accurately tracking moving targets or for precise astrometry over long periods.",
+    "relevance_score": 75,
+    "relevance_comment": "Proper motion is important for many astrophysical targets, especially for accurate astrometry and target identification over time.",
+    "user_comment": ""
+  },
+  "MU_DEC": {
+    "content": "This specifies the target's proper motion in Declination, detailing how much its position across the sky changes each year in the north-south direction, as provided by the observer. This information is crucial for accurately tracking moving targets or for precise astrometry over long periods.",
+    "relevance_score": 75,
+    "relevance_comment": "Proper motion is important for many astrophysical targets, especially for accurate astrometry and target identification over time.",
+    "user_comment": ""
+  },
+  "MU_EPOCH": {
+    "content": "This is the specific date (epoch) for which the provided proper motion values (MU_RA, MU_DEC) are valid. It's essential because proper motion describes a rate of change, so this reference point in time is critical for calculating a target's position at any other given date.",
+    "relevance_score": 70,
+    "relevance_comment": "This keyword is critical for correctly interpreting and applying the proper motion values.",
+    "user_comment": ""
+  },
+  "SRCTYAPT": {
+    "content": "This indicates how the observer classified the target source for spectroscopy: as a 'POINT' source (like a star), an 'EXTENDED' source (like a galaxy), or 'UNKNOWN'. This classification guides data reduction and interpretation, as different source types require different analytical approaches.",
+    "relevance_score": 80,
+    "relevance_comment": "This provides critical context for understanding spectroscopic data, especially for source characterization and data reduction choices.",
+    "user_comment": ""
+  },
+  "PA_APER": {
+    "content": "This specifies the orientation of the instrument's aperture or slit on the sky, measured in degrees eastward from North. Understanding this angle is crucial for aligning the observed data with the physical structure of celestial objects, particularly for extended sources with discernible morphology.",
+    "relevance_score": 85,
+    "relevance_comment": "This keyword is essential for understanding the orientation of the instrument's view on the sky, vital for spatial analysis of extended sources.",
+    "user_comment": ""
+  },
+  "PA_V3": {
+    "content": "This keyword specifies the position angle of the telescope's V3 axis on the sky, measured in degrees eastward from North. The V3 axis serves as a key reference direction for the observatory, helping to define the overall orientation of the spacecraft and its instruments during an observation.",
+    "relevance_score": 60,
+    "relevance_comment": "This is primarily an internal observatory orientation reference, less directly relevant for typical end-user data interpretation than the aperture angle.",
+    "user_comment": ""
+  },
+  "RA_V1": {
+    "content": "This specifies the Right Ascension coordinate of the telescope's V1 axis. As V1 is the primary pointing axis of the telescope, this value indicates the celestial Right Ascension to which the telescope was pointed at the time of observation.",
+    "relevance_score": 95,
+    "relevance_comment": "This keyword provides the fundamental pointing right ascension of the telescope, which is crucial coordinate information.",
+    "user_comment": ""
+  },
+  "DEC_V1": {
+    "content": "This keyword specifies the Declination (celestial north-south coordinate) of the telescope's V1 axis, indicating the precise sky location the instrument was pointed towards. It is a fundamental coordinate for pinpointing the target observed and placing the data spatially on the celestial sphere.",
+    "relevance_score": 95,
+    "relevance_comment": "Directly indicates a fundamental celestial coordinate of the observation, essential for locating the data on the sky.",
+    "user_comment": ""
+  },
+  "TITLE": {
+    "content": "This keyword provides the official title of the astronomical proposal under which the data were acquired. It offers a concise, plain-language summary of the scientific investigation, giving users immediate context about the observation's purpose and goals.",
+    "relevance_score": 85,
+    "relevance_comment": "Provides immediate scientific context and the purpose of the observed data, highly useful for quick understanding.",
+    "user_comment": ""
+  },
+  "PI_NAME": {
+    "content": "This keyword stores the name of the Principal Investigator (PI) who led the astronomical observing program. It identifies the lead scientist or team responsible for the observations, which is useful for attribution, finding related publications, or contacting the original researchers.",
+    "relevance_score": 75,
+    "relevance_comment": "Identifies the lead scientist for the program, useful for attribution and contextual research.",
+    "user_comment": ""
+  },
+  "CATEGORY": {
+    "content": "This keyword assigns a broad scientific category to the observing program, typically determined by the Telescope Allocation Committee (TAC) or the PI. It helps classify the data by overarching scientific themes (e.g., Exoplanets, Cosmology), aiding in data discovery and filtering.",
+    "relevance_score": 70,
+    "relevance_comment": "Helps categorize the scientific context of the observation, useful for discovery and filtering data.",
+    "user_comment": ""
+  },
+  "SUBCAT": {
+    "content": "For JWST, this keyword specifies a program sub-category that often directly indicates the instrument used for the observation (e.g., MIRI, NIRCAM). Knowing the instrument is critical for understanding data characteristics, capabilities, and for specialized analysis.",
+    "relevance_score": 80,
+    "relevance_comment": "Essential for knowing which specific instrument was used to acquire the data, crucial for understanding data properties.",
+    "user_comment": ""
+  },
+  "SCICAT": {
+    "content": "This keyword denotes a specific science category assigned during the Telescope Allocation Committee (TAC) review process. It offers a more detailed scientific classification than 'CATEGORY', often relating to the specific target type or astrophysical phenomenon under study.",
+    "relevance_score": 65,
+    "relevance_comment": "Offers a more granular scientific classification, useful for advanced data filtering and understanding research focus.",
+    "user_comment": ""
+  },
+  "CONT_ID": {
+    "content": "This keyword is an integer identifier that indicates if the current observing program is a continuation of a previous program number. It helps link related observations across different observing cycles or proposals, which is valuable for tracking long-term studies or follow-up campaigns.",
+    "relevance_score": 45,
+    "relevance_comment": "Primarily useful for researchers tracking extended or related observing programs, less for general users.",
+    "user_comment": ""
+  },
+  "AUTHOR": {
+    "content": "This keyword specifies the individual or entity responsible for creating or processing the FITS file itself. It provides attribution for the data product, which might be different from the Principal Investigator of the original observations, and is useful for data provenance.",
+    "relevance_score": 30,
+    "relevance_comment": "Provides attribution for the FITS file creator, useful for data provenance rather than direct astronomical content.",
+    "user_comment": ""
+  },
+  "WCSAXES": {
+    "content": "This keyword indicates the number of World Coordinate System (WCS) axes defined for the image data. It's a technical detail that tells software how many physical dimensions (e.g., celestial coordinates, spectral channels, time) are mapped by the WCS, enabling proper interpretation of the data array.",
+    "relevance_score": 25,
+    "relevance_comment": "A technical detail about the WCS structure, less directly consumed by end-users than the actual coordinate values.",
+    "user_comment": ""
+  },
+  "CRPIX1": {
+    "content": "This keyword specifies the pixel coordinate of the reference point along the first image axis (typically the x-axis) within the World Coordinate System. It's a fundamental parameter used in the mathematical conversion from pixel coordinates to real-world coordinates (like Right Ascension on the sky).",
+    "relevance_score": 50,
+    "relevance_comment": "A critical WCS parameter enabling coordinate transformations, but not directly interpreted by typical end-users.",
+    "user_comment": ""
+  },
+  "CRPIX2": {
+    "content": "This keyword specifies the pixel coordinate on the second axis (y-axis) that corresponds to the sky coordinate given by CRVAL2. It acts as a reference point for the World Coordinate System (WCS) calculations, defining the origin for coordinate transformations.",
+    "relevance_score": 30,
+    "relevance_comment": "It's an internal parameter of the WCS calculation not typically directly needed by end-users.",
+    "user_comment": ""
+  },
+  "CRVAL1": {
+    "content": "This keyword provides the celestial coordinate value (usually Right Ascension in degrees) at the reference pixel on the first image axis (x-axis). It defines the absolute sky position of a specific point in the image, typically near its center.",
+    "relevance_score": 95,
+    "relevance_comment": "Essential for knowing the exact sky location an image covers, fundamental for finding objects or cross-referencing with other data.",
+    "user_comment": ""
+  },
+  "CRVAL2": {
+    "content": "This keyword provides the celestial coordinate value (usually Declination in degrees) at the reference pixel on the second image axis (y-axis). Together with CRVAL1, it precisely pins the image to a specific location on the celestial sphere.",
+    "relevance_score": 95,
+    "relevance_comment": "Essential for knowing the exact sky location an image covers, fundamental for finding objects or cross-referencing with other data.",
+    "user_comment": ""
+  },
+  "CTYPE1": {
+    "content": "This keyword describes the type of celestial coordinate system and the projection used for the first image axis. For example, 'RA---TAN' indicates Right Ascension with a tangent plane projection, crucial for correctly interpreting sky coordinates.",
+    "relevance_score": 90,
+    "relevance_comment": "Very important for understanding what the coordinate values actually represent, ensuring proper interpretation of sky positions.",
+    "user_comment": ""
+  },
+  "CTYPE2": {
+    "content": "This keyword describes the type of celestial coordinate system and the projection used for the second image axis. For example, 'DEC--TAN' indicates Declination with a tangent plane projection, complementing CTYPE1 to fully define the sky projection.",
+    "relevance_score": 90,
+    "relevance_comment": "Very important for understanding what the coordinate values actually represent, ensuring proper interpretation of sky positions.",
+    "user_comment": ""
+  },
+  "CUNIT1": {
+    "content": "This keyword specifies the physical unit for the coordinate values on the first axis (e.g., 'deg' for degrees). It is critical for correctly interpreting the numerical values of RA or other sky coordinates.",
+    "relevance_score": 90,
+    "relevance_comment": "Essential for unambiguous interpretation of coordinate values, as a number without units is meaningless in an astronomical context.",
+    "user_comment": ""
+  },
+  "CUNIT2": {
+    "content": "This keyword specifies the physical unit for the coordinate values on the second axis (e.g., 'deg' for degrees). It is critical for correctly interpreting the numerical values of Dec or other sky coordinates.",
+    "relevance_score": 90,
+    "relevance_comment": "Essential for unambiguous interpretation of coordinate values, as a number without units is meaningless in an astronomical context.",
+    "user_comment": ""
+  },
+  "CDELT1": {
+    "content": "This keyword indicates the coordinate increment along the first image axis, typically representing the angular size of a pixel (e.g., degrees per pixel). It describes the spatial resolution or plate scale of the image in one direction.",
+    "relevance_score": 80,
+    "relevance_comment": "Useful for understanding the image's resolution and field of view, which impacts how much detail is visible.",
+    "user_comment": ""
+  },
+  "CDELT2": {
+    "content": "This keyword indicates the coordinate increment along the second image axis, typically representing the angular size of a pixel (e.g., degrees per pixel). It complements CDELT1 to describe the full spatial resolution of the image.",
+    "relevance_score": 80,
+    "relevance_comment": "Useful for understanding the image's resolution and field of view, which impacts how much detail is visible.",
+    "user_comment": ""
+  },
+  "CD1_1": {
+    "content": "This keyword is an element of the coordinate transformation matrix, which maps pixel coordinates to sky coordinates. It encodes information about the image's scale and any rotation along the first axis. When present with other CD_i_j keywords, it defines a more general WCS transformation than CDELT.",
+    "relevance_score": 50,
+    "relevance_comment": "Primarily an internal component of the WCS calculation; users typically view derived properties like rotation and scale rather than inspecting this matrix element directly.",
+    "user_comment": ""
+  },
+  "CD1_2": {
+    "content": "This value is an element of the coordinate description matrix, which defines how pixel coordinates are transformed into world coordinates (like Right Ascension and Declination). It specifically contributes to scaling, rotation, and skew of the image when mapping it to the sky. While not directly viewed by most users, it is crucial for software to accurately display the image with correct celestial coordinates.",
+    "relevance_score": 75,
+    "relevance_comment": "These values are critical for the software to accurately transform pixel locations into celestial coordinates, enabling precise astrometry and sky overlays.",
+    "user_comment": ""
+  },
+  "CD2_1": {
+    "content": "This value is an element of the coordinate description matrix, which defines how pixel coordinates are transformed into world coordinates (like Right Ascension and Declination). It specifically contributes to scaling, rotation, and skew of the image when mapping it to the sky. While not directly viewed by most users, it is crucial for software to accurately display the image with correct celestial coordinates.",
+    "relevance_score": 75,
+    "relevance_comment": "These values are critical for the software to accurately transform pixel locations into celestial coordinates, enabling precise astrometry and sky overlays.",
+    "user_comment": ""
+  },
+  "CD2_2": {
+    "content": "This value is an element of the coordinate description matrix, which defines how pixel coordinates are transformed into world coordinates (like Right Ascension and Declination). It specifically contributes to scaling, rotation, and skew of the image when mapping it to the sky. While not directly viewed by most users, it is crucial for software to accurately display the image with correct celestial coordinates.",
+    "relevance_score": 75,
+    "relevance_comment": "These values are critical for the software to accurately transform pixel locations into celestial coordinates, enabling precise astrometry and sky overlays.",
+    "user_comment": ""
+  },
+  "PC1_1": {
+    "content": "This value is an element of the projection coordinate (PC) matrix, an alternative or complementary way to define the linear transformation from pixel coordinates to celestial coordinates. Like the CDi_j matrix, it encodes information about the pixel scale, rotation, and any skew present in the image. It is fundamental for software to correctly interpret the image's orientation and scale on the sky.",
+    "relevance_score": 75,
+    "relevance_comment": "These values are critical for the software to accurately transform pixel locations into celestial coordinates, enabling precise astrometry and sky overlays.",
+    "user_comment": ""
+  },
+  "PC1_2": {
+    "content": "This value is an element of the projection coordinate (PC) matrix, an alternative or complementary way to define the linear transformation from pixel coordinates to celestial coordinates. Like the CDi_j matrix, it encodes information about the pixel scale, rotation, and any skew present in the image. It is fundamental for software to correctly interpret the image's orientation and scale on the sky.",
+    "relevance_score": 75,
+    "relevance_comment": "These values are critical for the software to accurately transform pixel locations into celestial coordinates, enabling precise astrometry and sky overlays.",
+    "user_comment": ""
+  },
+  "PC2_1": {
+    "content": "This value is an element of the projection coordinate (PC) matrix, an alternative or complementary way to define the linear transformation from pixel coordinates to celestial coordinates. Like the CDi_j matrix, it encodes information about the pixel scale, rotation, and any skew present in the image. It is fundamental for software to correctly interpret the image's orientation and scale on the sky.",
+    "relevance_score": 75,
+    "relevance_comment": "These values are critical for the software to accurately transform pixel locations into celestial coordinates, enabling precise astrometry and sky overlays.",
+    "user_comment": ""
+  },
+  "PC2_2": {
+    "content": "This value is an element of the projection coordinate (PC) matrix, an alternative or complementary way to define the linear transformation from pixel coordinates to celestial coordinates. Like the CDi_j matrix, it encodes information about the pixel scale, rotation, and any skew present in the image. It is fundamental for software to correctly interpret the image's orientation and scale on the sky.",
+    "relevance_score": 75,
+    "relevance_comment": "These values are critical for the software to accurately transform pixel locations into celestial coordinates, enabling precise astrometry and sky overlays.",
+    "user_comment": ""
+  },
+  "RADESYS": {
+    "content": "This keyword specifies the celestial coordinate reference system (e.g., ICRS, FK5) used for the Right Ascension and Declination values in the data. Knowing the reference system is vital for accurately interpreting object positions, comparing data from different sources, and ensuring proper coordinate transformations. For example, positions in ICRS are fixed, while FK5 positions slowly change due to precession.",
+    "relevance_score": 95,
+    "relevance_comment": "This keyword is essential for understanding the specific celestial coordinate system used for the data's RA/Dec values, ensuring correct interpretation and comparisons.",
+    "user_comment": ""
+  },
+  "EQUINOX": {
+    "content": "This keyword indicates the equinox (epoch) of the celestial coordinate system used for the data's Right Ascension and Declination, most commonly J2000.0. The equinox defines the orientation of the coordinate axes at a specific point in time, which is crucial for precise astrometry. Comparing observations from different eras requires knowing their respective equinoxes to account for precession.",
+    "relevance_score": 90,
+    "relevance_comment": "This keyword specifies the epoch of the celestial coordinate system, crucial for accurate astrometry and for comparing observations across different periods, especially if not J2000.0.",
+    "user_comment": ""
+  },
+  "LONPOLE": {
+    "content": "This keyword specifies the longitude of the native celestial pole in degrees, which is a technical parameter used in certain World Coordinate System (WCS) projections. It helps define the orientation of the projection, particularly when transforming to or from non-standard coordinate systems or projections. Most end-users will not directly interact with this value, but it is used by WCS software for accurate sky mapping.",
+    "relevance_score": 50,
+    "relevance_comment": "This keyword is a technical detail within the WCS projection definition, primarily used by advanced software to correctly orient complex sky projections.",
+    "user_comment": ""
+  },
+  "LATPOLE": {
+    "content": "This keyword specifies the native latitude of the celestial pole in degrees, relevant for certain specialized World Coordinate System (WCS) projections. It's a technical parameter defining part of how sky coordinates are mapped onto the image pixels.",
+    "relevance_score": 30,
+    "relevance_comment": "This is a low-level WCS parameter that is not directly consumed by most end-users, who typically work with the transformed RA/Dec coordinates.",
+    "user_comment": ""
+  },
+  "S_REGION": {
+    "content": "This keyword describes the precise spatial footprint of the observation on the sky using the IVOA's STC-S (Space-Time Coordinate System) format. It provides a polygon or region that delineates the exact area covered by the data, useful for database queries and visualization.",
+    "relevance_score": 85,
+    "relevance_comment": "This is highly relevant for understanding the exact sky coverage of an observation, valuable for search, display, and data comparison.",
+    "user_comment": ""
+  },
+  "A_ORDER": {
+    "content": "This keyword specifies the degree of the forward 'Simple Imaging Polynomial' (SIP) used for distortion correction along the first image axis (x-axis). SIP coefficients are used to mathematically model and correct for optical distortions in the instrument.",
+    "relevance_score": 25,
+    "relevance_comment": "This is a technical detail of the WCS distortion model, not directly useful for general users who benefit from the corrected image but don't need the polynomial specifics.",
+    "user_comment": ""
+  },
+  "B_ORDER": {
+    "content": "This keyword specifies the degree of the forward 'Simple Imaging Polynomial' (SIP) used for distortion correction along the second image axis (y-axis). SIP coefficients are used to mathematically model and correct for optical distortions in the instrument.",
+    "relevance_score": 25,
+    "relevance_comment": "This is a technical detail of the WCS distortion model, not directly useful for general users who benefit from the corrected image but don't need the polynomial specifics.",
+    "user_comment": ""
+  },
+  "AP_ORDER": {
+    "content": "This keyword specifies the degree of the inverse 'Simple Imaging Polynomial' (SIP) used to reverse distortion corrections along the first image axis. These polynomials allow mapping from distorted image coordinates back to ideal pixel coordinates.",
+    "relevance_score": 25,
+    "relevance_comment": "This is a technical detail of the WCS distortion model for inverse transformations, not directly useful for general users.",
+    "user_comment": ""
+  },
+  "BP_ORDER": {
+    "content": "This keyword specifies the degree of the inverse 'Simple Imaging Polynomial' (SIP) used to reverse distortion corrections along the second image axis. These polynomials allow mapping from distorted image coordinates back to ideal pixel coordinates.",
+    "relevance_score": 25,
+    "relevance_comment": "This is a technical detail of the WCS distortion model for inverse transformations, not directly useful for general users.",
+    "user_comment": ""
+  },
+  "SUBARRAY": {
+    "content": "This keyword indicates if the observation captured the full detector frame or a specific, smaller region (subarray). It often provides a descriptive name for the subarray used, such as 'FULL' for full frame or a custom name.",
+    "relevance_score": 60,
+    "relevance_comment": "This is useful for understanding whether the image represents the full detector field of view or a specific partial readout, impacting interpretation and visualization.",
+    "user_comment": ""
+  },
+  "SUBSTRT1": {
+    "content": "This keyword indicates the starting pixel column (axis 1) of the observed subarray within the full detector frame. It specifies the leftmost pixel of the subarray in the original detector coordinates.",
+    "relevance_score": 55,
+    "relevance_comment": "This provides granular information about the subarray's position, useful for advanced visualization, comparison, or understanding detector layout.",
+    "user_comment": ""
+  },
+  "SUBSTRT2": {
+    "content": "This keyword indicates the starting pixel row (axis 2) of the observed subarray within the full detector frame. It specifies the bottommost pixel of the subarray in the original detector coordinates.",
+    "relevance_score": 55,
+    "relevance_comment": "This provides granular information about the subarray's position, useful for advanced visualization, comparison, or understanding detector layout.",
+    "user_comment": ""
+  },
+  "SUBSIZE1": {
+    "content": "This keyword indicates the number of pixels along the first axis (width) of the observed subarray. It defines the size of the captured region in the x-direction.",
+    "relevance_score": 55,
+    "relevance_comment": "This provides granular information about the subarray's dimensions, useful for advanced visualization, comparison, or understanding detector layout.",
+    "user_comment": ""
+  },
+  "SUBSIZE2": {
+    "content": "This keyword specifies the dimension of the detector subarray along its second axis, indicating how many pixels were read out in that direction. It's crucial for understanding the size and extent of the captured image data when only a portion of the full detector was used.",
+    "relevance_score": 60,
+    "relevance_comment": "Useful for understanding the physical dimensions of a subarray image, relevant for advanced users analyzing instrument modes.",
+    "user_comment": ""
+  },
+  "FASTAXIS": {
+    "content": "This keyword describes which detector axis (1 or 2) corresponds to the faster readout direction, and whether it's read out in the positive or negative direction. This information is critical for instrument scientists or advanced users performing detailed noise analysis or understanding detector effects.",
+    "relevance_score": 30,
+    "relevance_comment": "Primarily relevant for instrument specialists or those performing detailed detector analysis, not typical end-users.",
+    "user_comment": ""
+  },
+  "SLOWAXIS": {
+    "content": "This keyword indicates which detector axis (1 or 2) corresponds to the slower readout direction, including the positive or negative readout direction. Like FASTAXIS, it's essential for understanding how the detector was operated and for analyzing specific detector artifacts or noise patterns.",
+    "relevance_score": 30,
+    "relevance_comment": "Primarily relevant for instrument specialists or those performing detailed detector analysis, not typical end-users.",
+    "user_comment": ""
+  },
+  "APERNAME": {
+    "content": "This keyword provides the official name of the science aperture used for the observation, as defined by the Spacecraft & Observatory Control (S&OC) system. It tells users exactly which instrument configuration and field of view was selected for the observation, linking the data to specific instrument modes.",
+    "relevance_score": 85,
+    "relevance_comment": "Essential for understanding the specific instrument configuration and field of view used for the observation.",
+    "user_comment": ""
+  },
+  "PPS_APER": {
+    "content": "This keyword stores the initial aperture name as it was specified in the Planning and Scheduling System (PPS) before any internal processing or translation. It can be useful for tracking the origin of an observation's configuration within the mission's planning pipeline.",
+    "relevance_score": 50,
+    "relevance_comment": "Provides context on the aperture name's origin within the planning system, primarily useful for pipeline traceability or specific debugging.",
+    "user_comment": ""
+  },
+  "NUMDTHPT": {
+    "content": "This keyword specifies the total count of individual positions included in the complete dither pattern for the observation. It helps users understand the overall strategy employed to cover the target area or mitigate detector artifacts through multiple shifted exposures.",
+    "relevance_score": 75,
+    "relevance_comment": "Useful for understanding the overall observation strategy and the full extent of a dithered observation.",
+    "user_comment": ""
+  },
+  "PATT_NUM": {
+    "content": "This keyword indicates the sequential number of the current observation within its complete dither pattern. It allows users to identify where this specific exposure fits into the larger dither sequence, which is crucial for combining multiple dithered images.",
+    "relevance_score": 90,
+    "relevance_comment": "Crucial for identifying the specific position of an exposure within a dither sequence, vital for data combination.",
+    "user_comment": ""
+  },
+  "XOFFSET": {
+    "content": "This keyword provides the offset in arcseconds along the X-axis from the nominal starting point of the dither pattern to the actual observation's position. It's essential for precisely aligning and combining individual dithered images to create a mosaic or improve spatial sampling.",
+    "relevance_score": 95,
+    "relevance_comment": "Essential for accurately aligning and combining individual dithered exposures for improved data quality.",
+    "user_comment": ""
+  },
+  "YOFFSET": {
+    "content": "This keyword provides the offset in arcseconds along the Y-axis from the nominal starting point of the dither pattern to the current observation's position. Similar to XOFFSET, it's vital for precisely aligning and combining multiple dithered exposures to achieve the intended scientific outcome.",
+    "relevance_score": 95,
+    "relevance_comment": "Essential for accurately aligning and combining individual dithered exposures for improved data quality.",
+    "user_comment": ""
+  },
+  "PATTTYPE": {
+    "content": "This keyword describes the specific strategy or design of the dither pattern employed for the observation. Knowing the pattern type helps users understand the scientific goals behind the dithering (e.g., full coverage, artifact mitigation) and guide their data processing choices.",
+    "relevance_score": 80,
+    "relevance_comment": "Useful for understanding the high-level strategy behind the dither pattern, which informs data analysis and interpretation.",
+    "user_comment": ""
+  },
+  "PATTSIZE": {
+    "content": "This keyword indicates the overall size or extent of the dither pattern used during data acquisition. Dithering is a technique where the telescope is slightly moved between exposures to improve image quality, sample detector pixels better, and remove cosmic rays or detector defects. The size refers to the spatial extent of these shifts.",
+    "relevance_score": 55,
+    "relevance_comment": "Understanding the dither pattern size is useful for advanced users evaluating data quality and spatial resolution.",
+    "user_comment": ""
+  },
+  "PATTSTRT": {
+    "content": "This specifies which step or position in a multi-point dither sequence was the first one executed for the current observation. When a dither pattern has many points, observations might start at an arbitrary point in the sequence, especially if it's a continuation of a larger program.",
+    "relevance_score": 30,
+    "relevance_comment": "This keyword is primarily an operational detail for pipeline processing and instrument teams, with little direct end-user relevance.",
+    "user_comment": ""
+  },
+  "PATTNPTS": {
+    "content": "This keyword indicates the total number of distinct positions the telescope visited as part of a cycling dither pattern. A higher number of points generally leads to better sampling of the detector and more robust cosmic ray rejection when the individual dithered images are combined.",
+    "relevance_score": 65,
+    "relevance_comment": "Knowing the number of dither points helps users understand the completeness and quality potential of the combined data, particularly for artifact rejection.",
+    "user_comment": ""
+  },
+  "NUMDSETS": {
+    "content": "This specifies how many complete cycles of a smaller, typically 4-point, dither pattern were executed. Some dither strategies involve repeating a foundational pattern multiple times to achieve specific noise reduction or image quality goals.",
+    "relevance_score": 60,
+    "relevance_comment": "This provides insight into the observation's redundancy and helps assess the potential for noise reduction or coverage for specific dither strategies.",
+    "user_comment": ""
+  },
+  "DSETSTRT": {
+    "content": "This keyword indicates which specific set number of a repeated dither pattern was the first one observed within a larger sequence. It tracks the starting point for multi-set dither strategies, similar to tracking the starting point within a single dither pattern.",
+    "relevance_score": 30,
+    "relevance_comment": "This is an internal detail for data pipeline and instrument teams, holding little direct value for typical end-user analysis.",
+    "user_comment": ""
+  },
+  "DITHDIRC": {
+    "content": "This indicates the general direction of the dither steps, often referring to whether the movements are sequentially positive or negative in a given coordinate axis. This can be relevant for understanding the precise sequence of small movements performed by the telescope.",
+    "relevance_score": 25,
+    "relevance_comment": "This is a highly specific operational detail of dither execution that rarely impacts the final scientific interpretation for most end-users.",
+    "user_comment": ""
+  },
+  "DITHOPFR": {
+    "content": "This keyword describes whether the dither pattern was specifically designed to optimize observations of point sources (like stars) or extended sources (like galaxies). Different optimization types use dither step sizes and patterns to best sample the target morphology and mitigate detector effects.",
+    "relevance_score": 75,
+    "relevance_comment": "This is very useful as it directly tells the user if the dither strategy was appropriate for the observed target type, influencing photometry or surface brightness measurements.",
+    "user_comment": ""
+  },
+  "DITHPNTS": {
+    "content": "This keyword provides a list or description of the specific positions visited during a sparse cycling dither pattern. Sparse dithers typically involve larger steps designed to move a target across different detector regions to mitigate artifacts or improve flat-fielding.",
+    "relevance_score": 60,
+    "relevance_comment": "For advanced users, knowing the exact dither positions can be crucial for understanding detector coverage, artifact mitigation, and for re-processing data.",
+    "user_comment": ""
+  },
+  "MRSPRCHN": {
+    "content": "This keyword specifies which of the MIRI Medium Resolution Spectrometer (MRS) channels the dither pattern was specifically optimized for. The MRS has multiple channels covering different wavelength ranges with varying pixel scales, requiring channel-specific dither strategies.",
+    "relevance_score": 70,
+    "relevance_comment": "This is important for MIRI MRS users to confirm the dither strategy was appropriate for the analyzed channel, impacting spectral extraction and data quality.",
+    "user_comment": ""
+  },
+  "NOD_TYPE": {
+    "content": "For NIRSpec Multi-Object Spectrometer (MOS) observations, this keyword describes the type of 'nodding' pattern used. Nodding is a technique where the telescope moves the target between different micro-shutter array (MSA) shutters to allow for accurate background subtraction and improved data quality, especially for faint targets.",
+    "relevance_score": 75,
+    "relevance_comment": "This is crucial for NIRSpec MOS users to understand how background subtraction was handled, which directly impacts the quality of extracted spectra.",
+    "user_comment": ""
+  },
+  "PRIDTYPE": {
+    "content": "This keyword indicates the specific type of primary dither pattern used during the observation, along with the total number of points in that pattern. Dithering involves slightly shifting the telescope's pointing between exposures to improve image quality, fill in detector gaps, and mitigate cosmic ray effects.",
+    "relevance_score": 55,
+    "relevance_comment": "This keyword is useful for advanced users to understand the observation strategy and assess data quality or completeness.",
+    "user_comment": ""
+  },
+  "PRIDTPTS": {
+    "content": "This keyword specifies the total number of individual pointing positions in the primary dither pattern performed by the Fine Guidance Sensor (FGS) during the observation. A higher number of dither points generally allows for better sampling and artifact rejection.",
+    "relevance_score": 50,
+    "relevance_comment": "Understanding the number of dither points helps advanced users assess the quality and coverage of combined data products.",
+    "user_comment": ""
+  },
+  "SUBPXPAT": {
+    "content": "This keyword describes the type of subpixel dither pattern applied, which is designed to sample the sky at resolutions finer than a single detector pixel. Common types include 'STANDARD' or 'SMALL-GRID-DITHER'. Using a subpixel dither improves the effective resolution of the final image.",
+    "relevance_score": 60,
+    "relevance_comment": "This is valuable for users interested in high-resolution imaging, as it directly impacts the achievable detail in the final processed data.",
+    "user_comment": ""
+  },
+  "SUBPXPTS": {
+    "content": "This keyword indicates the number of distinct pointing positions in the subpixel dither pattern. More points in a subpixel dither pattern contribute to a more finely sampled final image, which is crucial for achieving optimal spatial resolution.",
+    "relevance_score": 55,
+    "relevance_comment": "Knowing the number of subpixel dither points is useful for advanced users evaluating the potential resolution and quality of the final image.",
+    "user_comment": ""
+  },
+  "SMGRDPAT": {
+    "content": "This keyword specifies the particular name or configuration of the NIRCam small grid dither pattern used. Small grid dithers are a specialized type of dither often employed for specific science cases requiring precise subpixel sampling or mosaic patterns.",
+    "relevance_score": 45,
+    "relevance_comment": "This keyword is relevant for specialized NIRCam users who need to know the exact dither strategy for their specific analysis.",
+    "user_comment": ""
+  },
+  "NRIMDTPT": {
+    "content": "This keyword indicates the number of dither points specifically used for direct imaging observations with the NIRISS instrument. This value informs how many distinct positions the instrument observed as part of its dither sequence.",
+    "relevance_score": 40,
+    "relevance_comment": "This is useful for NIRISS instrument specialists or advanced users analyzing direct imaging data to understand data coverage.",
+    "user_comment": ""
+  },
+  "SPATNSTP": {
+    "content": "This keyword specifies the total number of steps or positions taken in the spatial direction during a MIRI Low-Resolution Spectroscopy (LRS) observation. These steps are part of a dither pattern to improve spatial sampling or remove detector artifacts.",
+    "relevance_score": 45,
+    "relevance_comment": "This keyword is valuable for users working with MIRI LRS data to understand the spatial sampling of their spectra.",
+    "user_comment": ""
+  },
+  "SPATSTEP": {
+    "content": "This keyword provides the physical distance, in arcseconds, between successive steps in the spatial direction for a MIRI LRS observation. This value quantifies the actual offset applied during spatial dithering.",
+    "relevance_score": 65,
+    "relevance_comment": "This precise measurement is highly useful for advanced users performing detailed spatial analysis or source extraction from MIRI LRS data.",
+    "user_comment": ""
+  },
+  "SPAT_NUM": {
+    "content": "This keyword indicates the specific position number of the current exposure within the larger sequence of spatial steps for a MIRI LRS observation. It helps to identify where this particular frame fits into the overall dither pattern.",
+    "relevance_score": 50,
+    "relevance_comment": "This keyword is important for advanced users needing to track and combine individual frames from a dither sequence.",
+    "user_comment": ""
+  },
+  "SPECNSTP": {
+    "content": "This keyword specifies the total number of steps or positions taken in the spectral direction during a MIRI Low-Resolution Spectroscopy (LRS) observation. These steps are part of a dither pattern designed to mitigate fringing and improve spectral fidelity.",
+    "relevance_score": 45,
+    "relevance_comment": "This keyword is valuable for users working with MIRI LRS data to understand the spectral sampling and artifact mitigation strategy.",
+    "user_comment": ""
+  },
+  "SPECSTEP": {
+    "content": "This keyword indicates the physical distance in arcseconds between successive exposures when dithered along the spectral direction for MIRI LRS observations. It's important for understanding how the instrument sampled the spectrum to mitigate detector artifacts or improve resolution.",
+    "relevance_score": 55,
+    "relevance_comment": "This details a specific dither parameter, useful for understanding data quality and processing, but not for casual viewing.",
+    "user_comment": ""
+  },
+  "SPEC_NUM": {
+    "content": "This identifies the specific position within a sequence of spectral dither steps for MIRI LRS observations. It helps researchers track which part of the dither pattern a particular exposure corresponds to, crucial for co-adding and artifact removal.",
+    "relevance_score": 50,
+    "relevance_comment": "This indicates the dither position, useful for advanced data processing and quality control.",
+    "user_comment": ""
+  },
+  "SPTOFFST": {
+    "content": "This keyword specifies the spatial offset in arcseconds from the starting point of the dither pattern for MIRI LRS observations. It helps determine the precise on-sky position of the observation relative to the overall pattern.",
+    "relevance_score": 55,
+    "relevance_comment": "This describes a spatial offset within a dither pattern, relevant for precise astrometry and advanced data reduction.",
+    "user_comment": ""
+  },
+  "SPCOFFST": {
+    "content": "This keyword specifies the spectral offset in arcseconds from the starting point of the dither pattern for MIRI LRS observations. It helps determine how the instrument's detector elements were moved along the spectral direction relative to the overall pattern.",
+    "relevance_score": 55,
+    "relevance_comment": "This describes a spectral offset within a dither pattern, relevant for precise wavelength calibration and advanced data reduction.",
+    "user_comment": ""
+  },
+  "VISITYPE": {
+    "content": "This keyword describes the overall type of observation visit, such as whether it's a primary target, a calibration, or an engineering test. It helps users understand the primary scientific or operational goal of the observation.",
+    "relevance_score": 80,
+    "relevance_comment": "This offers important high-level context about the observation's purpose, useful for understanding the data.",
+    "user_comment": ""
+  },
+  "VSTSTART": {
+    "content": "This keyword records the precise UTC date and time when the entire observation visit began. It's crucial for time-sensitive analyses, linking observations to external events, and understanding the overall timeline of data acquisition.",
+    "relevance_score": 95,
+    "relevance_comment": "The start time of an entire visit is highly relevant for understanding when the observation took place.",
+    "user_comment": ""
+  },
+  "VISITSTA": {
+    "content": "This keyword indicates the overall outcome or status of the observation visit, such as 'SUCCESSFUL,' 'DATALOSS,' or 'FAILED.' It's critical for users to quickly assess the quality and usability of the data.",
+    "relevance_score": 95,
+    "relevance_comment": "This provides critical information about the success and quality of the observation, highly relevant for data assessment.",
+    "user_comment": ""
+  },
+  "NEXPOSUR": {
+    "content": "This keyword specifies the total number of individual exposures that were planned to be taken during this entire observation visit. It provides context for the complete dataset and helps verify if all expected data frames were acquired.",
+    "relevance_score": 75,
+    "relevance_comment": "This provides useful context about the scope of the observation and data completeness.",
+    "user_comment": ""
+  },
+  "INTARGET": {
+    "content": "This boolean keyword indicates whether at least one exposure within the observation visit was designated as an 'internal target,' typically meaning it's pointed at an internal calibration source rather than an external astronomical object. It helps differentiate between science and calibration data.",
+    "relevance_score": 78,
+    "relevance_comment": "This helps users understand if the data pertains to an astronomical target or an internal calibration.",
+    "user_comment": ""
+  },
+  "TARGOOPP": {
+    "content": "This boolean keyword indicates whether the observation visit was scheduled as a 'Target of Opportunity' (ToO), meaning it was triggered by a transient event like a supernova or gamma-ray burst. It provides critical context about the transient nature of the observed phenomenon.",
+    "relevance_score": 90,
+    "relevance_comment": "This provides essential context about the nature of the observation, indicating if it was triggered by a transient event.",
+    "user_comment": ""
+  },
+  "TSOVISIT": {
+    "content": "This boolean keyword indicates if the observation was part of a Time Series Observation (TSO) program. TSOs are designed to capture changes over time, often for exoplanet transits or stellar variability studies, making this crucial for understanding the data's scientific purpose and appropriate analysis techniques.",
+    "relevance_score": 75,
+    "relevance_comment": "It informs users about a specific observing mode that significantly impacts scientific interpretation and data analysis strategies.",
+    "user_comment": ""
+  },
+  "EXP_ONLY": {
+    "content": "This keyword indicates if the exposure was taken using special commanding, bypassing the standard Science Instrument (SI) configuration process. This typically signifies an engineering or diagnostic exposure, rather than a scientific observation intended for public release and analysis.",
+    "relevance_score": 25,
+    "relevance_comment": "This keyword primarily identifies non-standard or engineering exposures, which are rarely relevant for typical end-user scientific analysis.",
+    "user_comment": ""
+  },
+  "CROWDFLD": {
+    "content": "This boolean keyword indicates whether the Fine Guidance Sensors (FGSes) encountered a crowded star field during the observation. Operating in a crowded field can potentially affect the accuracy and stability of guide star acquisition and tracking, which might subtly influence the overall pointing stability and astrometric quality of the data.",
+    "relevance_score": 45,
+    "relevance_comment": "This offers insight into potential pointing stability challenges, which can be useful for advanced users assessing data quality.",
+    "user_comment": ""
+  },
+  "GS_ORDER": {
+    "content": "This integer specifies the index or sequential order of the particular guide star within a list of selected guide stars for an observation. It is an internal identifier used to distinguish between multiple guide stars that might have been considered or used.",
+    "relevance_score": 20,
+    "relevance_comment": "This is an internal identifier for guide star selection, not generally relevant for typical scientific data analysis by end-users.",
+    "user_comment": ""
+  },
+  "GSSTRTTM": {
+    "content": "This keyword records the Coordinated Universal Time (UTC) when the guide star acquisition or tracking activity commenced for the observation. It provides a precise timestamp for when the telescope began actively using the guide star for fine pointing.",
+    "relevance_score": 55,
+    "relevance_comment": "Provides a precise timestamp for the start of guiding activity, which can be useful for detailed timing analysis or correlating with other events.",
+    "user_comment": ""
+  },
+  "GSENDTIM": {
+    "content": "This keyword records the Coordinated Universal Time (UTC) when the guide star acquisition or tracking activity concluded. Paired with GSSTRTTM, it defines the full duration during which the guide star was actively used to stabilize the telescope's pointing.",
+    "relevance_score": 55,
+    "relevance_comment": "Provides a precise timestamp for the end of guiding activity, useful for detailed timing analysis or assessing guiding duration.",
+    "user_comment": ""
+  },
+  "GDSTARID": {
+    "content": "This keyword provides the unique 10-character, base-36 identifier for the specific guide star used from the Guide Star Catalog 2 (GSC2). This ID allows researchers to look up detailed properties of the guide star in star catalogs.",
+    "relevance_score": 60,
+    "relevance_comment": "This identifies the specific guide star used, allowing advanced users to look up its properties for detailed analysis or verification.",
+    "user_comment": ""
+  },
+  "GS_RA": {
+    "content": "This keyword specifies the ICRS (International Celestial Reference System) Right Ascension coordinate of the guide star, measured in degrees. It is a fundamental celestial coordinate defining the guide star's position on the sky, crucial for understanding the telescope's pointing context.",
+    "relevance_score": 80,
+    "relevance_comment": "Provides the precise celestial Right Ascension of the guide star, which is crucial for understanding pointing context and verifying astrometry.",
+    "user_comment": ""
+  },
+  "GS_DEC": {
+    "content": "This keyword specifies the ICRS (International Celestial Reference System) Declination coordinate of the guide star, measured in degrees. Along with GS_RA, it precisely defines the guide star's position on the sky and is essential for astrometric analyses.",
+    "relevance_score": 80,
+    "relevance_comment": "Provides the precise celestial Declination of the guide star, crucial for understanding pointing context and verifying astrometry.",
+    "user_comment": ""
+  },
+  "GS_URA": {
+    "content": "This keyword provides the uncertainty in the Right Ascension (RA) measurement of the guide star, expressed in arcseconds. This value indicates the precision of the guide star's known position, which directly impacts the overall astrometric accuracy and pointing stability of the observation.",
+    "relevance_score": 65,
+    "relevance_comment": "This provides a crucial metric for advanced users to assess the precision of the guide star's Right Ascension and its potential impact on pointing accuracy.",
+    "user_comment": ""
+  },
+  "GS_UDEC": {
+    "content": "This keyword indicates the uncertainty in the celestial declination of the guide star used to keep the telescope pointed accurately. It tells astronomers how precisely the guide star's vertical position is known, which impacts the overall pointing stability and accuracy of the observation.",
+    "relevance_score": 45,
+    "relevance_comment": "This guide star uncertainty is mainly relevant for advanced users diagnosing pointing issues, not for general data consumption.",
+    "user_comment": ""
+  },
+  "GS_MAG": {
+    "content": "This keyword specifies the magnitude (brightness) of the guide star as measured by the Fine Guidance Sensor (FGS) detector. The guide star's brightness is crucial for assessing the reliability of the pointing system and for understanding the signal-to-noise ratio of the guiding process.",
+    "relevance_score": 75,
+    "relevance_comment": "Knowing the guide star's brightness helps users assess observation quality and potential pointing stability.",
+    "user_comment": ""
+  },
+  "GS_UMAG": {
+    "content": "This keyword represents the uncertainty in the measured magnitude of the guide star. It quantifies how precisely the guide star's brightness is known, which can be relevant for understanding the reliability of the guiding process and any potential issues.",
+    "relevance_score": 40,
+    "relevance_comment": "This guide star magnitude uncertainty is mainly relevant for advanced users diagnosing pointing issues, not for general data consumption.",
+    "user_comment": ""
+  },
+  "GS_V3_PA": {
+    "content": "This keyword gives the position angle of the guide star with respect to the V3 axis of the telescope, measured in degrees. It helps describe the precise orientation of the guide star relative to the instrument's field of view, which can be important for understanding roll stability and field rotation.",
+    "relevance_score": 55,
+    "relevance_comment": "This keyword provides specific technical details about guide star orientation, useful for advanced pointing analysis but less for general users.",
+    "user_comment": ""
+  },
+  "PCS_MODE": {
+    "content": "This keyword describes the mode in which the Pointing Control System (PCS) was operating during the observation. Examples include 'FINEGUIDE' for precise pointing using a guide star, or 'TRACK' for tracking a moving target. This information is vital for understanding the pointing stability and quality of the observation.",
+    "relevance_score": 85,
+    "relevance_comment": "Knowing the pointing mode is crucial for understanding the stability and quality of the observation.",
+    "user_comment": ""
+  },
+  "VISITEND": {
+    "content": "This keyword records the Coordinated Universal Time (UTC) when a specific astronomical visit, or observation block, concluded. It helps track the overall timeline of observations and can be used for scheduling or correlating with other events.",
+    "relevance_score": 90,
+    "relevance_comment": "The end time of an observation visit is important for understanding the overall observation timeline and context.",
+    "user_comment": ""
+  },
+  "BARTDELT": {
+    "content": "This keyword provides the calculated time difference (in seconds) that must be added to the UTC timestamp to correct it to the barycentric frame of reference. This correction accounts for the Earth's motion around the Sun, ensuring accurate timing for phenomena like exoplanet transits or pulsars.",
+    "relevance_score": 75,
+    "relevance_comment": "This barycentric time correction is essential for precise timing analysis, making it highly relevant for researchers in time-domain astronomy.",
+    "user_comment": ""
+  },
+  "BSTRTIME": {
+    "content": "This keyword gives the starting time of the observation exposure, corrected to the barycenter of the Solar System and expressed as a Modified Julian Date (MJD). Using barycentric time ensures that timing measurements are consistent regardless of the Earth's position.",
+    "relevance_score": 80,
+    "relevance_comment": "The barycentric-corrected start time is critical for precise time-domain analysis, making it very important for advanced users and researchers.",
+    "user_comment": ""
+  },
+  "BENDTIME": {
+    "content": "This keyword records the ending time of the observation exposure, corrected to the barycenter of the Solar System and expressed as a Modified Julian Date (MJD). This provides a precise, astronomically relevant timestamp for the conclusion of data collection.",
+    "relevance_score": 80,
+    "relevance_comment": "The barycentric-corrected end time is critical for precise time-domain analysis, making it very important for advanced users and researchers.",
+    "user_comment": ""
+  },
+  "BMIDTIME": {
+    "content": "This keyword specifies the mid-point time of the observation exposure, corrected to the barycenter of the Solar System and expressed as a Modified Julian Date (MJD). The mid-exposure time is often the most representative timestamp for an observation, especially when observing variable phenomena.",
+    "relevance_score": 85,
+    "relevance_comment": "The barycentric-corrected mid-exposure time is crucial for precise time-domain analysis and often the most representative timestamp for an observation.",
+    "user_comment": ""
+  },
+  "HELIDELT": {
+    "content": "This keyword indicates the time difference, in seconds, between the observation time in UTC and the equivalent time if the observation were made from the Sun's center (heliocentric). This correction accounts for the telescope's motion around the Sun, which is vital for high-precision timing studies of variable sources.",
+    "relevance_score": 65,
+    "relevance_comment": "Useful for advanced timing analyses requiring heliocentric correction, but less critical for general data viewing or basic analysis.",
+    "user_comment": ""
+  },
+  "HSTRTIME": {
+    "content": "This keyword specifies the starting time of the observation in the heliocentric reference frame, expressed as a Modified Julian Date (MJD). It provides the precise beginning of data acquisition as if observed from the Sun's center, which is important for accurate timing studies across different datasets and observatories.",
+    "relevance_score": 75,
+    "relevance_comment": "Important for precise timing analysis, offering a standardized start time in a heliocentric frame.",
+    "user_comment": ""
+  },
+  "HENDTIME": {
+    "content": "This keyword indicates the ending time of the observation in the heliocentric reference frame, expressed as a Modified Julian Date (MJD). It marks the precise conclusion of data acquisition as if observed from the Sun's center, complementing HSTRTIME for accurate duration and timing analyses.",
+    "relevance_score": 75,
+    "relevance_comment": "Important for precise timing analysis, offering a standardized end time in a heliocentric frame.",
+    "user_comment": ""
+  },
+  "HMIDTIME": {
+    "content": "This keyword gives the midpoint time of the observation in the heliocentric reference frame, expressed as a Modified Julian Date (MJD). It represents the effective central time of the exposure as if observed from the Sun's center, often used as the primary timestamp for scientific measurements that assume a single observation time.",
+    "relevance_score": 80,
+    "relevance_comment": "Highly useful for associating scientific measurements with a single, precise, and standardized observation time.",
+    "user_comment": ""
+  },
+  "ASNPOOL": {
+    "content": "This keyword stores the name of the association pool file used as input for the data processing pipeline. An association pool defines how related raw data (like multiple exposures of the same target) are grouped for combined processing into higher-level scientific products.",
+    "relevance_score": 30,
+    "relevance_comment": "Primarily relevant for understanding pipeline provenance and debugging, rather than direct scientific interpretation by end-users.",
+    "user_comment": ""
+  },
+  "ASNTABLE": {
+    "content": "This keyword provides the name of the association table from which the current data product was created by the pipeline. The association table details the specific rules and groupings used to combine raw exposures into the final scientific product.",
+    "relevance_score": 35,
+    "relevance_comment": "Useful for tracking the data's pipeline processing and how individual files were grouped into a product.",
+    "user_comment": ""
+  },
+  "BKGLEVEL": {
+    "content": "This keyword specifies the overall background signal level, typically in data units per pixel, computed during the 'skymatch' pipeline step. This value represents the general diffuse emission or instrumental noise present across the image or spectrum.",
+    "relevance_score": 75,
+    "relevance_comment": "Provides crucial information about the estimated background noise, which is important for evaluating data quality and signal-to-noise.",
+    "user_comment": ""
+  },
+  "BKGSUB": {
+    "content": "This boolean keyword indicates whether the background signal, as identified by BKGLEVEL, has been subtracted from the data ('T' for True, 'F' for False). It is essential for understanding the processing state and interpreting the pixel values of the image or spectrum.",
+    "relevance_score": 90,
+    "relevance_comment": "Essential for knowing if the data has been debiased by background subtraction, fundamentally impacting data interpretation.",
+    "user_comment": ""
+  },
+  "MASTERBG": {
+    "content": "This keyword stores the name of the 1-D master background spectrum file utilized by the pipeline during processing. Master background files are pre-calibrated reference files used to remove diffuse emission or instrumental noise from scientific observations.",
+    "relevance_score": 45,
+    "relevance_comment": "Primarily useful for advanced users or pipeline developers who need to understand the exact reference files used for background subtraction.",
+    "user_comment": ""
+  },
+  "FILENAME": {
+    "content": "This keyword simply stores the name of the FITS file itself. While seemingly redundant, it can be useful for internal tracking within data pipelines or for verifying data integrity if files are renamed or moved.",
+    "relevance_score": 20,
+    "relevance_comment": "While fundamental, the filename is usually known to the user who opened the file, making its header presence redundant for most end-user applications.",
+    "user_comment": ""
+  },
+  "FILETYPE": {
+    "content": "This keyword indicates the general category or purpose of the data stored in the FITS file, such as 'SCIENCE' for observation data or 'CALIBRATION' for reference files. Knowing the file type helps users quickly understand what kind of data they are looking at and its intended use.",
+    "relevance_score": 85,
+    "relevance_comment": "This is highly relevant as it immediately informs the user about the fundamental nature of the file's content.",
+    "user_comment": ""
+  },
+  "ROOTNAME": {
+    "content": "The root name serves as a unique identifier for a specific observation or dataset, often linking together multiple associated files (e.g., raw data, calibrated images, and derived products). It is crucial for organizing and tracking all components belonging to a single astronomical observation program.",
+    "relevance_score": 75,
+    "relevance_comment": "This keyword is very useful for users to group and manage related files from a common observation set.",
+    "user_comment": ""
+  },
+  "IMAGETYP": {
+    "content": "This keyword specifies the type of astronomical exposure, such as 'OBJECT' for a science observation, 'BIAS' for a zero-exposure frame, 'DARK' for a long-exposure with no light, or 'FLAT' for a uniform illumination frame. It is fundamental for understanding the purpose of an image and its role in the data calibration process.",
+    "relevance_score": 95,
+    "relevance_comment": "This is an essential keyword for all users, as it dictates how an image should be interpreted and whether it's science data or a calibration aid.",
+    "user_comment": ""
+  },
+  "LINENUM": {
+    "content": "This keyword refers to an administrative line number from the original telescope proposal's log sheet. It is primarily used internally by observatories for tracking observations during scheduling and execution.",
+    "relevance_score": 15,
+    "relevance_comment": "This is a purely administrative identifier with very little direct relevance for most end-users of an astronomy app.",
+    "user_comment": ""
+  },
+  "POSTARG1": {
+    "content": "POSTARG1 indicates an offset applied to the telescope's pointing position along the first spatial axis, typically specified in arcseconds or pixels. These offsets are often used for techniques like dithering, which involves taking multiple images at slightly different positions to fill in detector gaps or improve image quality.",
+    "relevance_score": 60,
+    "relevance_comment": "This keyword is useful for advanced users analyzing dither patterns or requiring precise pointing information, but less critical for casual viewers.",
+    "user_comment": ""
+  },
+  "POSTARG2": {
+    "content": "POSTARG2 indicates an offset applied to the telescope's pointing position along the second spatial axis, similar to POSTARG1. These offsets are crucial for understanding the exact pointing of an observation relative to a nominal target position and for combining dithered exposures.",
+    "relevance_score": 60,
+    "relevance_comment": "Similar to POSTARG1, this keyword is useful for advanced users involved in astrometry or dither analysis.",
+    "user_comment": ""
+  },
+  "CAL_VER": {
+    "content": "This keyword records the specific version number of the software pipeline used to process and calibrate the astronomical data. It is important for reproducibility and understanding any potential changes or improvements in data reduction algorithms.",
+    "relevance_score": 45,
+    "relevance_comment": "While not essential for every user, researchers and advanced users find this useful for understanding data provenance and comparing results.",
+    "user_comment": ""
+  },
+  "CAL_VCS": {
+    "content": "This keyword provides an even more precise identifier for the calibration software, often a git hash or tag from the version control system. It allows for exact reproduction of the software build used for processing.",
+    "relevance_score": 25,
+    "relevance_comment": "This is primarily relevant for pipeline developers or users needing extremely precise software versioning for debugging or exact reproduction, not for general users.",
+    "user_comment": ""
+  },
+  "CRDS_VER": {
+    "content": "This keyword specifies the version of the CRDS (Calibration Reference Data System) client software used to automatically select the appropriate calibration reference files. CRDS ensures that the correct darks, flats, and other reference data are applied during processing.",
+    "relevance_score": 20,
+    "relevance_comment": "This information is largely internal to the data processing pipeline and holds minimal direct value for the typical end-user viewing the calibrated data.",
+    "user_comment": ""
+  },
+  "CRDS_CTX": {
+    "content": "This keyword identifies the specific 'context' or mapping file (often a PMAP file) within the CRDS system that governed the selection of calibration reference files for the observation. It dictates which versions of reference files were considered valid for the given data.",
+    "relevance_score": 20,
+    "relevance_comment": "This keyword describes an internal aspect of the calibration system's configuration and has little direct relevance to a typical end-user.",
+    "user_comment": ""
+  },
+  "SDP_VER": {
+    "content": "This keyword indicates the specific version of the scientific data processing pipeline software used to generate this data product. It is important for ensuring the reproducibility of results and understanding the exact algorithms and calibrations applied to the raw observations.",
+    "relevance_score": 35,
+    "relevance_comment": "This keyword is primarily useful for advanced users to track data processing provenance and reproducibility.",
+    "user_comment": ""
+  },
+  "PRD_VER": {
+    "content": "This keyword specifies the version of the Project Reference Database that contains crucial calibration files, instrument models, and other reference data utilized during the processing of this observation. It's vital for understanding the exact calibration context applied to the scientific data.",
+    "relevance_score": 30,
+    "relevance_comment": "This keyword provides context for the specific reference data used in calibration, primarily relevant for advanced users and pipeline developers.",
+    "user_comment": ""
+  },
+  "OSS_VER": {
+    "content": "This keyword records the version number of the Observatory Scheduling Software used to plan and schedule the astronomical observation. While important for observatory operations, it typically does not directly influence the scientific interpretation of the resulting data for an end-user.",
+    "relevance_score": 10,
+    "relevance_comment": "This is an internal operational detail with minimal direct relevance for astronomical data analysis by end-users.",
+    "user_comment": ""
+  },
+  "VA_SCALE": {
+    "content": "This represents the velocity aberration scale factor, a correction applied to account for the apparent shift in object positions due to the observatory's motion relative to the solar system barycenter. It's a critical detail for achieving high-precision astrometric accuracy in the data.",
+    "relevance_score": 55,
+    "relevance_comment": "This factor is an internal calibration parameter important for high-precision astrometry, primarily relevant for advanced users working on specific analyses.",
+    "user_comment": ""
+  },
+  "PHOTMJSR": {
+    "content": "This is a photometric conversion factor indicating the flux density, in MegaJanskys per steradian, that produces one count per second in the detector. It is an essential value for converting the raw observed counts into physically meaningful flux units for quantitative scientific analysis.",
+    "relevance_score": 85,
+    "relevance_comment": "This keyword is crucial for converting observed counts into physical flux density units, making it highly relevant for quantitative photometric analysis.",
+    "user_comment": ""
+  },
+  "PIXAR_SR": {
+    "content": "This keyword specifies the nominal angular area of a single pixel on the sky, expressed in steradians. It is useful for converting flux density per steradian to flux density per pixel, and for calculations involving surface brightness measurements.",
+    "relevance_score": 78,
+    "relevance_comment": "This keyword provides the nominal pixel area, essential for photometric calculations involving surface brightness or converting flux units.",
+    "user_comment": ""
+  },
+  "PIXAR_A2": {
+    "content": "This keyword defines the nominal angular area of a single pixel on the sky, expressed in square arcseconds. It is a fundamental parameter for understanding the spatial resolution of the image and for performing photometric conversions involving the image scale.",
+    "relevance_score": 90,
+    "relevance_comment": "This keyword is highly relevant as it provides the fundamental pixel scale in a widely understood astronomical unit, crucial for understanding image resolution and performing photometric conversions.",
+    "user_comment": ""
+  },
+  "HGA_MOVE": {
+    "content": "This boolean flag indicates whether the High Gain Antenna (HGA) of the observatory was repositioned at any point while the scientific data was being collected. An HGA move can sometimes introduce minor disturbances, which may be relevant for very sensitive observations.",
+    "relevance_score": 45,
+    "relevance_comment": "This boolean flag is useful for advanced users to diagnose potential data quality issues, indicating if an observatory operation occurred during exposure.",
+    "user_comment": ""
+  },
+  "PWFSEET": {
+    "content": "This timestamp, given in Modified Julian Date (MJD), records the exact end time of the wavefront sensing (WFS) exposure that immediately preceded the current scientific observation. It provides context for the timing of instrument calibrations relative to the science data.",
+    "relevance_score": 25,
+    "relevance_comment": "This is an internal timing detail related to wavefront sensing, primarily relevant for instrument engineers and advanced debugging.",
+    "user_comment": ""
+  },
+  "NWFSEST": {
+    "content": "This timestamp, provided in Modified Julian Date (MJD), indicates the exact start time of the next scheduled wavefront sensing (WFS) exposure following the current scientific observation. It is an internal operational detail for tracking instrument calibration cycles.",
+    "relevance_score": 25,
+    "relevance_comment": "This is an internal timing detail related to wavefront sensing, primarily relevant for instrument engineers and advanced debugging.",
+    "user_comment": ""
+  },
+  "ERRTYPE": {
+    "content": "This keyword specifies what kind of uncertainty data is stored in a corresponding error array, such as direct errors, inverse errors, variance, or inverse variance. Understanding the error type is crucial for correctly interpreting the statistical reliability of the astronomical measurements. Knowing this helps users apply the correct statistical methods for analysis.",
+    "relevance_score": 75,
+    "relevance_comment": "This keyword is important for correctly understanding and utilizing the uncertainty information associated with the astronomical data.",
+    "user_comment": ""
+  },
+  "FA1VALUE": {
+    "content": "This keyword indicates the desired position for the first of several focus actuators, which are mechanical components used to precisely adjust the telescope's focus. It's an internal engineering setting reflecting the requested optical configuration. This value is part of the fine-tuning of the instrument's optics.",
+    "relevance_score": 10,
+    "relevance_comment": "This is a low-level engineering parameter that provides minimal direct value to most end-users interested in the astronomical data.",
+    "user_comment": ""
+  },
+  "FA2VALUE": {
+    "content": "Similar to FA1VALUE, this keyword specifies the requested absolute position for the second focus actuator. These actuators work together to achieve the desired optical focus for the instrument. It reflects a specific internal setup of the instrument.",
+    "relevance_score": 10,
+    "relevance_comment": "This is a low-level engineering parameter that provides minimal direct value to most end-users interested in the astronomical data.",
+    "user_comment": ""
+  },
+  "FA3VALUE": {
+    "content": "This keyword records the requested absolute position for the third focus actuator. Together with the other actuators, it helps finely tune the instrument's optical focus. It's an internal instrument setting.",
+    "relevance_score": 10,
+    "relevance_comment": "This is a low-level engineering parameter that provides minimal direct value to most end-users interested in the astronomical data.",
+    "user_comment": ""
+  },
+  "FCSRLPOS": {
+    "content": "This keyword indicates the relative position of the NIRSpec Refocus Mechanism Assembly (RMA) in motor steps, reflecting its setting for optical focus adjustments. It describes the precise physical configuration of an internal instrument component at the time of observation.",
+    "relevance_score": 10,
+    "relevance_comment": "This is a detailed instrument engineering parameter that offers little direct utility to most end-users analyzing the scientific data.",
+    "user_comment": ""
+  },
+  "RMA_POS": {
+    "content": "This keyword stores the actual measured position of the NIRSpec Refocus Mechanism Assembly (RMA) as reported by its hall-position sensor. It provides a real-time reading of a critical component for optical focus, indicating its true position during observation.",
+    "relevance_score": 10,
+    "relevance_comment": "This is a detailed instrument engineering parameter that offers little direct utility to most end-users analyzing the scientific data.",
+    "user_comment": ""
+  },
+  "ROIS": {
+    "content": "This keyword defines the spatial radius of a 'region of interest' used during data processing, typically for integral field unit (IFU) observations. It indicates the angular extent around a target that was considered relevant for extraction or analysis. Understanding this helps advanced users assess the spatial context of extracted spectra.",
+    "relevance_score": 55,
+    "relevance_comment": "This keyword can be useful for advanced users to understand the spatial extent of processed data in IFU observations.",
+    "user_comment": ""
+  },
+  "ROIW": {
+    "content": "This keyword specifies the radius of a 'region of interest' in the wavelength dimension, again typically for IFU data processing. It describes the spectral extent considered important for analysis or extraction. This helps advanced users understand the spectral coverage of processed data.",
+    "relevance_score": 55,
+    "relevance_comment": "This keyword can be useful for advanced users to understand the spectral extent of processed data in IFU observations.",
+    "user_comment": ""
+  },
+  "WPOWER": {
+    "content": "This keyword indicates the exponent used in a distance-weighting scheme when combining data from individual spatial pixels (spaxels) in an Integral Field Unit (IFU) observation. It controls how strongly the flux from nearby spaxels contributes to a combined measurement. This is a processing parameter.",
+    "relevance_score": 45,
+    "relevance_comment": "This parameter is relevant for advanced users who need to understand the details of how IFU spaxel data was weighted and combined during processing.",
+    "user_comment": ""
+  },
+  "WTYPE": {
+    "content": "This keyword describes the specific method or algorithm used for weighting and combining fluxes from multiple spaxels in an Integral Field Unit (IFU) observation. It provides information on how different spaxels contributed to the final flux measurements, such as 'uniform' or 'distance-weighted'.",
+    "relevance_score": 45,
+    "relevance_comment": "This keyword is important for advanced users seeking to understand the specific weighting algorithm applied during the combination of IFU spaxel data.",
+    "user_comment": ""
+  },
+  "SCATFILE": {
+    "content": "This keyword stores the name of an intermediate file containing a catalog of sources detected in the image, generated during the data processing pipeline. It's used internally by the pipeline to track processing steps, especially related to source detection and astrometric solutions.",
+    "relevance_score": 25,
+    "relevance_comment": "This filename refers to an internal pipeline product that most users will not directly need or understand.",
+    "user_comment": ""
+  },
+  "TCATFILE": {
+    "content": "This keyword specifies the filename of the source catalog used by the 'tweakreg' pipeline step, which performs precise astrometric alignment of images. It helps the pipeline keep track of which catalog was used for spatial registration adjustments.",
+    "relevance_score": 25,
+    "relevance_comment": "This filename refers to an internal pipeline product used for astrometric alignment that most users will not directly need.",
+    "user_comment": ""
+  },
+  "COMMENT": {
+    "content": "This keyword provides free-form textual comments from data producers or users. It can contain any human-readable information that might be useful, such as notes on observing conditions, processing steps, or data quality.",
+    "relevance_score": 85,
+    "relevance_comment": "Provides human-readable context or additional notes about the data which is often valuable to end-users.",
+    "user_comment": ""
+  },
+  "HISTORY": {
+    "content": "This keyword records a historical log of processing steps applied to the data, often including timestamps, software versions, and parameters used. It's crucial for understanding the provenance and transformations the data has undergone.",
+    "relevance_score": 90,
+    "relevance_comment": "Provides a critical log of data processing steps, essential for understanding data provenance and quality.",
+    "user_comment": ""
+  },
+  "PHOTFLAM": {
+    "content": "This keyword represents the inverse sensitivity of the instrument in a specific filter, indicating the flux density of a source (in erg/s/cm\u00b2/\u00c5) that would produce one count per second. It's essential for converting raw data counts into absolute flux units, especially for HST data.",
+    "relevance_score": 80,
+    "relevance_comment": "Crucial for converting raw data counts into physical flux units, which is a fundamental photometric task.",
+    "user_comment": ""
+  },
+  "PHOTZPT": {
+    "content": "This keyword specifies the magnitude zero point for the ST magnitude system, which is used to convert instrumental magnitudes to standard calibrated magnitudes. It's a key value for photometric analysis, particularly with HST data.",
+    "relevance_score": 80,
+    "relevance_comment": "Essential for converting instrumental magnitudes into a standard magnitude system.",
+    "user_comment": ""
+  },
+  "PHOTPLAM": {
+    "content": "This keyword defines the 'pivot wavelength' of the filter, which is a single characteristic wavelength representing the effective center of the filter's bandpass. It's crucial for understanding the spectral region observed and for various photometric calculations.",
+    "relevance_score": 75,
+    "relevance_comment": "Identifies the effective central wavelength of the filter, which is important for understanding the observed spectral region.",
+    "user_comment": ""
+  },
+  "PHOTBW": {
+    "content": "This keyword gives the root mean square (RMS) bandwidth of the filter, indicating the spread or width of the filter's transmission curve. It helps in characterizing the spectral resolution or range of wavelengths captured by the filter.",
+    "relevance_score": 60,
+    "relevance_comment": "Describes the width of the filter's bandpass, useful for detailed spectral context but less critical than pivot wavelength.",
+    "user_comment": ""
+  },
+  "PHOTFNU": {
+    "content": "This keyword provides another measure of inverse sensitivity, specifically the flux density in Janskys that produces one count per second. It's used, along with PHOTFLAM, to convert raw counts into absolute flux units, but in units of flux density per unit frequency.",
+    "relevance_score": 80,
+    "relevance_comment": "Provides another critical factor for converting raw data counts into physical flux density per unit frequency.",
+    "user_comment": ""
+  },
+  "ORIENTAT": {
+    "content": "This keyword indicates the orientation of the image on the sky, specifically the position angle of the image's Y-axis measured in degrees east of North. It's crucial for correctly orienting images for display or comparison with other data.",
+    "relevance_score": 95,
+    "relevance_comment": "Essential for correctly orienting the image on the sky and understanding its spatial layout.",
+    "user_comment": ""
+  },
+  "PROPOSID": {
+    "content": "This is the unique identifier for the scientific research project or proposal under which the astronomical data was collected. It allows users to group related observations, understand the scientific context, and find the principal investigators or institutions responsible for the data.",
+    "relevance_score": 85,
+    "relevance_comment": "This keyword provides crucial context about the scientific program, highly relevant for researchers and interested enthusiasts.",
+    "user_comment": ""
+  },
+  "LINENUM_HST": {
+    "content": "This keyword specifies a particular line item or individual observation within a broader HST proposal. While the PROPOSID identifies the overall project, LINENUM_HST helps pinpoint a specific observation request or configuration within that project.",
+    "relevance_score": 60,
+    "relevance_comment": "Useful for advanced users to pinpoint specific observations within a proposal, but less critical for general data exploration.",
+    "user_comment": ""
+  },
+  "TSTART": {
+    "content": "This keyword indicates the precise moment, in a standardized time system like Barycentric Julian Date, when the astronomical observation officially began. It is fundamental for knowing exactly when the data was collected and for correlating it with other astronomical events.",
+    "relevance_score": 95,
+    "relevance_comment": "The start time is essential for nearly all users to understand when the observation occurred.",
+    "user_comment": ""
+  },
+  "TSTOP": {
+    "content": "This keyword specifies the precise moment, in a standardized time system, when the astronomical observation concluded. Together with TSTART, it defines the total duration of the observation.",
+    "relevance_score": 95,
+    "relevance_comment": "The stop time is essential for nearly all users to understand the duration and context of the observation.",
+    "user_comment": ""
+  },
+  "BJDREFI": {
+    "content": "This keyword stores the integer part of a reference Barycentric Julian Date, which serves as a fixed offset for the timestamps within the data file. It is used in conjunction with BJDREFF to calculate highly precise Barycentric Julian Dates for each data point.",
+    "relevance_score": 30,
+    "relevance_comment": "This is a technical component for reconstructing precise times, which most end-users won't directly interact with.",
+    "user_comment": ""
+  },
+  "BJDREFF": {
+    "content": "This keyword stores the fractional part of a reference Barycentric Julian Date, used alongside BJDREFI to create a complete and extremely precise reference timestamp. Data points' individual times are then given as offsets from this reference.",
+    "relevance_score": 30,
+    "relevance_comment": "Similar to BJDREFI, this is a technical detail for time reconstruction rather than direct user information.",
+    "user_comment": ""
+  },
+  "TIMEDEL": {
+    "content": "This keyword indicates the time interval or cadence between successive data points in the observation, typically in days. It is crucial for understanding the sampling rate of time-series data, such as light curves, and for assessing the temporal resolution.",
+    "relevance_score": 85,
+    "relevance_comment": "Highly relevant for anyone analyzing time-series data to understand the sampling frequency.",
+    "user_comment": ""
+  },
+  "LIVETIME": {
+    "content": "This keyword specifies the actual accumulated time, in seconds, during which the detector was actively collecting useful photons, excluding any periods of dead time, telemetry saturation, or other interruptions. It is particularly important for calculating accurate fluxes and count rates in high-energy astronomy.",
+    "relevance_score": 80,
+    "relevance_comment": "Crucial for quantitative analysis (e.g., flux calculations) as it reflects the true integration time.",
+    "user_comment": ""
+  },
+  "ONTIME": {
+    "content": "This keyword represents the total duration, in seconds, during which the instrument was observing and collecting valid data, often summing up multiple 'good time intervals'. It is a key metric for understanding the total exposure duration and the reliability of the observation.",
+    "relevance_score": 80,
+    "relevance_comment": "Provides essential context regarding the total data collection time, important for assessing data quality and exposure.",
+    "user_comment": ""
+  },
+  "SECTOR": {
+    "content": "For TESS observations, this keyword identifies the specific sector number of the sky that was observed during a particular period. TESS observes the sky in a sequence of sectors, and this number tells you which portion of the sky the data corresponds to.",
+    "relevance_score": 90,
+    "relevance_comment": "Essential for TESS users to understand the spatial context and campaign period of the observation.",
+    "user_comment": ""
+  },
+  "CAMERA": {
+    "content": "This keyword identifies which of the TESS mission's four wide-field cameras acquired the data. It's important for understanding the specific instrument responsible for the observation, as each camera covers a distinct region of the sky and may have unique instrumental characteristics.",
+    "relevance_score": 75,
+    "relevance_comment": "Useful for understanding the specific instrument part used and potential instrumental effects on the data.",
+    "user_comment": ""
+  },
+  "CCD": {
+    "content": "This specifies the particular Charge-Coupled Device (CCD) within a TESS camera that captured the data. Since each TESS camera has multiple CCDs, this information is valuable for detailed analysis and accounting for any detector-specific nuances or artifacts.",
+    "relevance_score": 55,
+    "relevance_comment": "Provides specific detector information, useful for detailed analysis but less critical for general users.",
+    "user_comment": ""
+  },
+  "TICID": {
+    "content": "This is the unique identifier for the observed star within the TESS Input Catalog (TIC). It is crucial for linking the data to extensive external catalog information, enabling users to retrieve a wealth of stellar properties and cross-reference with other astronomical databases.",
+    "relevance_score": 95,
+    "relevance_comment": "Essential for uniquely identifying the astronomical target and accessing external catalog data.",
+    "user_comment": ""
+  },
+  "KEPLERID": {
+    "content": "This is the unique identifier for the observed star within the Kepler Input Catalog (KIC) for Kepler, or the K2 Ecliptic Plane Input Catalog (EPIC) for K2 data. It's vital for connecting the observation to comprehensive catalog details, allowing users to research stellar properties and cross-match with other datasets.",
+    "relevance_score": 95,
+    "relevance_comment": "Essential for uniquely identifying the astronomical target and accessing external catalog data.",
+    "user_comment": ""
+  },
+  "QUARTER": {
+    "content": "This keyword indicates the specific three-month observing quarter during which the Kepler mission collected the data. It is important for organizing data temporally, understanding the observation epoch, and correlating observations with known mission events or data releases.",
+    "relevance_score": 80,
+    "relevance_comment": "Important for understanding the temporal context of the observation and retrieving related data.",
+    "user_comment": ""
+  },
+  "CAMPAIGN": {
+    "content": "This specifies the K2 mission observing campaign number during which the data was acquired. K2 campaigns delineate distinct observing periods and sky fields, making this keyword important for data organization, understanding the observation's spatial and temporal context, and accessing relevant mission documentation.",
+    "relevance_score": 80,
+    "relevance_comment": "Important for understanding the temporal context and specific observing field of the K2 mission.",
+    "user_comment": ""
+  },
+  "CROWDSAP": {
+    "content": "This crowding metric represents the ratio of the target's own flux to the total flux measured within the photometric aperture. A value less than 1 indicates that light from nearby stars is contaminating the target's signal, which is critical for assessing the purity and reliability of the photometric measurements.",
+    "relevance_score": 85,
+    "relevance_comment": "Crucial for evaluating the quality and purity of photometric measurements, especially for exoplanet light curves.",
+    "user_comment": ""
+  },
+  "FLFRCSAP": {
+    "content": "This keyword represents the fraction of the target's total light that falls within the chosen optimal photometric aperture. It's an important indicator of how effectively the target's flux was captured, helping users assess potential aperture losses and overall data quality.",
+    "relevance_score": 80,
+    "relevance_comment": "Important for understanding how much of the target's light was captured in the photometric aperture.",
+    "user_comment": ""
+  },
+  "TMAG": {
+    "content": "This is the TESS magnitude of the target star, representing its brightness specifically in the TESS mission's wide red optical bandpass. It is fundamental for characterizing the target's intrinsic luminosity, comparing it with other stars, and performing various astrophysical analyses.",
+    "relevance_score": 90,
+    "relevance_comment": "Essential for characterizing the target's brightness and for comparative analysis.",
+    "user_comment": ""
+  },
+  "KEPMAG": {
+    "content": "This is the Kepler magnitude of the target star, indicating its brightness in the Kepler mission's broad optical bandpass. It is a critical parameter for characterizing the star, comparing its properties with other stars, and is widely used in stellar and exoplanet research.",
+    "relevance_score": 90,
+    "relevance_comment": "Essential for characterizing the target's brightness and for comparative analysis.",
+    "user_comment": ""
+  },
+  "NUVEXPTI": {
+    "content": "This keyword indicates the exposure time, in seconds, for the Near-Ultraviolet (NUV) channel of the GALEX mission. It directly tells you how long the detector collected light in the NUV band, which is crucial for understanding the signal-to-noise ratio and depth of the observation.",
+    "relevance_score": 95,
+    "relevance_comment": "This is essential information for understanding the quality and depth of an astronomical observation.",
+    "user_comment": ""
+  },
+  "FUVEXPTI": {
+    "content": "This keyword specifies the exposure time, in seconds, for the Far-Ultraviolet (FUV) channel of the GALEX mission. Knowing this value is fundamental for assessing how much light was collected in the FUV band and for interpreting the brightness of observed objects in that wavelength range.",
+    "relevance_score": 95,
+    "relevance_comment": "This is essential information for understanding the quality and depth of an astronomical observation.",
+    "user_comment": ""
+  },
+  "MESSION": {
+    "content": "This keyword identifies the specific mission phase or survey (e.g., 'GCS' for GALEX Complete Survey) during which the GALEX data was acquired. It provides important context about the overall scientific goals and observation strategy, which can influence data characteristics like depth and coverage.",
+    "relevance_score": 75,
+    "relevance_comment": "Provides important context for the observation, useful for researchers and advanced enthusiasts to understand data origins.",
+    "user_comment": ""
+  },
+  "ECLESSION": {
+    "content": "This keyword indicates the orbit number during which the GALEX observation was conducted. It can be useful for tracking instrumental performance changes over the mission's lifetime or for correlating observations with specific orbital events.",
+    "relevance_score": 55,
+    "relevance_comment": "This is useful for advanced users tracking mission specifics or analyzing time-dependent trends, but less critical for general data viewing.",
+    "user_comment": ""
+  },
+  "AODO_COR": {
+    "content": "This is a boolean flag indicating whether the aspect-corrected optical distortion has been applied to the GALEX data. This correction is vital for ensuring accurate astrometry (correct positions) and photometry (correct brightness measurements) of objects in the image.",
+    "relevance_score": 70,
+    "relevance_comment": "This keyword is important for understanding the astrometric and photometric fidelity of the data, relevant for users performing scientific analysis.",
+    "user_comment": ""
+  },
+  "CHNLNUM": {
+    "content": "This keyword specifies the channel number (1, 2, 3, or 4) of the Spitzer IRAC instrument used for the observation. Each channel observes a different infrared wavelength, making this essential for understanding the spectral band of the image.",
+    "relevance_score": 90,
+    "relevance_comment": "This is essential for understanding the specific wavelength range of the observation, which directly impacts scientific interpretation.",
+    "user_comment": ""
+  },
+  "AESSION_ID": {
+    "content": "This is the unique Astronomical Observation Request (AOR) ID for Spitzer data. It links the observation back to its original scientific proposal and planning, allowing users to easily find associated data products and documentation within the Spitzer archive.",
+    "relevance_score": 80,
+    "relevance_comment": "This ID is highly useful for researchers to locate related data, proposals, and documentation in archives.",
+    "user_comment": ""
+  },
+  "FOVID": {
+    "content": "This keyword is a unique identifier for a specific field of view within a Spitzer observation. It helps distinguish individual frames, especially when an observation includes multiple dither positions or distinct sky regions within a single Astronomical Observation Request.",
+    "relevance_score": 60,
+    "relevance_comment": "Useful for advanced users dealing with complex observation patterns or needing to link specific frames to their sky positions.",
+    "user_comment": ""
+  },
+  "PROJID": {
+    "content": "This keyword identifies the specific Pan-STARRS project or survey (e.g., PS1, PS2) that acquired the data. It provides context about the scientific goals and overall data characteristics of the observation, which can be relevant for understanding data quality and processing.",
+    "relevance_score": 75,
+    "relevance_comment": "Provides important context about the specific survey responsible for the data, useful for understanding data characteristics.",
+    "user_comment": ""
+  },
+  "SKYCELL": {
+    "content": "This keyword provides the Pan-STARRS sky cell identifier, which is part of a fixed tessellation grid used by the survey to organize and process data across the sky. It helps in precisely locating and retrieving data within the vast Pan-STARRS dataset.",
+    "relevance_score": 65,
+    "relevance_comment": "This is useful for navigating and organizing data within the large Pan-STARRS survey footprint, particularly for advanced users.",
+    "user_comment": ""
+  },
+  "HIERARCH": {
+    "content": "HIERARCH is not a keyword itself, but a FITS convention that allows header keywords to be longer than the standard 8 characters. It enables more descriptive and organized metadata, making headers easier to understand and parse for complex instruments.",
+    "relevance_score": 5,
+    "relevance_comment": "This is a structural convention that enables other keywords, not a piece of information directly consumed by an end-user.",
+    "user_comment": ""
+  },
+  "CHECKSUM": {
+    "content": "This keyword stores a verification code for the entire FITS Header Data Unit (HDU), which includes both the header and the data. Software uses this value to detect if any corruption occurred during data transmission or storage, ensuring the integrity of the file.",
+    "relevance_score": 10,
+    "relevance_comment": "This keyword is purely for data integrity verification by software and holds no direct interpretative value for an end-user.",
+    "user_comment": ""
+  },
+  "DATASUM": {
+    "content": "This keyword provides a verification code specifically for the data array within an HDU, distinct from the header checksum. It helps ensure that the numerical pixel values themselves have not been corrupted during transfer or storage.",
+    "relevance_score": 10,
+    "relevance_comment": "This keyword serves solely for data integrity verification and has no direct meaning or use for an astronomy app user.",
+    "user_comment": ""
+  },
+  "COMPRESS": {
+    "content": "This boolean keyword indicates whether the data within the FITS file was compressed by the instrument on board the spacecraft before transmission. Knowing this can be important for understanding potential effects on data fidelity or the need for decompression.",
+    "relevance_score": 45,
+    "relevance_comment": "This information is useful for advanced users to understand data processing history and potential fidelity implications.",
+    "user_comment": ""
+  },
+  "FPE_SIDE": {
+    "content": "This keyword indicates which of the redundant Focal Plane Electronics (FPE) sides (A or B) was actively used for the MIRI instrument during the observation. This is internal instrument state information, relevant for diagnostics or detailed hardware context.",
+    "relevance_score": 25,
+    "relevance_comment": "This is highly specific instrument hardware status, primarily for engineers or very advanced users diagnosing issues.",
+    "user_comment": ""
+  },
+  "ICE_SIDE": {
+    "content": "This keyword specifies which of the redundant Instrument Control Electronics (ICE) sides (A or B) was active for the MIRI instrument. Similar to FPE_SIDE, it provides context about the instrument's operational configuration for specialists.",
+    "relevance_score": 25,
+    "relevance_comment": "This is highly specific instrument hardware status, primarily for engineers or very advanced users diagnosing issues.",
+    "user_comment": ""
+  },
+  "TARGCAT": {
+    "content": "This keyword provides a high-level category for the observed target, typically originating from the Astronomer's Proposal Tool (APT). Examples include 'GALAXY', 'STAR', or 'PLANET', giving immediate context to the type of celestial object.",
+    "relevance_score": 90,
+    "relevance_comment": "This provides immediate context about the observed object type, useful for all user levels.",
+    "user_comment": ""
+  },
+  "TARGDESC": {
+    "content": "This keyword offers a more detailed, free-form description of the target, often directly from the Astronomer's Proposal Tool (APT). It can include specific notes, aliases, or a more precise characterization, such as 'Active Galactic Nucleus in M87', enhancing understanding of the observation's scientific goal.",
+    "relevance_score": 95,
+    "relevance_comment": "This provides valuable descriptive context for the observed target, useful for understanding the science case.",
+    "user_comment": ""
+  },
+  "V2_REF": {
+    "content": "This keyword specifies the telescope's V2 coordinate (in arcseconds) of a designated reference point within the image, in the instrument's frame. V2 and V3 coordinates are essential for precise astrometry, allowing scientists to accurately position observations on the sky and align data from different instruments.",
+    "relevance_score": 75,
+    "relevance_comment": "This is fundamental for precise astrometry and WCS transformations, making it highly relevant for analysis but less so for casual viewing.",
+    "user_comment": ""
+  },
+  "V3_REF": {
+    "content": "This keyword specifies the telescope's V3 coordinate (in arcseconds) of the same designated reference point. Together with V2_REF, it forms the critical pair of values used to define the precise pointing and orientation of the observation within the telescope's coordinate system.",
+    "relevance_score": 75,
+    "relevance_comment": "This is fundamental for precise astrometry and WCS transformations, making it highly relevant for analysis but less so for casual viewing.",
+    "user_comment": ""
+  },
+  "VPARITY": {
+    "content": "This keyword indicates the 'parity' or sense of certain aperture settings, typically represented as 1 or -1. It's an internal instrument configuration detail that helps define how specific optical components or apertures are oriented or behave within the instrument's optical path.",
+    "relevance_score": 25,
+    "relevance_comment": "This keyword describes an internal instrumental detail that is rarely relevant to data interpretation for most end-users, primarily used for internal calibration or instrument modeling.",
+    "user_comment": ""
+  },
+  "V3I_YANG": {
+    "content": "This keyword specifies the direction angle of the V3 axis in the instrument's Y-coordinate system, measured in degrees. The V3 axis is part of JWST's unique coordinate system used to define the telescope's orientation relative to its focal plane.",
+    "relevance_score": 30,
+    "relevance_comment": "This keyword describes a very specific internal instrument orientation parameter, not typically needed by general users unless performing highly specialized instrument characterization or modeling.",
+    "user_comment": ""
+  },
+  "RA_REF": {
+    "content": "This keyword provides the Right Ascension (RA) of the reference point used for the World Coordinate System (WCS) of the image, expressed in degrees. This value, along with DEC_REF, tells you precisely where on the celestial sphere the observed data is located.",
+    "relevance_score": 95,
+    "relevance_comment": "Knowing the celestial coordinates (Right Ascension) of the data is fundamental for any astronomical analysis, display, or comparison with other observations.",
+    "user_comment": ""
+  },
+  "DEC_REF": {
+    "content": "This keyword provides the Declination (DEC) of the reference point used for the World Coordinate System (WCS) of the image, expressed in degrees. This value, along with RA_REF, defines the exact position of the observed data on the celestial sphere.",
+    "relevance_score": 95,
+    "relevance_comment": "Knowing the celestial coordinates (Declination) of the data is fundamental for any astronomical analysis, display, or comparison with other observations.",
+    "user_comment": ""
+  },
+  "ROLL_REF": {
+    "content": "This keyword indicates the V3 roll angle at the WCS reference point, measured in degrees (often North over East). It defines the orientation of the instrument's field of view on the sky, telling you how the image is rotated relative to celestial north.",
+    "relevance_score": 85,
+    "relevance_comment": "This keyword indicates the orientation of the observation on the sky, which is important for understanding image rotation, aligning with other data, and creating sky-oriented visualizations.",
+    "user_comment": ""
+  },
+  "DISPAXIS": {
+    "content": "For spectroscopic data, this keyword indicates the direction along which the spectrum is dispersed on the detector. A value of 1 means dispersion is along the rows, and 2 means along the columns. This is crucial for correctly extracting one-dimensional spectra from two-dimensional detector images.",
+    "relevance_score": 80,
+    "relevance_comment": "This keyword is essential for understanding and processing spectroscopic data, as it defines the direction of wavelength dispersion across the detector.",
+    "user_comment": ""
+  },
+  "SPECSYS": {
+    "content": "This keyword specifies the spectral reference frame used for any wavelength or velocity information in the data, such as BARYCENT (barycentric), HELIOCEN (heliocentric), or TOPOCENT (topocentric). It is vital for ensuring accurate comparisons of radial velocities or precise wavelength measurements from different observations.",
+    "relevance_score": 75,
+    "relevance_comment": "This keyword is vital for precise spectroscopic analysis, ensuring that velocity measurements and wavelength scales are correctly referenced and comparable.",
+    "user_comment": ""
+  },
+  "VELOSYS": {
+    "content": "This keyword provides the barycentric correction to the radial velocity, measured in meters per second. This value accounts for the observer's (or spacecraft's) motion relative to the Solar System barycenter, allowing observed velocities to be converted to a standard, consistent reference frame.",
+    "relevance_score": 70,
+    "relevance_comment": "This keyword provides an important velocity correction, crucial for accurate astrophysical measurements of radial velocity and comparing velocities across different datasets.",
+    "user_comment": ""
+  },
+  "REFFRAME": {
+    "content": "This keyword specifies the ephemeris reference frame, such as 'EME2000', used for the precise calculation of the spacecraft's or target's position and velocity. It defines the underlying coordinate system for these orbital mechanics calculations.",
+    "relevance_score": 40,
+    "relevance_comment": "This keyword specifies the technical coordinate system used for spacecraft ephemeris, which is mostly a backend detail for general users unless performing highly precise astrometry.",
+    "user_comment": ""
+  },
+  "EPH_TYPE": {
+    "content": "This keyword indicates the type of ephemeris data used, typically 'Definitive' or 'Predicted'. 'Definitive' means the ephemeris is based on actual tracking data, providing higher accuracy, while 'Predicted' uses models and is less precise. This affects the reliability of pointing and astrometry.",
+    "relevance_score": 45,
+    "relevance_comment": "This keyword provides information about the reliability and precision of the pointing ephemeris, useful for advanced users assessing data quality and positional accuracy.",
+    "user_comment": ""
+  },
+  "EPH_TIME": {
+    "content": "This keyword indicates the Modified Julian Date (MJD) at which the recorded position and velocity vectors of the observatory (JWST) are valid. It provides the precise temporal reference point for the accompanying ephemeris data, which is crucial for accurate astrometric and orbital calculations.",
+    "relevance_score": 55,
+    "relevance_comment": "This keyword provides the critical time reference for all other ephemeris data.",
+    "user_comment": ""
+  },
+  "JWST_X": {
+    "content": "This keyword provides the precise X coordinate of the James Webb Space Telescope (JWST) in a barycentric coordinate system, typically centered on the Solar System barycenter. This information is vital for highly accurate astrometry, parallax corrections, and advanced orbital mechanics calculations for scientific data.",
+    "relevance_score": 50,
+    "relevance_comment": "Useful for advanced users performing high-precision astrometry or orbital calculations.",
+    "user_comment": ""
+  },
+  "JWST_Y": {
+    "content": "This keyword provides the precise Y coordinate of the James Webb Space Telescope (JWST) in a barycentric coordinate system, typically centered on the Solar System barycenter. This information is vital for highly accurate astrometry, parallax corrections, and advanced orbital mechanics calculations for scientific data.",
+    "relevance_score": 50,
+    "relevance_comment": "Useful for advanced users performing high-precision astrometry or orbital calculations.",
+    "user_comment": ""
+  },
+  "JWST_Z": {
+    "content": "This keyword provides the precise Z coordinate of the James Webb Space Telescope (JWST) in a barycentric coordinate system, typically centered on the Solar System barycenter. This information is vital for highly accurate astrometry, parallax corrections, and advanced orbital mechanics calculations for scientific data.",
+    "relevance_score": 50,
+    "relevance_comment": "Useful for advanced users performing high-precision astrometry or orbital calculations.",
+    "user_comment": ""
+  },
+  "JWST_DX": {
+    "content": "This keyword specifies the X velocity component of the James Webb Space Telescope (JWST) within a barycentric coordinate system. This velocity data is crucial for calculating Doppler shifts due to the observatory's motion and for detailed orbital propagation models.",
+    "relevance_score": 50,
+    "relevance_comment": "Useful for advanced users requiring detailed observatory motion for Doppler shift or orbital analyses.",
+    "user_comment": ""
+  },
+  "JWST_DY": {
+    "content": "This keyword specifies the Y velocity component of the James Webb Space Telescope (JWST) within a barycentric coordinate system. This velocity data is crucial for calculating Doppler shifts due to the observatory's motion and for detailed orbital propagation models.",
+    "relevance_score": 50,
+    "relevance_comment": "Useful for advanced users requiring detailed observatory motion for Doppler shift or orbital analyses.",
+    "user_comment": ""
+  },
+  "JWST_DZ": {
+    "content": "This keyword specifies the Z velocity component of the James Webb Space Telescope (JWST) within a barycentric coordinate system. This velocity data is crucial for calculating Doppler shifts due to the observatory's motion and for detailed orbital propagation models.",
+    "relevance_score": 50,
+    "relevance_comment": "Useful for advanced users requiring detailed observatory motion for Doppler shift or orbital analyses.",
+    "user_comment": ""
+  },
+  "OBSGEO-X": {
+    "content": "This keyword indicates the X coordinate of the James Webb Space Telescope (JWST) in a geocentric coordinate system, which places its position relative to the Earth's center. This information is relevant for understanding the telescope's precise location with respect to Earth, which can be important for communication links and specific observation planning.",
+    "relevance_score": 50,
+    "relevance_comment": "Useful for advanced users needing the observatory's precise position relative to Earth for specific analyses.",
+    "user_comment": ""
+  },
+  "OBSGEO-Y": {
+    "content": "This keyword indicates the Y coordinate of the James Webb Space Telescope (JWST) in a geocentric coordinate system, which places its position relative to the Earth's center. This information is relevant for understanding the telescope's precise location with respect to Earth, which can be important for communication links and specific observation planning.",
+    "relevance_score": 50,
+    "relevance_comment": "Useful for advanced users needing the observatory's precise position relative to Earth for specific analyses.",
+    "user_comment": ""
+  },
+  "OBSGEO-Z": {
+    "content": "This keyword indicates the Z coordinate of the James Webb Space Telescope (JWST) in a geocentric coordinate system, which places its position relative to the Earth's center. This information is relevant for understanding the telescope's precise location with respect to Earth, which can be important for communication links and specific observation planning.",
+    "relevance_score": 50,
+    "relevance_comment": "Useful for advanced users needing the observatory's precise position relative to Earth for specific analyses.",
+    "user_comment": ""
+  },
+  "TDB-BEG": {
+    "content": "This keyword specifies the precise start time of the astronomical observation, measured in MJD (Modified Julian Date) using the Barycentric Dynamical Time (TDB) standard. TDB accounts for relativistic effects and the motion of the Earth around the Sun, making it crucial for high-precision timing applications and comparisons across different observatories.",
+    "relevance_score": 95,
+    "relevance_comment": "This keyword provides essential timing information, indicating precisely when the observation began, which is fundamental for any astronomical analysis.",
+    "user_comment": ""
+  },
+  "TDB-MID": {
+    "content": "This keyword indicates the precise midpoint of the astronomical observation's exposure, measured in MJD (Modified Julian Date) using the Barycentric Dynamical Time (TDB) standard. This is often the most representative single time for an observation, especially when coordinating with other datasets or for tracking rapidly changing phenomena.",
+    "relevance_score": 98,
+    "relevance_comment": "As the most representative single time for an exposure, this keyword is crucial for accurate temporal alignment and comparison of astronomical data.",
+    "user_comment": ""
+  },
+  "TDB-END": {
+    "content": "This keyword specifies the precise end time of the astronomical observation, measured in MJD (Modified Julian Date) using the Barycentric Dynamical Time (TDB) standard. Together with the start time, it defines the exact duration of the exposure, vital for understanding the integration period.",
+    "relevance_score": 95,
+    "relevance_comment": "This keyword provides essential timing information, indicating precisely when the observation ended, which is fundamental for any astronomical analysis.",
+    "user_comment": ""
+  },
+  "END": {
+    "content": "This keyword is a structural marker in the FITS header, signaling the absolute end of the current header block. It has no value associated with it and serves purely to delimit the header from the subsequent data section or another header block.",
+    "relevance_score": 5,
+    "relevance_comment": "This keyword is purely structural and serves no direct interpretative purpose for an end-user of astronomical data.",
+    "user_comment": ""
+  }
+}

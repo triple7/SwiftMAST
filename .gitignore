@@ -11,3 +11,7 @@ Resources/results/*
 # Python cache files
 __pycache__/
 *.pyc
+
+.venv/
+
+research/fit-headers/*.key
