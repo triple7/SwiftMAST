@@ -1,0 +1,1234 @@
+{
+  "": {
+    "description": "Blank keyword (headline or padding)",
+    "category": "Comments"
+  },
+  "ACT_ID": {
+    "description": "Activity identifier (base-36) within a sequence",
+    "category": "Observation"
+  },
+  "APERNAME": {
+    "description": "S&OC PRD aperture name used for telescope pointing",
+    "category": "Aperture"
+  },
+  "APERTURE": {
+    "description": "Aperture name",
+    "category": "Instrument"
+  },
+  "ASNPOOL": {
+    "description": "Name of the association pool file used as pipeline input",
+    "category": "Association"
+  },
+  "ASNTABLE": {
+    "description": "Name of the association table from which this product was created",
+    "category": "Association"
+  },
+  "AUTHOR": {
+    "description": "Author of the data",
+    "category": "Unknown"
+  },
+  "BAND": {
+    "description": "Wavelength band",
+    "category": "Instrument"
+  },
+  "BARTDELT": {
+    "description": "Calculated barycentric time correction from UTC (seconds)",
+    "category": "Time"
+  },
+  "BENDTIME": {
+    "description": "Barycentric-corrected exposure end time (MJD)",
+    "category": "Time"
+  },
+  "BITPIX": {
+    "description": "Number of bits per data pixel",
+    "category": "Structural"
+  },
+  "BKGDTARG": {
+    "description": "Exposure is flagged as a background target",
+    "category": "Observation"
+  },
+  "BKGLEVEL": {
+    "description": "Overall background signal level computed by the skymatch pipeline step",
+    "category": "Background"
+  },
+  "BKGSUB": {
+    "description": "Background signal from BKGLEVEL has been subtracted (T or F)",
+    "category": "Background"
+  },
+  "BLANK": {
+    "description": "Value representing undefined pixels (integer arrays)",
+    "category": "Data Scaling"
+  },
+  "BMIDTIME": {
+    "description": "Barycentric-corrected exposure mid time (MJD)",
+    "category": "Time"
+  },
+  "BSCALE": {
+    "description": "Linear scaling factor for data values",
+    "category": "Data Scaling"
+  },
+  "BSTRTIME": {
+    "description": "Barycentric-corrected exposure start time (MJD)",
+    "category": "Time"
+  },
+  "BTYPE": {
+    "description": "Type of data (e.g. surface brightness)",
+    "category": "Data Scaling"
+  },
+  "BUNIT": {
+    "description": "Physical unit of the data array values",
+    "category": "Data Scaling"
+  },
+  "BZERO": {
+    "description": "Zero point offset for data values",
+    "category": "Data Scaling"
+  },
+  "CAL_VCS": {
+    "description": "Calibration software repository version",
+    "category": "Calibration"
+  },
+  "CAL_VER": {
+    "description": "Calibration software version",
+    "category": "Calibration"
+  },
+  "CATEGORY": {
+    "description": "Program category",
+    "category": "Program"
+  },
+  "CCCSTATE": {
+    "description": "MIRI contamination control cover state (OPEN, CLOSED, LOCKED)",
+    "category": "Instrument"
+  },
+  "CD1_1": {
+    "description": "Coordinate transformation matrix element (1,1)",
+    "category": "WCS"
+  },
+  "CD1_2": {
+    "description": "Coordinate transformation matrix element (1,2)",
+    "category": "WCS"
+  },
+  "CD2_1": {
+    "description": "Coordinate transformation matrix element (2,1)",
+    "category": "WCS"
+  },
+  "CD2_2": {
+    "description": "Coordinate transformation matrix element (2,2)",
+    "category": "WCS"
+  },
+  "CDELT1": {
+    "description": "Coordinate increment along axis 1",
+    "category": "WCS"
+  },
+  "CDELT2": {
+    "description": "Coordinate increment along axis 2",
+    "category": "WCS"
+  },
+  "CHANNEL": {
+    "description": "Instrument channel",
+    "category": "Instrument"
+  },
+  "CMD_TSEL": {
+    "description": "SCE test pattern: COLUMNS, ROWS, FRAMES, or ALL",
+    "category": "Instrument"
+  },
+  "COMMENT": {
+    "description": "Comment",
+    "category": "Comments"
+  },
+  "CONT_ID": {
+    "description": "Continuation of the specified previous program number",
+    "category": "Program"
+  },
+  "CORONMSK": {
+    "description": "MIRI coronagraph mask in use",
+    "category": "Instrument"
+  },
+  "CRDS_CTX": {
+    "description": "Version of the CRDS context (PMAP) controlling reference file selection",
+    "category": "Calibration"
+  },
+  "CRDS_VER": {
+    "description": "Version of the CRDS client software used for reference file selection",
+    "category": "Calibration"
+  },
+  "CROWDFLD": {
+    "description": "FGSes operating in a crowded star field",
+    "category": "Visit"
+  },
+  "CRPIX1": {
+    "description": "Reference pixel on axis 1",
+    "category": "WCS"
+  },
+  "CRPIX2": {
+    "description": "Reference pixel on axis 2",
+    "category": "WCS"
+  },
+  "CRVAL1": {
+    "description": "Coordinate value at reference pixel on axis 1",
+    "category": "WCS"
+  },
+  "CRVAL2": {
+    "description": "Coordinate value at reference pixel on axis 2",
+    "category": "WCS"
+  },
+  "CTYPE1": {
+    "description": "Coordinate type for axis 1",
+    "category": "WCS"
+  },
+  "CTYPE2": {
+    "description": "Coordinate type for axis 2",
+    "category": "WCS"
+  },
+  "CUNIT1": {
+    "description": "Physical unit for axis 1 coordinate",
+    "category": "WCS"
+  },
+  "CUNIT2": {
+    "description": "Physical unit for axis 2 coordinate",
+    "category": "WCS"
+  },
+  "DATAMAX": {
+    "description": "Maximum data value",
+    "category": "Data Scaling"
+  },
+  "DATAMIN": {
+    "description": "Minimum data value",
+    "category": "Data Scaling"
+  },
+  "DATAMODE": {
+    "description": "Post-processing method used in FPAP; maps to readout pattern (0–86)",
+    "category": "Exposure"
+  },
+  "DATAMODL": {
+    "description": "Type of data model",
+    "category": "Instrument"
+  },
+  "DATAPROB": {
+    "description": "Science telemetry indicated data problems (T or F)",
+    "category": "Exposure"
+  },
+  "DATE": {
+    "description": "File creation date (UTC)",
+    "category": "Time"
+  },
+  "DATE-BEG": {
+    "description": "Date-time of observation start",
+    "category": "Time"
+  },
+  "DATE-END": {
+    "description": "Date-time of observation end",
+    "category": "Time"
+  },
+  "DATE-OBS": {
+    "description": "Date of observation start (UTC)",
+    "category": "Time"
+  },
+  "DEC_TARG": {
+    "description": "Declination of the target (degrees)",
+    "category": "Target"
+  },
+  "DEC_V1": {
+    "description": "Declination of the V1 axis (degrees)",
+    "category": "Target"
+  },
+  "DETECTOR": {
+    "description": "Detector used to acquire the data",
+    "category": "Instrument"
+  },
+  "DETMODE": {
+    "description": "Detector mode: FLUSH_MODE, TEST_PATTERN, CLOCKING, or EXPOSURE",
+    "category": "Instrument"
+  },
+  "DITHDIRC": {
+    "description": "Dither direction: POSITIVE or NEGATIVE",
+    "category": "Dither"
+  },
+  "DITHOPFR": {
+    "description": "Dither optimization type: POINT-SOURCE or EXTENDED-SOURCE",
+    "category": "Dither"
+  },
+  "DITHPNTS": {
+    "description": "Sparse cycling dither positions list",
+    "category": "Dither"
+  },
+  "DRPFRMS1": {
+    "description": "Number of frames dropped prior to first integration",
+    "category": "Exposure"
+  },
+  "DRPFRMS3": {
+    "description": "Number of frames dropped between integrations",
+    "category": "Exposure"
+  },
+  "DSETSTRT": {
+    "description": "Starting set number of the 4-point dither sets (1–10)",
+    "category": "Dither"
+  },
+  "DURATION": {
+    "description": "Total duration of exposure: integration time × number of integrations (seconds)",
+    "category": "Exposure"
+  },
+  "EFFEXPTM": {
+    "description": "Effective exposure time corrected for dead time (seconds)",
+    "category": "Exposure"
+  },
+  "EFFINTTM": {
+    "description": "Effective integration time (seconds)",
+    "category": "Exposure"
+  },
+  "ENGQLPTG": {
+    "description": "Source and quality of spacecraft pointing keywords",
+    "category": "Observation"
+  },
+  "ENG_QUAL": {
+    "description": "Engineering database quality flag (OK or SUSPECT)",
+    "category": "Observation"
+  },
+  "EQUINOX": {
+    "description": "Equinox of celestial coordinate system",
+    "category": "WCS"
+  },
+  "ERRTYPE": {
+    "description": "Type of values in the error array (ERR, IERR, VAR, IVAR)",
+    "category": "Engineering"
+  },
+  "EXPCOUNT": {
+    "description": "Monotonically increasing exposure count within a visit",
+    "category": "Exposure"
+  },
+  "EXPEND": {
+    "description": "Exposure end time in MJD",
+    "category": "Exposure"
+  },
+  "EXPMID": {
+    "description": "Exposure mid time (Modified Julian Date)",
+    "category": "Exposure"
+  },
+  "EXPOSURE": {
+    "description": "Exposure request number",
+    "category": "Observation"
+  },
+  "EXPRIPAR": {
+    "description": "Exposure is PRIME, PARALLEL_COORDINATED, or PARALLEL_PURE",
+    "category": "Exposure"
+  },
+  "EXPSTART": {
+    "description": "Exposure start time in MJD",
+    "category": "Exposure"
+  },
+  "EXPSTENG": {
+    "description": "UTC exposure start time from engineering data stream",
+    "category": "Exposure"
+  },
+  "EXPTIME": {
+    "description": "Exposure time in seconds",
+    "category": "Exposure"
+  },
+  "EXP_ONLY": {
+    "description": "Exposure taken through special commanding without SI configuration",
+    "category": "Visit"
+  },
+  "EXP_TYPE": {
+    "description": "Exposure type",
+    "category": "Exposure"
+  },
+  "EXSEGNUM": {
+    "description": "Sequential segment number within a TSO single exposure",
+    "category": "Exposure"
+  },
+  "EXSEGTOT": {
+    "description": "Total number of segments in a TSO single exposure",
+    "category": "Exposure"
+  },
+  "EXTEND": {
+    "description": "File may contain standard extensions",
+    "category": "Structural"
+  },
+  "EXTLEVEL": {
+    "description": "Hierarchical level of the extension",
+    "category": "Structural"
+  },
+  "EXTNAME": {
+    "description": "Name of the extension",
+    "category": "Structural"
+  },
+  "EXTVER": {
+    "description": "Version number of the extension",
+    "category": "Structural"
+  },
+  "FA1VALUE": {
+    "description": "Requested focus actuator 1 absolute position value",
+    "category": "Engineering"
+  },
+  "FA2VALUE": {
+    "description": "Requested focus actuator 2 absolute position value",
+    "category": "Engineering"
+  },
+  "FA3VALUE": {
+    "description": "Requested focus actuator 3 absolute position value",
+    "category": "Engineering"
+  },
+  "FAM_LA1": {
+    "description": "FAM primary sensor measured position of linear actuator 1 (steps)",
+    "category": "Engineering"
+  },
+  "FAM_LA2": {
+    "description": "FAM primary sensor measured position of linear actuator 2 (steps)",
+    "category": "Engineering"
+  },
+  "FAM_LA3": {
+    "description": "FAM primary sensor measured position of linear actuator 3 (steps)",
+    "category": "Engineering"
+  },
+  "FAPHASE1": {
+    "description": "Requested focus actuator 1 starting phase per exposure specification",
+    "category": "Engineering"
+  },
+  "FAPHASE2": {
+    "description": "Requested focus actuator 2 starting phase per exposure specification",
+    "category": "Engineering"
+  },
+  "FAPHASE3": {
+    "description": "Requested focus actuator 3 starting phase per exposure specification",
+    "category": "Engineering"
+  },
+  "FASTAXIS": {
+    "description": "Axis and direction of fast detector readout (±1 or ±2)",
+    "category": "Subarray"
+  },
+  "FASTEP1": {
+    "description": "Requested focus actuator 1 starting steps per exposure specification",
+    "category": "Engineering"
+  },
+  "FASTEP2": {
+    "description": "Requested focus actuator 2 starting steps per exposure specification",
+    "category": "Engineering"
+  },
+  "FASTEP3": {
+    "description": "Requested focus actuator 3 starting steps per exposure specification",
+    "category": "Engineering"
+  },
+  "FAUNIT1": {
+    "description": "Requested focus actuator 1 starting units per exposure specification",
+    "category": "Engineering"
+  },
+  "FAUNIT2": {
+    "description": "Requested focus actuator 2 starting units per exposure specification",
+    "category": "Engineering"
+  },
+  "FAUNIT3": {
+    "description": "Requested focus actuator 3 starting units per exposure specification",
+    "category": "Engineering"
+  },
+  "FCSRLPOS": {
+    "description": "NIRSpec RMA relative position in motor steps (-18400 to +18400)",
+    "category": "Engineering"
+  },
+  "FILENAME": {
+    "description": "Name of the file",
+    "category": "Calibration"
+  },
+  "FILETYPE": {
+    "description": "Type of data in the file",
+    "category": "Calibration"
+  },
+  "FILTER": {
+    "description": "Filter used during observation",
+    "category": "Instrument"
+  },
+  "FILTER1": {
+    "description": "First filter element",
+    "category": "Instrument"
+  },
+  "FILTER2": {
+    "description": "Second filter element",
+    "category": "Instrument"
+  },
+  "FOCUSPOS": {
+    "description": "FGS focus mechanism position in millimeters (-4.0 to 4.0)",
+    "category": "Instrument"
+  },
+  "FRMDIVSR": {
+    "description": "Frame divisor used on-board when averaging multiple frames into a group",
+    "category": "Exposure"
+  },
+  "FWCPOS": {
+    "description": "NIRISS filter wheel encoder position (millimeters)",
+    "category": "Instrument"
+  },
+  "FXD_SLIT": {
+    "description": "NIRSpec fixed slit aperture name (S200A1, S200A2, S200B1, S400A1, S1600A1)",
+    "category": "Instrument"
+  },
+  "GAINFACT": {
+    "description": "Data scaling factor ratio between gain=2 and nominal gain=1",
+    "category": "Exposure"
+  },
+  "GCOUNT": {
+    "description": "Number of data groups",
+    "category": "Structural"
+  },
+  "GDSTARID": {
+    "description": "Guide Star Catalog 2 identifier (10 character, base-36)",
+    "category": "Guide Star"
+  },
+  "GRATING": {
+    "description": "Grating used during observation",
+    "category": "Instrument"
+  },
+  "GROUPGAP": {
+    "description": "Number of frames skipped between groups",
+    "category": "Exposure"
+  },
+  "GSENDTIM": {
+    "description": "UTC end time of guide star acquisition activity",
+    "category": "Guide Star"
+  },
+  "GSSTRTTM": {
+    "description": "Observatory UTC time when guide star activity started",
+    "category": "Guide Star"
+  },
+  "GS_DEC": {
+    "description": "ICRS declination of the guide star (degrees)",
+    "category": "Guide Star"
+  },
+  "GS_MAG": {
+    "description": "Guide star magnitude in FGS detector",
+    "category": "Guide Star"
+  },
+  "GS_ORDER": {
+    "description": "Index of this guide star within the list of selected guide stars",
+    "category": "Guide Star"
+  },
+  "GS_RA": {
+    "description": "ICRS right ascension of the guide star (degrees)",
+    "category": "Guide Star"
+  },
+  "GS_UDEC": {
+    "description": "ICRS declination uncertainty of the guide star (arcsec)",
+    "category": "Guide Star"
+  },
+  "GS_UMAG": {
+    "description": "Guide star magnitude uncertainty",
+    "category": "Guide Star"
+  },
+  "GS_URA": {
+    "description": "ICRS right ascension uncertainty of the guide star (arcsec)",
+    "category": "Guide Star"
+  },
+  "GS_V3_PA": {
+    "description": "V3 position angle of the guide star at the guide star location (degrees)",
+    "category": "Guide Star"
+  },
+  "GWA_PXAV": {
+    "description": "NIRSpec grating wheel REC-averaged calibrated X-tilt value",
+    "category": "Instrument"
+  },
+  "GWA_PYAV": {
+    "description": "NIRSpec grating wheel REC-averaged calibrated Y-tilt value",
+    "category": "Instrument"
+  },
+  "GWA_TILT": {
+    "description": "NIRSpec grating wheel temperature sensor calibrated value",
+    "category": "Instrument"
+  },
+  "GWA_XP_V": {
+    "description": "NIRSpec grating wheel X-position tilt sensor calibrated value",
+    "category": "Instrument"
+  },
+  "GWA_XTIL": {
+    "description": "NIRSpec grating wheel averaged X-tilt sensor value",
+    "category": "Instrument"
+  },
+  "GWA_YP_V": {
+    "description": "NIRSpec grating wheel Y-position tilt sensor calibrated value",
+    "category": "Instrument"
+  },
+  "GWA_YTIL": {
+    "description": "NIRSpec grating wheel averaged Y-tilt sensor value",
+    "category": "Instrument"
+  },
+  "HELIDELT": {
+    "description": "Calculated heliocentric time correction from UTC (seconds)",
+    "category": "Time"
+  },
+  "HENDTIME": {
+    "description": "Heliocentric exposure end time (MJD)",
+    "category": "Time"
+  },
+  "HGA_MOVE": {
+    "description": "High Gain Antenna moved during data collection",
+    "category": "Engineering"
+  },
+  "HISTORY": {
+    "description": "Processing history entry",
+    "category": "Comments"
+  },
+  "HMIDTIME": {
+    "description": "Heliocentric exposure mid time (MJD)",
+    "category": "Time"
+  },
+  "HSTRTIME": {
+    "description": "Heliocentric exposure start time (MJD)",
+    "category": "Time"
+  },
+  "IMAGETYP": {
+    "description": "Type of exposure identifier",
+    "category": "Calibration"
+  },
+  "INSTRUME": {
+    "description": "Instrument used to acquire the data",
+    "category": "Instrument"
+  },
+  "INTARGET": {
+    "description": "At least one exposure in the visit is internally targeted",
+    "category": "Visit"
+  },
+  "INTEND": {
+    "description": "Number of the last integration in a segmented exposure product",
+    "category": "Exposure"
+  },
+  "INTSTART": {
+    "description": "Number of the first integration in a segmented exposure product",
+    "category": "Exposure"
+  },
+  "IS_IMPRT": {
+    "description": "Exposure flagged as a leakcal or imprint exposure",
+    "category": "Instrument"
+  },
+  "IS_PSF": {
+    "description": "Exposure intended as a PSF reference observation",
+    "category": "Observation"
+  },
+  "LAMP": {
+    "description": "Internal lamp state for all science instruments",
+    "category": "Instrument"
+  },
+  "LATPOLE": {
+    "description": "Native latitude of the celestial pole",
+    "category": "WCS"
+  },
+  "LINENUM": {
+    "description": "Proposal log-sheet line number",
+    "category": "Calibration"
+  },
+  "LONPOLE": {
+    "description": "Native longitude of the celestial pole",
+    "category": "WCS"
+  },
+  "MASTERBG": {
+    "description": "Name of the 1-D master background spectrum file used in pipeline",
+    "category": "Background"
+  },
+  "MIRNFRMS": {
+    "description": "MIRI flight system number of frames",
+    "category": "Instrument"
+  },
+  "MIRNGRPS": {
+    "description": "MIRI flight system number of groups",
+    "category": "Instrument"
+  },
+  "MJD-AVG": {
+    "description": "Modified Julian Date of exposure midpoint",
+    "category": "Time"
+  },
+  "MJD-BEG": {
+    "description": "Modified Julian Date of exposure start",
+    "category": "Time"
+  },
+  "MJD-END": {
+    "description": "Modified Julian Date of exposure end",
+    "category": "Time"
+  },
+  "MJD-MID": {
+    "description": "Modified Julian Date of exposure midpoint",
+    "category": "Time"
+  },
+  "MJD-OBS": {
+    "description": "Modified Julian Date of observation start",
+    "category": "Time"
+  },
+  "MODULE": {
+    "description": "NIRCam module used (A, B, or MULTIPLE)",
+    "category": "Instrument"
+  },
+  "MRSPRCHN": {
+    "description": "MIRI MRS channel for which dither is optimized",
+    "category": "Dither"
+  },
+  "MSACONID": {
+    "description": "Unique identifier of all MSA configurations within a visit",
+    "category": "Instrument"
+  },
+  "MSAMETFL": {
+    "description": "NIRSpec MSA metadata file name",
+    "category": "Instrument"
+  },
+  "MSAMETID": {
+    "description": "Unique identifier within a visit for MSA configuration collection",
+    "category": "Instrument"
+  },
+  "MSASTATE": {
+    "description": "NIRSpec MSA state: ALLOPEN, ALLCLOSED, or CONFIGURED",
+    "category": "Instrument"
+  },
+  "MU_DEC": {
+    "description": "Proper motion of the target in Dec from APT (arcsec/year)",
+    "category": "Target"
+  },
+  "MU_EPOCH": {
+    "description": "Epoch of the proper motion values",
+    "category": "Target"
+  },
+  "MU_RA": {
+    "description": "Proper motion of the target in RA from APT (arcsec/year)",
+    "category": "Target"
+  },
+  "NAXIS": {
+    "description": "Number of data array dimensions",
+    "category": "Structural"
+  },
+  "NAXIS1": {
+    "description": "Length of data axis 1 (columns)",
+    "category": "Structural"
+  },
+  "NAXIS2": {
+    "description": "Length of data axis 2 (rows)",
+    "category": "Structural"
+  },
+  "NAXIS3": {
+    "description": "Length of data axis 3 (planes/channels)",
+    "category": "Structural"
+  },
+  "NAXIS4": {
+    "description": "Length of data axis 4",
+    "category": "Structural"
+  },
+  "NEXPOSUR": {
+    "description": "Total number of planned exposures in the visit",
+    "category": "Visit"
+  },
+  "NEXTEND": {
+    "description": "Number of file extensions",
+    "category": "Structural"
+  },
+  "NFRAMES": {
+    "description": "Number of frames in a group",
+    "category": "Exposure"
+  },
+  "NGROUPS": {
+    "description": "Number of groups per integration",
+    "category": "Exposure"
+  },
+  "NINTS": {
+    "description": "Number of integrations within the exposure",
+    "category": "Exposure"
+  },
+  "NOD_TYPE": {
+    "description": "NIRSpec MSA nod pattern type (NONE, 2-, 3-, or 5-SHUTTER-SLITLET)",
+    "category": "Dither"
+  },
+  "NOUTPUTS": {
+    "description": "Number of detector amplifier outputs used (1, 4, or 5)",
+    "category": "Exposure"
+  },
+  "NRESETS": {
+    "description": "Number of resets separating integrations within an exposure",
+    "category": "Exposure"
+  },
+  "NRIMDTPT": {
+    "description": "NIRISS direct image dither number of points",
+    "category": "Dither"
+  },
+  "NRSTSTRT": {
+    "description": "Number of resets at the start of exposure",
+    "category": "Exposure"
+  },
+  "NRS_NORM": {
+    "description": "Number of normal pixels per block in NIRSpec IRS2 readout",
+    "category": "Instrument"
+  },
+  "NRS_REF": {
+    "description": "Number of interleaved reference pixels per block in NIRSpec IRS2 readout",
+    "category": "Instrument"
+  },
+  "NSAMPLES": {
+    "description": "Number of A/D samples per pixel read",
+    "category": "Exposure"
+  },
+  "NUMDSETS": {
+    "description": "Total number of 4-point dither sets (1–10)",
+    "category": "Dither"
+  },
+  "NUMDTHPT": {
+    "description": "Total number of points in the entire dither pattern",
+    "category": "Dither"
+  },
+  "NWFSEST": {
+    "description": "Exposure start time from the next WFS exposure (MJD)",
+    "category": "Engineering"
+  },
+  "OBJECT": {
+    "description": "Name of the observed object",
+    "category": "Observation"
+  },
+  "OBSERVTN": {
+    "description": "Observation number",
+    "category": "Observation"
+  },
+  "OBSFOLDR": {
+    "description": "APT observation folder name containing this observation",
+    "category": "Observation"
+  },
+  "OBSLABEL": {
+    "description": "Proposer-defined label for the observation",
+    "category": "Observation"
+  },
+  "OBSMODE": {
+    "description": "Observation mode",
+    "category": "Observation"
+  },
+  "OBSTYPE": {
+    "description": "Observation type",
+    "category": "Observation"
+  },
+  "OBS_ID": {
+    "description": "Programmatic observation identifier",
+    "category": "Observation"
+  },
+  "OPMODE": {
+    "description": "NIRSpec lamp operating mode (MSASPEC, IFU, IMAGE, FIXEDSLIT, etc.)",
+    "category": "Instrument"
+  },
+  "ORIGIN": {
+    "description": "Institution that created the file",
+    "category": "Program"
+  },
+  "OSF_FILE": {
+    "description": "Observatory Status File name for this exposure",
+    "category": "Exposure"
+  },
+  "OSS_VER": {
+    "description": "Version number of the OSS software",
+    "category": "Calibration"
+  },
+  "PATTNPTS": {
+    "description": "MIRI imaging number of points in CYCLING dither pattern (≥3)",
+    "category": "Dither"
+  },
+  "PATTSIZE": {
+    "description": "NIRCam/NIRISS dither pattern size (NONE, SMALL, MEDIUM, LARGE)",
+    "category": "Dither"
+  },
+  "PATTSTRT": {
+    "description": "MIRI imaging starting point in the dither cycling pattern (1–311)",
+    "category": "Dither"
+  },
+  "PATTTYPE": {
+    "description": "Dither pattern type (FULL, INTRAMODULE, INTRASCA, NONE, etc.)",
+    "category": "Dither"
+  },
+  "PATT_NUM": {
+    "description": "Position number within dither pattern",
+    "category": "Dither"
+  },
+  "PA_APER": {
+    "description": "Position angle of the aperture (degrees)",
+    "category": "Target"
+  },
+  "PA_V3": {
+    "description": "Position angle of the V3 axis (degrees)",
+    "category": "Target"
+  },
+  "PC1_1": {
+    "description": "Linear transformation matrix element (1,1)",
+    "category": "WCS"
+  },
+  "PC1_2": {
+    "description": "Linear transformation matrix element (1,2)",
+    "category": "WCS"
+  },
+  "PC2_1": {
+    "description": "Linear transformation matrix element (2,1)",
+    "category": "WCS"
+  },
+  "PC2_2": {
+    "description": "Linear transformation matrix element (2,2)",
+    "category": "WCS"
+  },
+  "PCOUNT": {
+    "description": "Number of bytes of supplemental data (parameter count)",
+    "category": "Structural"
+  },
+  "PCS_MODE": {
+    "description": "Pointing Control System mode (FINEGUIDE, COARSE, TRACK, MOVING, NONE)",
+    "category": "Guide Star"
+  },
+  "PHOTMJSR": {
+    "description": "Flux density producing 1 count/sec (MJy/sr)",
+    "category": "Unknown"
+  },
+  "PILIN": {
+    "description": "Pupil imaging lens in use (T or F)",
+    "category": "Instrument"
+  },
+  "PIXAR_A2": {
+    "description": "Nominal pixel area in arcsec squared",
+    "category": "Unknown"
+  },
+  "PIXAR_SR": {
+    "description": "Nominal pixel area in steradians",
+    "category": "Unknown"
+  },
+  "PI_NAME": {
+    "description": "Principal investigator name",
+    "category": "Program"
+  },
+  "POSTARG1": {
+    "description": "POSTARG in axis 1 direction",
+    "category": "Calibration"
+  },
+  "POSTARG2": {
+    "description": "POSTARG in axis 2 direction",
+    "category": "Calibration"
+  },
+  "PPS_APER": {
+    "description": "Original aperture name as supplied by PPS in the PPS_DB",
+    "category": "Aperture"
+  },
+  "PRD_VER": {
+    "description": "Project Reference Database version",
+    "category": "Calibration"
+  },
+  "PREIMAGE": {
+    "description": "Name of reference image used to measure position for this source",
+    "category": "Instrument"
+  },
+  "PRIDTPTS": {
+    "description": "Number of points in FGS primary dither pattern",
+    "category": "Dither"
+  },
+  "PRIDTYPE": {
+    "description": "NIRCam primary dither specification with number of points",
+    "category": "Dither"
+  },
+  "PROGRAM": {
+    "description": "Program number",
+    "category": "Observation"
+  },
+  "PROPAPER": {
+    "description": "Proposed aperture name",
+    "category": "Instrument"
+  },
+  "PROP_DEC": {
+    "description": "Proposed declination (degrees)",
+    "category": "Target"
+  },
+  "PROP_RA": {
+    "description": "Proposed right ascension (degrees)",
+    "category": "Target"
+  },
+  "PUPIL": {
+    "description": "Pupil wheel element",
+    "category": "Instrument"
+  },
+  "PWCPOS": {
+    "description": "NIRISS pupil wheel encoder position (millimeters)",
+    "category": "Instrument"
+  },
+  "PWFSEET": {
+    "description": "Exposure end time from the previous WFS exposure (MJD)",
+    "category": "Engineering"
+  },
+  "RADESYS": {
+    "description": "Celestial coordinate reference frame",
+    "category": "WCS"
+  },
+  "RA_TARG": {
+    "description": "Right ascension of the target (degrees)",
+    "category": "Target"
+  },
+  "RA_V1": {
+    "description": "Right ascension of the V1 axis (degrees)",
+    "category": "Target"
+  },
+  "READPATT": {
+    "description": "Readout pattern name (pre-defined NFRAMES, GROUPGAP, NRESETS combination)",
+    "category": "Exposure"
+  },
+  "RMA_POS": {
+    "description": "NIRSpec Refocus Mechanism Assembly latest hall-position sensor value",
+    "category": "Engineering"
+  },
+  "ROIS": {
+    "description": "Radius of the region of interest in spatial dimensions (arcsec)",
+    "category": "Engineering"
+  },
+  "ROIW": {
+    "description": "Radius of the region of interest in wavelength dimension (arcsec)",
+    "category": "Engineering"
+  },
+  "ROOTNAME": {
+    "description": "Root name of the observation set",
+    "category": "Calibration"
+  },
+  "SCATFILE": {
+    "description": "Source catalog filename generated by the source_catalog pipeline step",
+    "category": "Resampling"
+  },
+  "SCA_NUM": {
+    "description": "Sensor Chip Assembly number (1–18)",
+    "category": "Exposure"
+  },
+  "SCICAT": {
+    "description": "Science category",
+    "category": "Program"
+  },
+  "SCTARATE": {
+    "description": "Spacecraft clock time adjustment rate (milliseconds/second)",
+    "category": "Exposure"
+  },
+  "SDP_VER": {
+    "description": "Data processing software version",
+    "category": "Calibration"
+  },
+  "SELFREF": {
+    "description": "Coronagraphic observation is a self-referencing PSF survey",
+    "category": "Observation"
+  },
+  "SEQ_ID": {
+    "description": "Parallel sequence identifier within a group",
+    "category": "Observation"
+  },
+  "SIMPLE": {
+    "description": "File conforms to the FITS standard",
+    "category": "Structural"
+  },
+  "SLOWAXIS": {
+    "description": "Axis and direction of slow detector readout (±1 or ±2)",
+    "category": "Subarray"
+  },
+  "SMGRDPAT": {
+    "description": "NIRCam small grid dither pattern name",
+    "category": "Dither"
+  },
+  "SPATNSTP": {
+    "description": "MIRI LRS number of steps in the spatial direction",
+    "category": "Dither"
+  },
+  "SPATSTEP": {
+    "description": "MIRI LRS distance between steps in the spatial direction (arcsec)",
+    "category": "Dither"
+  },
+  "SPAT_NUM": {
+    "description": "MIRI LRS position number within spatial steps",
+    "category": "Dither"
+  },
+  "SPCOFFST": {
+    "description": "MIRI LRS spectral offset from pattern starting position (arcsec)",
+    "category": "Dither"
+  },
+  "SPECNSTP": {
+    "description": "MIRI LRS number of steps in the spectral direction",
+    "category": "Dither"
+  },
+  "SPECSTEP": {
+    "description": "MIRI LRS distance between steps in the spectral direction (arcsec)",
+    "category": "Dither"
+  },
+  "SPEC_NUM": {
+    "description": "MIRI LRS position number within spectral steps",
+    "category": "Dither"
+  },
+  "SPTOFFST": {
+    "description": "MIRI LRS spatial offset from pattern starting position (arcsec)",
+    "category": "Dither"
+  },
+  "SRCTYAPT": {
+    "description": "APT source type for spectroscopy: POINT, EXTENDED, or UNKNOWN",
+    "category": "Target"
+  },
+  "SUBARRAY": {
+    "description": "Subarray name (FULL or named subarray up to 9 characters)",
+    "category": "Subarray"
+  },
+  "SUBCAT": {
+    "description": "Program sub-category (FGS, MIRI, NIRCAM, NIRISS, NIRSPEC, SC)",
+    "category": "Program"
+  },
+  "SUBPXPAT": {
+    "description": "NIRCam subpixel dither pattern type (STANDARD, SMALL-GRID-DITHER, NONE)",
+    "category": "Dither"
+  },
+  "SUBPXPTS": {
+    "description": "Number of points in FGS subpixel dither pattern",
+    "category": "Dither"
+  },
+  "SUBSIZE1": {
+    "description": "Number of pixels in the full science frame axis 1 direction",
+    "category": "Subarray"
+  },
+  "SUBSIZE2": {
+    "description": "Number of pixels in the full science frame axis 2 direction",
+    "category": "Subarray"
+  },
+  "SUBSTRT1": {
+    "description": "Starting pixel in the full science frame axis 1 direction",
+    "category": "Subarray"
+  },
+  "SUBSTRT2": {
+    "description": "Starting pixel in the full science frame axis 2 direction",
+    "category": "Subarray"
+  },
+  "S_REGION": {
+    "description": "Spatial footprint (STC-S format)",
+    "category": "WCS"
+  },
+  "TARGNAME": {
+    "description": "Target name as specified in the proposal",
+    "category": "Target"
+  },
+  "TARGOOPP": {
+    "description": "Visit scheduled as a target of opportunity",
+    "category": "Visit"
+  },
+  "TARGPROP": {
+    "description": "Proposer-preferred name for the target (2–31 characters)",
+    "category": "Target"
+  },
+  "TARGTYPE": {
+    "description": "Target type: FIXED, MOVING, or GENERIC",
+    "category": "Target"
+  },
+  "TARGUDEC": {
+    "description": "Target declination uncertainty at mid-exposure (arcsec)",
+    "category": "Target"
+  },
+  "TARGURA": {
+    "description": "Target right ascension uncertainty at mid-exposure (arcsec)",
+    "category": "Target"
+  },
+  "TARG_DEC": {
+    "description": "Declination of the target (degrees)",
+    "category": "Target"
+  },
+  "TARG_RA": {
+    "description": "Right ascension of the target (degrees)",
+    "category": "Target"
+  },
+  "TCATFILE": {
+    "description": "Tweakreg catalog filename used for image alignment",
+    "category": "Resampling"
+  },
+  "TELAPSE": {
+    "description": "Total elapsed exposure time in seconds",
+    "category": "Exposure"
+  },
+  "TELESCOP": {
+    "description": "Telescope used to acquire the data",
+    "category": "Instrument"
+  },
+  "TEMPLATE": {
+    "description": "Observation template used",
+    "category": "Observation"
+  },
+  "TEXPTIME": {
+    "description": "Total exposure time of all pointings in a resampled product (seconds)",
+    "category": "Resampling"
+  },
+  "TFRAME": {
+    "description": "Time between start of successive frames (seconds)",
+    "category": "Exposure"
+  },
+  "TGROUP": {
+    "description": "Time between start of successive groups (seconds)",
+    "category": "Exposure"
+  },
+  "TIME-OBS": {
+    "description": "Time of observation start (UTC)",
+    "category": "Time"
+  },
+  "TIMESYS": {
+    "description": "Principal time system for time-related keywords",
+    "category": "Time"
+  },
+  "TIMEUNIT": {
+    "description": "Default unit for time values",
+    "category": "Time"
+  },
+  "TITLE": {
+    "description": "Proposal title",
+    "category": "Program"
+  },
+  "TSAMPLE": {
+    "description": "Time between samples (microseconds)",
+    "category": "Exposure"
+  },
+  "TSOVISIT": {
+    "description": "Visit uses Time Series Observation special requirement",
+    "category": "Visit"
+  },
+  "VA_SCALE": {
+    "description": "Velocity aberration scale factor",
+    "category": "Calibration"
+  },
+  "VISIT": {
+    "description": "Visit number within the observation",
+    "category": "Observation"
+  },
+  "VISITEND": {
+    "description": "Observatory UTC time when the visit completed",
+    "category": "Guide Star"
+  },
+  "VISITGRP": {
+    "description": "Visit group identifier for parallel synchronization",
+    "category": "Observation"
+  },
+  "VISITSTA": {
+    "description": "Status of the visit (e.g. DATALOSS)",
+    "category": "Visit"
+  },
+  "VISITYPE": {
+    "description": "Visit type",
+    "category": "Visit"
+  },
+  "VISIT_ID": {
+    "description": "Visit identifier",
+    "category": "Observation"
+  },
+  "VSTSTART": {
+    "description": "Observatory UTC time when the visit started",
+    "category": "Visit"
+  },
+  "WCSAXES": {
+    "description": "Number of World Coordinate System axes",
+    "category": "WCS"
+  },
+  "WPOWER": {
+    "description": "Weighting power controlling distance weighting for IFU spaxels",
+    "category": "Engineering"
+  },
+  "WTYPE": {
+    "description": "Type of weighting used when combining IFU point cloud fluxes",
+    "category": "Engineering"
+  },
+  "XOFFSET": {
+    "description": "X offset from pattern starting position in SI ideal frame (arcsec)",
+    "category": "Dither"
+  },
+  "XPOSURE": {
+    "description": "Effective exposure time in seconds",
+    "category": "Exposure"
+  },
+  "XTENSION": {
+    "description": "Type of extension (IMAGE, BINTABLE, TABLE)",
+    "category": "Structural"
+  },
+  "YOFFSET": {
+    "description": "Y offset from pattern starting position in SI ideal frame (arcsec)",
+    "category": "Dither"
+  },
+  "ZEROFRAM": {
+    "description": "Zero frame was read separately (T or F)",
+    "category": "Exposure"
+  }
+}

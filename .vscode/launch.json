@@ -39,6 +39,26 @@
             "target": "TestFitsConversion",
             "configuration": "release",
             "preLaunchTask": "swift: Build Release TestFitsConversion"
+        },
+        {
+            "type": "swift",
+            "request": "launch",
+            "args": [],
+            "cwd": "${workspaceFolder:SwiftMAST}",
+            "name": "Debug FITSCoreDemo",
+            "target": "FITSCoreDemo",
+            "configuration": "debug",
+            "preLaunchTask": "swift: Build Debug FITSCoreDemo"
+        },
+        {
+            "type": "swift",
+            "request": "launch",
+            "args": [],
+            "cwd": "${workspaceFolder:SwiftMAST}",
+            "name": "Release FITSCoreDemo",
+            "target": "FITSCoreDemo",
+            "configuration": "release",
+            "preLaunchTask": "swift: Build Release FITSCoreDemo"
         }
     ]
 }
