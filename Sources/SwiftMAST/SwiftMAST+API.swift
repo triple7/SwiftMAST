@@ -943,4 +943,255 @@ extension SwiftMAST {
             })
     }
 
+    // MARK: - JWST Multi-Filter Science Products
+
+    /** Query JWST science image products for a target, grouped by filter band.
+
+     This function resolves the target, queries MAST for JWST public science images
+     at calibration level 3–4, groups results by unique filter, and returns one
+     ``CoamResult`` per filter — preferring products observed closest together in time.
+
+     Use this to build a catalogue of available imagery across different wavelengths
+     for a single target (e.g. F770W, F1000W, F1500W, …).
+
+     Parameters:
+     * targetName: String - the target identifier (e.g. "NGC 628", "NGC 253")
+     * instruments: [String]? - optional instrument filter (e.g. ["MIRI/IMAGE", "NIRCAM/IMAGE"])
+       When nil, all JWST instruments are included.
+     * calibLevels: [String] - calibration levels (default: ["3", "4"])
+     * pageSize: Int - number of results per page (default: 200)
+     * result: Closure returning a dictionary mapping filter name → CoamResult
+
+     The returned dictionary maps each unique filter string (e.g. "F1000W") to the
+     single best ``CoamResult`` for that filter. When multiple observations exist for
+     the same filter, the one closest to the median observation epoch is chosen so
+     that the selected products are as contemporaneous as possible.
+
+     Example usage:
+     ```swift
+     let mast = SwiftMAST()
+     // All JWST filters for NGC 628
+     mast.getJWSTFilteredProducts(targetName: "NGC 628") { products in
+         for (filter, coam) in products {
+             print("\(filter): \(coam.obs_id)")
+         }
+     }
+
+     // MIRI-only filters
+     mast.getJWSTFilteredProducts(targetName: "NGC 253", instruments: ["MIRI/IMAGE"]) { products in
+         for (filter, coam) in products {
+             print("\(filter): \(coam.instrument_name) \(coam.obs_id)")
+         }
+     }
+     ```
+     */
+    public func getJWSTFilteredProducts(
+        targetName: String,
+        instruments: [String]? = nil,
+        calibLevels: [String] = ["3", "4"],
+        pageSize: Int = 200,
+        result: @escaping ([String: CoamResult]) -> Void
+    ) {
+        self.lookupTargetCoordinates(targetName: targetName) { coordinates in
+            guard let coordinates = coordinates else {
+                self.log(
+                    .RequestError,
+                    message:
+                        "getJWSTFilteredProducts: Could not resolve target '\(targetName)'"
+                )
+                result([:])
+                return
+            }
+            self.getJWSTFilteredProducts(
+                targetName: targetName,
+                ra: coordinates.ra,
+                dec: coordinates.dec,
+                radius: coordinates.radius,
+                instruments: instruments,
+                calibLevels: calibLevels,
+                pageSize: pageSize,
+                result: result
+            )
+        }
+    }
+
+    /** Query JWST science image products at given coordinates, grouped by filter band.
+
+     Parameters:
+     * targetName: String - the target identifier
+     * ra: Float - Right Ascension
+     * dec: Float - Declination
+     * radius: Float - Search radius in degrees
+     * instruments: [String]? - optional instrument filter (e.g. ["MIRI/IMAGE"])
+     * calibLevels: [String] - calibration levels (default: ["3", "4"])
+     * pageSize: Int - number of results per page (default: 200)
+     * result: Closure returning a dictionary mapping filter name → CoamResult
+     */
+    public func getJWSTFilteredProducts(
+        targetName: String,
+        ra: Float,
+        dec: Float,
+        radius: Float,
+        instruments: [String]? = nil,
+        calibLevels: [String] = ["3", "4"],
+        pageSize: Int = 200,
+        result: @escaping ([String: CoamResult]) -> Void
+    ) {
+        self.log(
+            .OK,
+            message:
+                "getJWSTFilteredProducts: Starting for \(targetName) at RA=\(ra), Dec=\(dec), radius=\(radius)"
+        )
+
+        var filterOptions = ImageryFilterOptions(
+            collections: ["JWST"],
+            instruments: instruments,
+            calibLevels: calibLevels
+        )
+
+        self.setTargetId(targetId: targetName)
+        let service = Service.Mast_Caom_Filtered_Position
+        var params = service.serviceRequest(requestType: .advancedSearch)
+
+        params.setGeneralParameters(params: MAP.values.defaultGeneralParameters())
+        params.setParameter(param: MAP.pagesize, value: pageSize)
+        params.setParameter(param: MAP.page, value: 1)
+        let filterParams = filterOptions.toMASTFilters()
+        params.setFilterParameters(params: filterParams)
+        params.setParameters(params: [MAP.columns: "*", MAP.position: "\(ra), \(dec), \(radius)"])
+
+        let start = CACurrentMediaTime()
+        self.queryMast(
+            service: service, params: params, returnType: .json,
+            { success in
+                let end = CACurrentMediaTime()
+                self.log(
+                    .OK,
+                    message:
+                        "getJWSTFilteredProducts: Query completed in \(String(format: "%.2f", end - start))s"
+                )
+
+                guard let table = self.targets[targetName] else {
+                    self.log(
+                        .RequestError,
+                        message:
+                            "getJWSTFilteredProducts: No target table for '\(targetName)'"
+                    )
+                    result([:])
+                    return
+                }
+
+                let coamResults = table.getCoamResults()
+                self.log(
+                    .OK,
+                    message:
+                        "getJWSTFilteredProducts: Found \(coamResults.count) total JWST products"
+                )
+
+                // Optionally filter by instrument in obs_id (e.g. "miri" in filename)
+                let filteredResults: [CoamResult]
+                if let instruments = instruments {
+                    let lowerInstruments = instruments.map { $0.lowercased() }
+                    filteredResults = coamResults.filter { coam in
+                        lowerInstruments.contains(coam.instrument_name.lowercased())
+                    }
+                } else {
+                    filteredResults = coamResults
+                }
+
+                guard !filteredResults.isEmpty else {
+                    self.log(
+                        .OK,
+                        message:
+                            "getJWSTFilteredProducts: No products after instrument filtering"
+                    )
+                    result([:])
+                    return
+                }
+
+                // Group by filter
+                var productsByFilter = [String: [CoamResult]]()
+                for coam in filteredResults {
+                    let filter = coam.filters
+                    if productsByFilter[filter] == nil {
+                        productsByFilter[filter] = [coam]
+                    } else {
+                        productsByFilter[filter]!.append(coam)
+                    }
+                }
+
+                self.log(
+                    .OK,
+                    message:
+                        "getJWSTFilteredProducts: \(productsByFilter.count) unique filters found: \(productsByFilter.keys.sorted().joined(separator: ", "))"
+                )
+
+                // Pick the best product per filter, preferring the closest common epoch
+                let selected = self.selectClosestEpochProducts(productsByFilter: productsByFilter)
+
+                self.log(
+                    .OK,
+                    message:
+                        "getJWSTFilteredProducts: Selected \(selected.count) products across filters"
+                )
+
+                // Store as target assets
+                let assets = Array(selected.values)
+                if self.targetAssets[targetName] != nil {
+                    self.targetAssets[targetName]!.setAssets(assets: assets)
+                }
+
+                result(selected)
+            })
+    }
+
+    /// Select one product per filter, choosing observations closest to the median epoch
+    /// across all filters. This ensures the returned products are as contemporaneous as possible.
+    internal func selectClosestEpochProducts(
+        productsByFilter: [String: [CoamResult]]
+    ) -> [String: CoamResult] {
+        // Collect all observation timestamps
+        var allTimestamps = [Float]()
+        for products in productsByFilter.values {
+            for p in products where p.t_min > 0 {
+                allTimestamps.append(p.t_min)
+            }
+        }
+
+        guard !allTimestamps.isEmpty else {
+            // Fallback: just take first product per filter
+            var output = [String: CoamResult]()
+            for (filter, products) in productsByFilter {
+                output[filter] = products.first
+            }
+            return output
+        }
+
+        // Find median timestamp as reference epoch
+        allTimestamps.sort()
+        let medianTimestamp: Float
+        if allTimestamps.count % 2 == 0 {
+            medianTimestamp =
+                (allTimestamps[allTimestamps.count / 2 - 1]
+                    + allTimestamps[allTimestamps.count / 2]) / 2.0
+        } else {
+            medianTimestamp = allTimestamps[allTimestamps.count / 2]
+        }
+
+        // For each filter, pick the product closest to the median epoch
+        var output = [String: CoamResult]()
+        for (filter, products) in productsByFilter {
+            let best = products.min { a, b in
+                let aDist = abs(a.t_min - medianTimestamp)
+                let bDist = abs(b.t_min - medianTimestamp)
+                return aDist < bDist
+            }
+            if let best = best {
+                output[filter] = best
+            }
+        }
+
+        return output
+    }
+
 }

@@ -27,7 +27,7 @@ public struct ImageryFilterOptions {
     public var intentType: String
     /// Data rights (default: "PUBLIC")
     public var dataRights: String
-    
+
     /// Initialize with default science image settings
     public init(
         wavelengthRegions: [String]? = nil,
@@ -48,122 +48,140 @@ public struct ImageryFilterOptions {
         self.intentType = intentType
         self.dataRights = dataRights
     }
-    
+
     /// Convert to MASTJsonFilter array for API queries
     public func toMASTFilters() -> [MASTJsonFilter] {
         var filters: [MASTJsonFilter] = []
-        
+
         // Always include data rights
-        filters.append(MASTJsonFilter(
-            paramName: Coam.dataRights.id,
-            values: QObject(values: [QValue(value: dataRights)] as Any)
-        ))
-        
+        filters.append(
+            MASTJsonFilter(
+                paramName: Coam.dataRights.id,
+                values: QObject(values: [QValue(value: dataRights)] as Any)
+            ))
+
         // Calibration levels
         if !calibLevels.isEmpty {
-            filters.append(MASTJsonFilter(
-                paramName: Coam.calib_level.id,
-                values: QObject(values: calibLevels.map { QValue(value: $0) } as Any)
-            ))
+            filters.append(
+                MASTJsonFilter(
+                    paramName: Coam.calib_level.id,
+                    values: QObject(values: calibLevels.map { QValue(value: $0) } as Any)
+                ))
         }
-        
+
         // Data product types
         if !dataProductTypes.isEmpty {
-            filters.append(MASTJsonFilter(
-                paramName: Coam.dataproduct_type.id,
-                values: QObject(values: dataProductTypes.map { QValue(value: $0) } as Any)
-            ))
+            filters.append(
+                MASTJsonFilter(
+                    paramName: Coam.dataproduct_type.id,
+                    values: QObject(values: dataProductTypes.map { QValue(value: $0) } as Any)
+                ))
         }
-        
+
         // Intent type
-        filters.append(MASTJsonFilter(
-            paramName: Coam.intentType.id,
-            values: QObject(values: [QValue(value: intentType)] as Any)
-        ))
-        
+        filters.append(
+            MASTJsonFilter(
+                paramName: Coam.intentType.id,
+                values: QObject(values: [QValue(value: intentType)] as Any)
+            ))
+
         // Optional: Wavelength regions
         if let regions = wavelengthRegions, !regions.isEmpty {
-            filters.append(MASTJsonFilter(
-                paramName: Coam.wavelength_region.id,
-                values: QObject(values: regions.map { QValue(value: $0) } as Any),
-                separator: ";"
-            ))
+            filters.append(
+                MASTJsonFilter(
+                    paramName: Coam.wavelength_region.id,
+                    values: QObject(values: regions.map { QValue(value: $0) } as Any),
+                    separator: ";"
+                ))
         }
-        
+
         // Optional: Collections/Missions
         if let cols = collections, !cols.isEmpty {
-            filters.append(MASTJsonFilter(
-                paramName: Coam.obs_collection.id,
-                values: QObject(values: cols.map { QValue(value: $0) } as Any),
-                separator: ";"
-            ))
+            filters.append(
+                MASTJsonFilter(
+                    paramName: Coam.obs_collection.id,
+                    values: QObject(values: cols.map { QValue(value: $0) } as Any),
+                    separator: ";"
+                ))
         }
-        
+
         // Optional: Instruments
         if let insts = instruments, !insts.isEmpty {
-            filters.append(MASTJsonFilter(
-                paramName: Coam.instrument_name.id,
-                values: QObject(values: insts.map { QValue(value: $0) } as Any),
-                separator: ";"
-            ))
+            filters.append(
+                MASTJsonFilter(
+                    paramName: Coam.instrument_name.id,
+                    values: QObject(values: insts.map { QValue(value: $0) } as Any),
+                    separator: ";"
+                ))
         }
-        
+
         // Optional: Filter bands
         if let bands = filterBands, !bands.isEmpty {
-            filters.append(MASTJsonFilter(
-                paramName: Coam.filters.id,
-                values: QObject(values: bands.map { QValue(value: $0) } as Any),
-                separator: ";"
-            ))
+            filters.append(
+                MASTJsonFilter(
+                    paramName: Coam.filters.id,
+                    values: QObject(values: bands.map { QValue(value: $0) } as Any),
+                    separator: ";"
+                ))
         }
-        
+
         return filters
     }
-    
+
     // MARK: - Convenience Presets
-    
+
     /// Default science images (all wavelengths, all missions)
     public static var defaultScience: ImageryFilterOptions {
         ImageryFilterOptions()
     }
-    
+
     /// UV-only imagery
     public static var uvOnly: ImageryFilterOptions {
         ImageryFilterOptions(wavelengthRegions: ["UV", "EUV"])
     }
-    
+
     /// Optical-only imagery
     public static var opticalOnly: ImageryFilterOptions {
         ImageryFilterOptions(wavelengthRegions: ["OPTICAL"])
     }
-    
+
     /// Infrared-only imagery
     public static var infraredOnly: ImageryFilterOptions {
         ImageryFilterOptions(wavelengthRegions: ["INFRARED", "IR"])
     }
-    
+
     /// X-ray imagery
     public static var xrayOnly: ImageryFilterOptions {
         ImageryFilterOptions(wavelengthRegions: ["XRAY"])
     }
-    
+
     /// Hubble Space Telescope only
     public static var hubbleOnly: ImageryFilterOptions {
         ImageryFilterOptions(collections: ["HST"])
     }
-    
+
     /// James Webb Space Telescope only
     public static var jwstOnly: ImageryFilterOptions {
         ImageryFilterOptions(collections: ["JWST"])
     }
-    
+
     /// GALEX ultraviolet survey
     public static var galexOnly: ImageryFilterOptions {
         ImageryFilterOptions(collections: ["GALEX"])
     }
-    
+
     /// Swift UVOT
     public static var swiftOnly: ImageryFilterOptions {
         ImageryFilterOptions(collections: ["SWIFT"])
+    }
+
+    /// JWST MIRI instrument only
+    public static var jwstMIRI: ImageryFilterOptions {
+        ImageryFilterOptions(collections: ["JWST"], instruments: ["MIRI/IMAGE"])
+    }
+
+    /// JWST NIRCam instrument only
+    public static var jwstNIRCam: ImageryFilterOptions {
+        ImageryFilterOptions(collections: ["JWST"], instruments: ["NIRCAM/IMAGE"])
     }
 }

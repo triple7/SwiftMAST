@@ -47,7 +47,7 @@ public class SwiftMAST: NSObject {
      */
     internal var currentTargetId: String?
     public var targets: [String: MASTTable]
-    private var targetAssets: [String: TargetAsset]
+    internal var targetAssets: [String: TargetAsset]
     // Storage for FITS metadata keyed by targetName
     public var fitsMetadataStore: [String: [FITSMetadata]]
     private var buffer: Int!

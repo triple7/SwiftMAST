@@ -1482,4 +1482,187 @@ final class SwiftMASTTests: XCTestCase {
 
         print("JWST keyword descriptions test passed")
     }
+
+    // MARK: - JWST Multi-Filter Products Tests
+
+    private func makeCoamResultWithFilter(
+        filter: String, instrument: String = "MIRI/IMAGE",
+        tMin: Float = 0, obsId: String = "obs-1"
+    ) -> CoamResult {
+        return CoamResult(
+            calib_level: 3,
+            dataRights: "PUBLIC",
+            dataURL: "mast:JWST/product/\(obsId).fits",
+            dataproduct_type: "IMAGE",
+            distance: 0,
+            em_max: 0,
+            em_min: 0,
+            filters: filter,
+            instrument_name: instrument,
+            intentType: "science",
+            jpegURL: "",
+            mtFlag: false,
+            objID: 1,
+            obs_collection: "JWST",
+            obs_id: obsId,
+            obs_title: "Test Observation",
+            obsid: 1,
+            project: "Test",
+            proposal_id: "1",
+            proposal_pi: "PI",
+            proposal_type: "TEST",
+            provenance_name: "MAST",
+            s_dec: QValue(value: "0.0"),
+            s_ra: QValue(value: "0.0"),
+            s_region: "",
+            sequence_number: 0,
+            srcDen: 0,
+            t_exptime: 100.0,
+            t_max: tMin + 0.01,
+            t_min: tMin,
+            t_obs_release: 0.0,
+            target_classification: "",
+            target_name: "NGC-628",
+            wavelength_region: "INFRARED"
+        )
+    }
+
+    func testSelectClosestEpochProductsSinglePerFilter() {
+        let mast = SwiftMAST()
+        let products: [String: [CoamResult]] = [
+            "F770W": [makeCoamResultWithFilter(filter: "F770W", tMin: 59777.46, obsId: "obs-1")],
+            "F1000W": [makeCoamResultWithFilter(filter: "F1000W", tMin: 59777.47, obsId: "obs-2")],
+            "F1500W": [makeCoamResultWithFilter(filter: "F1500W", tMin: 59777.48, obsId: "obs-3")],
+        ]
+
+        let selected = mast.selectClosestEpochProducts(productsByFilter: products)
+
+        XCTAssertEqual(selected.count, 3)
+        XCTAssertNotNil(selected["F770W"])
+        XCTAssertNotNil(selected["F1000W"])
+        XCTAssertNotNil(selected["F1500W"])
+    }
+
+    func testSelectClosestEpochProductsPicksClosestToMedian() {
+        let mast = SwiftMAST()
+
+        // F770W has two observations: one at epoch 59777, one at epoch 60659
+        // F1000W has one at epoch 59780
+        // Median of all timestamps should favor the ~59777-59780 cluster
+        let products: [String: [CoamResult]] = [
+            "F770W": [
+                makeCoamResultWithFilter(filter: "F770W", tMin: 59777.46, obsId: "obs-early"),
+                makeCoamResultWithFilter(filter: "F770W", tMin: 60659.21, obsId: "obs-late"),
+            ],
+            "F1000W": [
+                makeCoamResultWithFilter(filter: "F1000W", tMin: 59780.0, obsId: "obs-mid")
+            ],
+        ]
+
+        let selected = mast.selectClosestEpochProducts(productsByFilter: products)
+
+        XCTAssertEqual(selected.count, 2)
+        // The median of [59777.46, 59780.0, 60659.21] = 59780.0
+        // F770W should pick the early obs (closer to 59780.0)
+        XCTAssertEqual(selected["F770W"]?.obs_id, "obs-early")
+        XCTAssertEqual(selected["F1000W"]?.obs_id, "obs-mid")
+    }
+
+    func testSelectClosestEpochProductsEmptyTimestamps() {
+        let mast = SwiftMAST()
+        let products: [String: [CoamResult]] = [
+            "F770W": [makeCoamResultWithFilter(filter: "F770W", tMin: 0, obsId: "obs-1")],
+            "F1000W": [makeCoamResultWithFilter(filter: "F1000W", tMin: 0, obsId: "obs-2")],
+        ]
+
+        let selected = mast.selectClosestEpochProducts(productsByFilter: products)
+
+        // With t_min = 0, fallback should still return one per filter
+        XCTAssertEqual(selected.count, 2)
+    }
+
+    func testJWSTMIRIPreset() {
+        let options = ImageryFilterOptions.jwstMIRI
+        XCTAssertEqual(options.collections, ["JWST"])
+        XCTAssertEqual(options.instruments, ["MIRI/IMAGE"])
+        let filters = options.toMASTFilters()
+        let paramNames = filters.map { $0.paramName }
+        XCTAssertTrue(paramNames.contains("obs_collection"))
+        XCTAssertTrue(paramNames.contains("instrument_name"))
+    }
+
+    func testJWSTNIRCamPreset() {
+        let options = ImageryFilterOptions.jwstNIRCam
+        XCTAssertEqual(options.collections, ["JWST"])
+        XCTAssertEqual(options.instruments, ["NIRCAM/IMAGE"])
+    }
+
+    // MARK: - JWST Integration Tests (requires network)
+
+    /// Test fetching JWST products grouped by filter for NGC 628
+    func testGetJWSTFilteredProductsNGC628() {
+        let expectation = XCTestExpectation(description: "Get JWST filtered products for NGC 628")
+        let mast = SwiftMAST()
+
+        print("\n=== Testing JWST Multi-Filter Products for NGC 628 ===")
+        mast.getJWSTFilteredProducts(targetName: "NGC 628") { products in
+            print("JWST Products by filter (\(products.count) filters):")
+            for (filter, coam) in products.sorted(by: { $0.key < $1.key }) {
+                print(
+                    "  \(filter): \(coam.instrument_name) | obs_id=\(coam.obs_id) | t_min=\(coam.t_min)"
+                )
+            }
+            XCTAssertFalse(products.isEmpty, "Should find JWST products for NGC 628")
+            XCTAssertTrue(products.count > 5, "NGC 628 should have multiple JWST filters")
+            expectation.fulfill()
+        }
+
+        wait(for: [expectation], timeout: 60.0)
+    }
+
+    /// Test fetching MIRI-only products for NGC 628
+    func testGetJWSTFilteredProductsMIRIOnly() {
+        let expectation = XCTestExpectation(description: "Get JWST MIRI products for NGC 628")
+        let mast = SwiftMAST()
+
+        print("\n=== Testing JWST MIRI-Only Products for NGC 628 ===")
+        mast.getJWSTFilteredProducts(
+            targetName: "NGC 628",
+            instruments: ["MIRI/IMAGE"]
+        ) { products in
+            print("MIRI Products by filter (\(products.count) filters):")
+            for (filter, coam) in products.sorted(by: { $0.key < $1.key }) {
+                print("  \(filter): \(coam.instrument_name) | obs_id=\(coam.obs_id)")
+                // All should be MIRI
+                XCTAssertTrue(
+                    coam.instrument_name.uppercased().contains("MIRI"),
+                    "Expected MIRI instrument, got \(coam.instrument_name)"
+                )
+            }
+            XCTAssertFalse(products.isEmpty, "Should find MIRI products for NGC 628")
+            expectation.fulfill()
+        }
+
+        wait(for: [expectation], timeout: 60.0)
+    }
+
+    /// Test fetching JWST products for NGC 253
+    func testGetJWSTFilteredProductsNGC253() {
+        let expectation = XCTestExpectation(description: "Get JWST filtered products for NGC 253")
+        let mast = SwiftMAST()
+
+        print("\n=== Testing JWST Multi-Filter Products for NGC 253 ===")
+        mast.getJWSTFilteredProducts(targetName: "NGC 253") { products in
+            print("JWST Products by filter (\(products.count) filters):")
+            for (filter, coam) in products.sorted(by: { $0.key < $1.key }) {
+                print(
+                    "  \(filter): \(coam.instrument_name) | obs_id=\(coam.obs_id) | t_min=\(coam.t_min)"
+                )
+            }
+            XCTAssertFalse(products.isEmpty, "Should find JWST products for NGC 253")
+            expectation.fulfill()
+        }
+
+        wait(for: [expectation], timeout: 60.0)
+    }
 }

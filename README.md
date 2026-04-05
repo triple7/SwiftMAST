@@ -187,3 +187,91 @@ if let radesys = FITSRaDesys(fitsValue: "'ICRS    '") {
 }
 ```
 
+## JWST Filter-Band Products
+
+`getJWSTFilteredProducts` queries MAST for public JWST science products (calibration levels 3–4) around a target and returns exactly one `CoamResult` per unique filter band. When multiple observations exist for the same filter the product closest to the median observation epoch is selected, so the returned set is as contemporaneous as possible.
+
+### By target name
+
+The target name is resolved via the MAST name resolver before querying.
+
+```swift
+let mast = SwiftMAST()
+
+// All JWST instruments (NIRCam + MIRI)
+mast.getJWSTFilteredProducts(targetName: "NGC 628") { products in
+    for (filter, coam) in products.sorted(by: { $0.key < $1.key }) {
+        print("\(filter)  \(coam.instrument_name)  \(coam.obs_id)")
+    }
+}
+// F1000W  MIRI/IMAGE  jw02666-o007_t001_miri_f1000w
+// F1130W  MIRI/IMAGE  jw02666-o007_t001_miri_f1130w
+// F115W   NIRCAM/IMAGE  jw02107-o039_t018_nircam_clear-f115w
+// …
+
+// MIRI only
+mast.getJWSTFilteredProducts(targetName: "NGC 253", instruments: ["MIRI/IMAGE"]) { products in
+    for (filter, coam) in products {
+        print("\(filter): \(coam.obs_id)")
+    }
+}
+```
+
+### By coordinates
+
+Use the coordinate overload when you already have RA/Dec, bypassing the resolver step.
+
+```swift
+mast.getJWSTFilteredProducts(
+    targetName: "NGC 628",
+    ra: 24.174,
+    dec: 15.783,
+    radius: 0.2,
+    instruments: ["NIRCAM/IMAGE"],
+    calibLevels: ["3", "4"]
+) { products in
+    print("NIRCam filters: \(products.keys.sorted().joined(separator: ", "))")
+}
+```
+
+### Parameters
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `targetName` | `String` | — | Human-readable target identifier |
+| `ra` | `Float` | — | Right Ascension (degrees, J2000) — coordinate overload only |
+| `dec` | `Float` | — | Declination (degrees, J2000) — coordinate overload only |
+| `radius` | `Float` | — | Search radius (degrees) — coordinate overload only |
+| `instruments` | `[String]?` | `nil` | Restrict to specific instruments, e.g. `["MIRI/IMAGE"]` or `["NIRCAM/IMAGE"]`. `nil` returns all. |
+| `calibLevels` | `[String]` | `["3", "4"]` | CAOM calibration levels to include |
+| `pageSize` | `Int` | `200` | Maximum products fetched per MAST page |
+| `result` | `([String: CoamResult]) -> Void` | — | Callback receiving the filter → product dictionary |
+
+### Return value
+
+A `[String: CoamResult]` dictionary keyed by filter name (e.g. `"F770W"`, `"F1000W"`). Each value is a full `CoamResult` containing `obs_id`, `instrument_name`, `dataURL`, `t_min`/`t_max`, `filters`, and all other CAOM fields.
+
+### ImageryFilterOptions presets
+
+Two convenience presets are provided for building filter queries manually:
+
+```swift
+// JWST MIRI imaging
+let miriOptions = ImageryFilterOptions.jwstMIRI
+// collections: ["JWST"], instruments: ["MIRI/IMAGE"]
+
+// JWST NIRCam imaging
+let nircamOptions = ImageryFilterOptions.jwstNIRCam
+// collections: ["JWST"], instruments: ["NIRCAM/IMAGE"]
+
+// Use with getScienceImageQueryResults
+mast.getScienceImageQueryResults(
+    targetName: "NGC 628",
+    filterOptions: .jwstMIRI,
+    pageSize: 50,
+    page: 1
+) { results in
+    print("MIRI products: \(results.count)")
+}
+```
+
