@@ -1145,6 +1145,164 @@ extension SwiftMAST {
             })
     }
 
+    // MARK: - JWST Multi-Filter Science Product Extraction
+
+    /** Extract science products for each unique JWST filter band of a target.
+
+     This is a convenience function that chains `getJWSTFilteredProducts` with
+     `extractScienceProducts`: it first queries MAST for one ``CoamResult`` per
+     unique filter, then downloads and extracts the FITS data for each, returning
+     a dictionary mapping filter name → array of ``ScienceProduct`` (one per HDU
+     in the FITS file).
+
+     Parameters:
+     * targetName: String - the target identifier (e.g. "NGC 628")
+     * instruments: [String]? - optional instrument filter (e.g. ["MIRI/IMAGE"])
+     * calibLevels: [String] - calibration levels (default: ["3", "4"])
+     * pageSize: Int - number of results per page (default: 200)
+     * token: String? - MAST authentication token (optional)
+     * result: Closure returning a dictionary mapping filter name → [ScienceProduct]
+
+     Example usage:
+     ```swift
+     let mast = SwiftMAST()
+     mast.getJWSTScienceProducts(targetName: "NGC 628") { products in
+         for (filter, scienceProducts) in products {
+             print("\(filter): \(scienceProducts.count) HDU(s)")
+             for sp in scienceProducts {
+                 print("  \(sp.name) — \(sp.headers.count) headers")
+             }
+         }
+     }
+     ```
+     */
+    public func getJWSTScienceProducts(
+        targetName: String,
+        instruments: [String]? = nil,
+        calibLevels: [String] = ["3", "4"],
+        pageSize: Int = 200,
+        token: String? = nil,
+        result: @escaping ([String: [ScienceProduct]]) -> Void
+    ) {
+        self.getJWSTFilteredProducts(
+            targetName: targetName,
+            instruments: instruments,
+            calibLevels: calibLevels,
+            pageSize: pageSize
+        ) { filteredProducts in
+            guard !filteredProducts.isEmpty else {
+                result([:])
+                return
+            }
+
+            self.log(
+                .OK,
+                message:
+                    "getJWSTScienceProducts: Extracting science products for \(filteredProducts.count) filters"
+            )
+
+            var scienceProducts = [String: [ScienceProduct]]()
+            let group = DispatchGroup()
+            let lock = NSLock()
+
+            for (filter, coam) in filteredProducts {
+                group.enter()
+                self.extractScienceProducts(
+                    targetName: targetName, coamResult: coam, token: token
+                ) { products in
+                    if !products.isEmpty {
+                        lock.lock()
+                        scienceProducts[filter] = products
+                        lock.unlock()
+                    }
+                    group.leave()
+                }
+            }
+
+            group.notify(queue: .main) {
+                self.log(
+                    .OK,
+                    message:
+                        "getJWSTScienceProducts: Extracted \(scienceProducts.count) science products across filters"
+                )
+                result(scienceProducts)
+            }
+        }
+    }
+
+    /** Extract science products for each unique JWST filter band at given coordinates.
+
+     Parameters:
+     * targetName: String - the target identifier
+     * ra: Float - Right Ascension (degrees, J2000)
+     * dec: Float - Declination (degrees, J2000)
+     * radius: Float - Search radius in degrees
+     * instruments: [String]? - optional instrument filter (e.g. ["MIRI/IMAGE"])
+     * calibLevels: [String] - calibration levels (default: ["3", "4"])
+     * pageSize: Int - number of results per page (default: 200)
+     * token: String? - MAST authentication token (optional)
+     * result: Closure returning a dictionary mapping filter name → [ScienceProduct]
+     */
+    public func getJWSTScienceProducts(
+        targetName: String,
+        ra: Float,
+        dec: Float,
+        radius: Float,
+        instruments: [String]? = nil,
+        calibLevels: [String] = ["3", "4"],
+        pageSize: Int = 200,
+        token: String? = nil,
+        result: @escaping ([String: [ScienceProduct]]) -> Void
+    ) {
+        self.getJWSTFilteredProducts(
+            targetName: targetName,
+            ra: ra,
+            dec: dec,
+            radius: radius,
+            instruments: instruments,
+            calibLevels: calibLevels,
+            pageSize: pageSize
+        ) { filteredProducts in
+            guard !filteredProducts.isEmpty else {
+                result([:])
+                return
+            }
+
+            self.log(
+                .OK,
+                message:
+                    "getJWSTScienceProducts: Extracting science products for \(filteredProducts.count) filters"
+            )
+
+            var scienceProducts = [String: [ScienceProduct]]()
+            let group = DispatchGroup()
+            let lock = NSLock()
+
+            for (filter, coam) in filteredProducts {
+                group.enter()
+                self.extractScienceProducts(
+                    targetName: targetName, coamResult: coam, token: token
+                ) { products in
+                    if !products.isEmpty {
+                        lock.lock()
+                        scienceProducts[filter] = products
+                        lock.unlock()
+                    }
+                    group.leave()
+                }
+            }
+
+            group.notify(queue: .main) {
+                self.log(
+                    .OK,
+                    message:
+                        "getJWSTScienceProducts: Extracted \(scienceProducts.count) science products across filters"
+                )
+                result(scienceProducts)
+            }
+        }
+    }
+
     /// Select one product per filter, choosing observations closest to the median epoch
     /// across all filters. This ensures the returned products are as contemporaneous as possible.
     internal func selectClosestEpochProducts(

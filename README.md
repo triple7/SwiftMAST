@@ -275,3 +275,38 @@ mast.getScienceImageQueryResults(
 }
 ```
 
+## JWST Science Product Extraction by Filter
+
+`getJWSTScienceProducts` extends the filter-band query by downloading each FITS file and extracting its science products. It returns a `[String: [ScienceProduct]]` dictionary — one array of `ScienceProduct` per unique filter band (one per HDU in the FITS file).
+
+### Usage
+
+```swift
+let mast = SwiftMAST()
+
+mast.getJWSTScienceProducts(targetName: "NGC 628", instruments: ["MIRI/IMAGE"]) { products in
+    for (filter, scienceProducts) in products.sorted(by: { $0.key < $1.key }) {
+        print("\(filter): \(scienceProducts.count) HDU(s)")
+        for sp in scienceProducts {
+            print("  \(sp.name)")
+            print("  Image: \(sp.imageLocation?.path ?? "none")")
+            print("  Headers: \(sp.headers.count)")
+        }
+    }
+}
+```
+
+### Parameters
+
+Accepts the same parameters as `getJWSTFilteredProducts`, plus an optional `token` for MAST authentication:
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `targetName` | `String` | — | Human-readable target identifier |
+| `instruments` | `[String]?` | `nil` | Restrict to specific instruments |
+| `calibLevels` | `[String]` | `["3", "4"]` | CAOM calibration levels |
+| `pageSize` | `Int` | `200` | Maximum products per MAST page |
+| `token` | `String?` | `nil` | MAST authentication token |
+| `result` | `([String: [ScienceProduct]]) -> Void` | — | Callback receiving the filter → products dictionary |
+
+A coordinate-based overload is also available with additional `ra`, `dec`, and `radius` parameters.

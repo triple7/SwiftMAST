@@ -1665,4 +1665,39 @@ final class SwiftMASTTests: XCTestCase {
 
         wait(for: [expectation], timeout: 60.0)
     }
+
+    // MARK: - JWST Science Product Extraction Tests
+
+    /// Integration test: extract science products by filter for a small target
+    func testGetJWSTScienceProductsMIRI() {
+        let expectation = XCTestExpectation(
+            description: "Get JWST science products for NGC 628 MIRI")
+        let mast = SwiftMAST()
+
+        print("\n=== Testing JWST Science Products (MIRI) for NGC 628 ===")
+        mast.getJWSTScienceProducts(
+            targetName: "NGC 628",
+            instruments: ["MIRI/IMAGE"]
+        ) { products in
+            print("Science Products by filter (\(products.count) filters):")
+            for (filter, scienceProducts) in products.sorted(by: { $0.key < $1.key }) {
+                print("  \(filter): \(scienceProducts.count) HDU(s)")
+                for sp in scienceProducts {
+                    print("    name: \(sp.name)")
+                    print("    image: \(sp.imageLocation?.lastPathComponent ?? "none")")
+                    print("    headers: \(sp.headers.count)")
+                }
+            }
+            XCTAssertFalse(products.isEmpty, "Should extract MIRI science products for NGC 628")
+            // Each filter should have at least one ScienceProduct
+            for (filter, scienceProducts) in products {
+                XCTAssertFalse(
+                    scienceProducts.isEmpty,
+                    "Filter \(filter) should have at least one ScienceProduct")
+            }
+            expectation.fulfill()
+        }
+
+        wait(for: [expectation], timeout: 120.0)
+    }
 }
