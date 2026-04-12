@@ -1352,4 +1352,204 @@ extension SwiftMAST {
         return output
     }
 
+    // MARK: - JWST Observation Groups
+
+    /** Query JWST science products and group them by observation session.
+
+     Each observation group shares the same program, observation number, target,
+     and instrument (derived from the `obs_id` prefix). Within each group, products
+     are sorted by filter wavelength in ascending order (e.g. F200W before F1000W).
+
+     This is useful for viewing all filter bands captured in a single observation
+     session, organized by instrument.
+
+     Parameters:
+     * targetName: String - the target identifier (e.g. "NGC 628", "NGC 253")
+     * instruments: [String]? - optional instrument filter (e.g. ["MIRI/IMAGE"])
+     * calibLevels: [String] - calibration levels (default: ["3", "4"])
+     * pageSize: Int - number of results per page (default: 400)
+     * result: Closure returning an array of ``JWSTObservationGroup``, sorted by observation key
+
+     Example usage:
+     ```swift
+     let mast = SwiftMAST()
+     mast.getJWSTObservationGroups(targetName: "NGC 628") { groups in
+         for group in groups {
+             print(group.observationKey)
+             print("  instrument: \(group.instrument)")
+             for product in group.products {
+                 print("  \(product.filters): \(product.obs_id)")
+             }
+         }
+     }
+     ```
+     */
+    public func getJWSTObservationGroups(
+        targetName: String,
+        instruments: [String]? = nil,
+        calibLevels: [String] = ["3", "4"],
+        pageSize: Int = 400,
+        result: @escaping ([JWSTObservationGroup]) -> Void
+    ) {
+        self.lookupTargetCoordinates(targetName: targetName) { coordinates in
+            guard let coordinates = coordinates else {
+                self.log(
+                    .RequestError,
+                    message:
+                        "getJWSTObservationGroups: Could not resolve target '\(targetName)'"
+                )
+                result([])
+                return
+            }
+            self.getJWSTObservationGroups(
+                targetName: targetName,
+                ra: coordinates.ra,
+                dec: coordinates.dec,
+                radius: coordinates.radius,
+                instruments: instruments,
+                calibLevels: calibLevels,
+                pageSize: pageSize,
+                result: result
+            )
+        }
+    }
+
+    /** Query JWST science products at given coordinates and group by observation session.
+
+     Parameters:
+     * targetName: String - the target identifier
+     * ra: Float - Right Ascension (degrees, J2000)
+     * dec: Float - Declination (degrees, J2000)
+     * radius: Float - Search radius in degrees
+     * instruments: [String]? - optional instrument filter (e.g. ["MIRI/IMAGE"])
+     * calibLevels: [String] - calibration levels (default: ["3", "4"])
+     * pageSize: Int - number of results per page (default: 400)
+     * result: Closure returning an array of ``JWSTObservationGroup``
+     */
+    public func getJWSTObservationGroups(
+        targetName: String,
+        ra: Float,
+        dec: Float,
+        radius: Float,
+        instruments: [String]? = nil,
+        calibLevels: [String] = ["3", "4"],
+        pageSize: Int = 400,
+        result: @escaping ([JWSTObservationGroup]) -> Void
+    ) {
+        self.log(
+            .OK,
+            message:
+                "getJWSTObservationGroups: Starting for \(targetName) at RA=\(ra), Dec=\(dec), radius=\(radius)"
+        )
+
+        var filterOptions = ImageryFilterOptions(
+            collections: ["JWST"],
+            instruments: instruments,
+            calibLevels: calibLevels
+        )
+
+        self.setTargetId(targetId: targetName)
+        let service = Service.Mast_Caom_Filtered_Position
+        var params = service.serviceRequest(requestType: .advancedSearch)
+
+        params.setGeneralParameters(params: MAP.values.defaultGeneralParameters())
+        params.setParameter(param: MAP.pagesize, value: pageSize)
+        params.setParameter(param: MAP.page, value: 1)
+        let filterParams = filterOptions.toMASTFilters()
+        params.setFilterParameters(params: filterParams)
+        params.setParameters(params: [MAP.columns: "*", MAP.position: "\(ra), \(dec), \(radius)"])
+
+        let start = CACurrentMediaTime()
+        self.queryMast(
+            service: service, params: params, returnType: .json,
+            { success in
+                let end = CACurrentMediaTime()
+                self.log(
+                    .OK,
+                    message:
+                        "getJWSTObservationGroups: Query completed in \(String(format: "%.2f", end - start))s"
+                )
+
+                guard let table = self.targets[targetName] else {
+                    self.log(
+                        .RequestError,
+                        message:
+                            "getJWSTObservationGroups: No target table for '\(targetName)'"
+                    )
+                    result([])
+                    return
+                }
+
+                let coamResults = table.getCoamResults()
+                self.log(
+                    .OK,
+                    message:
+                        "getJWSTObservationGroups: Found \(coamResults.count) total JWST products"
+                )
+
+                // Optionally filter by instrument
+                let filteredResults: [CoamResult]
+                if let instruments = instruments {
+                    let lowerInstruments = instruments.map { $0.lowercased() }
+                    filteredResults = coamResults.filter { coam in
+                        lowerInstruments.contains(coam.instrument_name.lowercased())
+                    }
+                } else {
+                    filteredResults = coamResults
+                }
+
+                guard !filteredResults.isEmpty else {
+                    self.log(
+                        .OK,
+                        message: "getJWSTObservationGroups: No products after filtering"
+                    )
+                    result([])
+                    return
+                }
+
+                let groups = self.buildObservationGroups(from: filteredResults)
+
+                self.log(
+                    .OK,
+                    message:
+                        "getJWSTObservationGroups: Built \(groups.count) observation groups"
+                )
+
+                result(groups)
+            })
+    }
+
+    /// Build observation groups from a flat array of CoamResults.
+    /// Groups by obs_id prefix, sorts products within each group by filter wavelength,
+    /// and sorts groups by observation key.
+    internal func buildObservationGroups(from results: [CoamResult]) -> [JWSTObservationGroup] {
+        // Group by observation key
+        var grouped = [String: [CoamResult]]()
+        for coam in results {
+            let key = jwstObservationGroupKey(coam.obs_id)
+            if grouped[key] == nil {
+                grouped[key] = [coam]
+            } else {
+                grouped[key]!.append(coam)
+            }
+        }
+
+        // Build sorted groups
+        var groups = [JWSTObservationGroup]()
+        for (key, products) in grouped {
+            let sorted = products.sorted { compareJWSTFilters($0.filters, $1.filters) }
+            let instrument = sorted.first?.instrument_name ?? ""
+            groups.append(
+                JWSTObservationGroup(
+                    observationKey: key,
+                    instrument: instrument,
+                    products: sorted
+                ))
+        }
+
+        // Sort groups by key
+        groups.sort { $0.observationKey < $1.observationKey }
+        return groups
+    }
+
 }

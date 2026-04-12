@@ -6,7 +6,14 @@ import XCTest
 
 final class SwiftMASTTests: XCTestCase {
 
-    private func makeCoamResult(dataURL: String = "", jpegURL: String = "") -> CoamResult {
+    private func makeCoamResult(
+        dataURL: String = "",
+        jpegURL: String = "",
+        obs_id: String = "obs-1",
+        filters: String = "F606W",
+        instrument_name: String = "ACS",
+        obs_collection: String = "HST"
+    ) -> CoamResult {
         return CoamResult(
             calib_level: 3,
             dataRights: "PUBLIC",
@@ -15,14 +22,14 @@ final class SwiftMASTTests: XCTestCase {
             distance: 0,
             em_max: 0,
             em_min: 0,
-            filters: "F606W",
-            instrument_name: "ACS",
+            filters: filters,
+            instrument_name: instrument_name,
             intentType: "science",
             jpegURL: jpegURL,
             mtFlag: false,
             objID: 1,
-            obs_collection: "HST",
-            obs_id: "obs-1",
+            obs_collection: obs_collection,
+            obs_id: obs_id,
             obs_title: "Test Observation",
             obsid: 1,
             project: "Test",
@@ -1695,6 +1702,172 @@ final class SwiftMASTTests: XCTestCase {
                     scienceProducts.isEmpty,
                     "Filter \(filter) should have at least one ScienceProduct")
             }
+            expectation.fulfill()
+        }
+
+        wait(for: [expectation], timeout: 120.0)
+    }
+
+    // MARK: - JWST Observation Group Unit Tests
+
+    func testJWSTFilterWavelength() {
+        // Standard filter names
+        XCTAssertEqual(jwstFilterWavelength("F200W"), 200)
+        XCTAssertEqual(jwstFilterWavelength("F1000W"), 1000)
+        XCTAssertEqual(jwstFilterWavelength("F2550W"), 2550)
+        XCTAssertEqual(jwstFilterWavelength("F115W"), 115)
+
+        // Filter with trailing digit (e.g. F150W2)
+        XCTAssertEqual(jwstFilterWavelength("F150W2"), 150)
+
+        // Compound filter (e.g. F444W;F405N)
+        XCTAssertEqual(jwstFilterWavelength("F444W;F405N"), 444)
+
+        // Lowercase
+        XCTAssertEqual(jwstFilterWavelength("f770w"), 770)
+
+        // Non-standard name sorts last
+        XCTAssertEqual(jwstFilterWavelength("CLEAR"), Int.max)
+    }
+
+    func testCompareJWSTFilters() {
+        // F200W < F1000W
+        XCTAssertTrue(compareJWSTFilters("F200W", "F1000W"))
+        XCTAssertFalse(compareJWSTFilters("F1000W", "F200W"))
+
+        // F115W < F150W
+        XCTAssertTrue(compareJWSTFilters("F115W", "F150W"))
+
+        // F150W2 (wavelength 150) < F200W (wavelength 200)
+        XCTAssertTrue(compareJWSTFilters("F150W2", "F200W"))
+
+        // Same wavelength sorts alphabetically
+        XCTAssertTrue(compareJWSTFilters("F150W", "F150W2"))
+
+        // Compound filter: F444W;F405N (wavelength 444) < F560W (wavelength 560)
+        XCTAssertTrue(compareJWSTFilters("F444W;F405N", "F560W"))
+
+        // Verify a full sort
+        let unsorted = ["F1000W", "F200W", "F560W", "F115W", "F150W2", "F444W;F405N", "F2550W"]
+        let sorted = unsorted.sorted(by: compareJWSTFilters)
+        let expected = ["F115W", "F150W2", "F200W", "F444W;F405N", "F560W", "F1000W", "F2550W"]
+        XCTAssertEqual(sorted, expected)
+    }
+
+    func testJWSTObservationGroupKey() {
+        // Standard obs_id with 4+ parts
+        XCTAssertEqual(
+            jwstObservationGroupKey("jw02666-o007_t004_miri_f1000w"),
+            "jw02666-o007_t004_miri"
+        )
+        XCTAssertEqual(
+            jwstObservationGroupKey("jw01783-o004_t008_nircam_f200w-f150w2"),
+            "jw01783-o004_t008_nircam"
+        )
+
+        // obs_id with exactly 3 parts
+        XCTAssertEqual(
+            jwstObservationGroupKey("jw01783-o004_t008_nircam"),
+            "jw01783-o004_t008_nircam"
+        )
+
+        // obs_id with fewer than 3 parts (edge case: return as-is)
+        XCTAssertEqual(
+            jwstObservationGroupKey("jw01783-o004"),
+            "jw01783-o004"
+        )
+    }
+
+    func testBuildObservationGroups() {
+        let mast = SwiftMAST()
+
+        // Create mock CoamResults with different obs_ids for the same group
+        let coam1 = makeCoamResult(
+            obs_id: "jw02666-o007_t004_miri_f1000w",
+            filters: "F1000W",
+            instrument_name: "MIRI/IMAGE",
+            obs_collection: "JWST"
+        )
+        let coam2 = makeCoamResult(
+            obs_id: "jw02666-o007_t004_miri_f560w",
+            filters: "F560W",
+            instrument_name: "MIRI/IMAGE",
+            obs_collection: "JWST"
+        )
+        let coam3 = makeCoamResult(
+            obs_id: "jw02666-o007_t004_miri_f2100w",
+            filters: "F2100W",
+            instrument_name: "MIRI/IMAGE",
+            obs_collection: "JWST"
+        )
+        let coam4 = makeCoamResult(
+            obs_id: "jw01783-o004_t008_nircam_f200w",
+            filters: "F200W",
+            instrument_name: "NIRCAM/IMAGE",
+            obs_collection: "JWST"
+        )
+        let coam5 = makeCoamResult(
+            obs_id: "jw01783-o004_t008_nircam_f115w",
+            filters: "F115W",
+            instrument_name: "NIRCAM/IMAGE",
+            obs_collection: "JWST"
+        )
+
+        let groups = mast.buildObservationGroups(from: [coam1, coam2, coam3, coam4, coam5])
+
+        // Should produce 2 groups
+        XCTAssertEqual(groups.count, 2)
+
+        // Groups should be sorted by key
+        XCTAssertEqual(groups[0].observationKey, "jw01783-o004_t008_nircam")
+        XCTAssertEqual(groups[1].observationKey, "jw02666-o007_t004_miri")
+
+        // NIRCam group: products sorted by wavelength (F115W before F200W)
+        XCTAssertEqual(groups[0].products.count, 2)
+        XCTAssertEqual(groups[0].filterNames, ["F115W", "F200W"])
+        XCTAssertEqual(groups[0].instrument, "NIRCAM/IMAGE")
+
+        // MIRI group: products sorted by wavelength (F560W, F1000W, F2100W)
+        XCTAssertEqual(groups[1].products.count, 3)
+        XCTAssertEqual(groups[1].filterNames, ["F560W", "F1000W", "F2100W"])
+        XCTAssertEqual(groups[1].instrument, "MIRI/IMAGE")
+    }
+
+    // MARK: - JWST Observation Groups Integration Test
+
+    func testGetJWSTObservationGroupsNGC628() {
+        let expectation = XCTestExpectation(
+            description: "Get JWST observation groups for NGC 628")
+        let mast = SwiftMAST()
+
+        print("\n=== Testing JWST Observation Groups for NGC 628 ===")
+        mast.getJWSTObservationGroups(targetName: "NGC 628") { groups in
+            print("Observation Groups (\(groups.count) groups):")
+            for group in groups {
+                print("  \(group)")
+            }
+
+            XCTAssertFalse(groups.isEmpty, "Should find observation groups for NGC 628")
+
+            // Verify sorting: within each group, filters are in wavelength order
+            for group in groups {
+                let wavelengths = group.products.map { jwstFilterWavelength($0.filters) }
+                for i in 1..<wavelengths.count {
+                    XCTAssertLessThanOrEqual(
+                        wavelengths[i - 1], wavelengths[i],
+                        "Filters should be sorted by wavelength in group \(group.observationKey)"
+                    )
+                }
+            }
+
+            // Groups should be sorted by key
+            for i in 1..<groups.count {
+                XCTAssertLessThanOrEqual(
+                    groups[i - 1].observationKey, groups[i].observationKey,
+                    "Groups should be sorted by observation key"
+                )
+            }
+
             expectation.fulfill()
         }
 

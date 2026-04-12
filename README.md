@@ -310,3 +310,53 @@ Accepts the same parameters as `getJWSTFilteredProducts`, plus an optional `toke
 | `result` | `([String: [ScienceProduct]]) -> Void` | — | Callback receiving the filter → products dictionary |
 
 A coordinate-based overload is also available with additional `ra`, `dec`, and `radius` parameters.
+
+## JWST Observation Groups
+
+`getJWSTObservationGroups` queries JWST products and groups them by observation session. Each group shares the same program, observation number, target, and instrument — derived from the `obs_id` prefix (e.g. `jw02666-o007_t004_miri`). Within each group, products are sorted by filter wavelength in ascending order (F200W before F1000W).
+
+### Usage
+
+```swift
+let mast = SwiftMAST()
+
+mast.getJWSTObservationGroups(targetName: "NGC 628") { groups in
+    for group in groups {
+        print(group.observationKey)
+        print("  instrument: \(group.instrument)")
+        print("  filters: \(group.filterNames.joined(separator: ", "))")
+        for product in group.products {
+            print("  \(product.filters): \(product.obs_id)")
+        }
+    }
+}
+```
+
+### Example Output
+
+```
+jw01783-o004_t008_nircam [NIRCAM/IMAGE] — 8 filters: F115W, F150W, F187N, F200W, F277W, F335M, F444W, F444W;F405N
+jw02666-o007_t004_miri [MIRI/IMAGE] — 8 filters: F560W, F1000W, F1130W, F1280W, F1500W, F1800W, F2100W, F2550W
+jw02107-o040_t018_nircam [NIRCAM/IMAGE] — 4 filters: F200W, F300M, F335M, F360M
+```
+
+### Filter Wavelength Sorting
+
+Filters are sorted by the numeric wavelength extracted from the filter name:
+
+- `F200W` → 200, `F1000W` → 1000, `F2550W` → 2550
+- Trailing digits ignored: `F150W2` → 150
+- Compound filters use the first component: `F444W;F405N` → 444
+- Non-standard names (e.g. `CLEAR`) sort last
+
+### Parameters
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `targetName` | `String` | — | Human-readable target identifier |
+| `instruments` | `[String]?` | `nil` | Restrict to specific instruments (e.g. `["MIRI/IMAGE"]`) |
+| `calibLevels` | `[String]` | `["3", "4"]` | CAOM calibration levels |
+| `pageSize` | `Int` | `400` | Maximum products per MAST page |
+| `result` | `([JWSTObservationGroup]) -> Void` | — | Callback receiving sorted observation groups |
+
+A coordinate-based overload is also available with additional `ra`, `dec`, and `radius` parameters.
