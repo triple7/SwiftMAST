@@ -1833,6 +1833,83 @@ final class SwiftMASTTests: XCTestCase {
         XCTAssertEqual(groups[1].instrument, "MIRI/IMAGE")
     }
 
+    // MARK: - jwstFilters on CoamResult (unit tests)
+
+    func testJWSTFiltersOnCoamResultSingleFilter() {
+        let coam = makeCoamResult(filters: "F560W", obs_collection: "JWST")
+        let filters = coam.jwstFilters
+        XCTAssertEqual(filters.count, 1)
+        XCTAssertEqual(filters.first, .F560W)
+        XCTAssertEqual(filters.first?.scienceUse, "Stellar photospheres, warm dust continuum")
+    }
+
+    func testJWSTFiltersOnCoamResultMultipleFilters() {
+        let coam = makeCoamResult(filters: "F560W;F1000W;F2100W", obs_collection: "JWST")
+        let filters = coam.jwstFilters
+        XCTAssertEqual(filters.count, 3)
+        XCTAssertEqual(filters[0], .F560W)
+        XCTAssertEqual(filters[1], .F1000W)
+        XCTAssertEqual(filters[2], .F2100W)
+    }
+
+    func testJWSTFiltersOnCoamResultUnknownFilterIgnored() {
+        // Non-JWST filters (e.g. HST/ACS) should not crash — they are simply skipped
+        let coam = makeCoamResult(filters: "F606W", obs_collection: "HST")
+        let filters = coam.jwstFilters
+        XCTAssertTrue(filters.isEmpty)
+    }
+
+    func testJWSTFiltersOnCoamResultMixedKnownAndUnknown() {
+        let coam = makeCoamResult(filters: "UNKNOWN;F140M;F200W", obs_collection: "JWST")
+        let filters = coam.jwstFilters
+        XCTAssertEqual(filters.count, 2)
+        XCTAssertEqual(filters[0], .F140M)
+        XCTAssertEqual(filters[1], .F200W)
+        XCTAssertEqual(filters[0].scienceUse, "Cool stars, H₂O, CH₄")
+    }
+
+    // MARK: - getJWSTObservationGroups + jwstFilters integration test
+
+    func testGetJWSTObservationGroupsJWSTFiltersPresent() {
+        let expectation = XCTestExpectation(
+            description: "Each CoamResult in observation groups exposes jwstFilters")
+        let mast = SwiftMAST()
+
+        mast.getJWSTObservationGroups(targetName: "NGC 628") { groups in
+            XCTAssertFalse(
+                groups.isEmpty, "Should return at least one observation group for NGC 628")
+
+            for group in groups {
+                for product in group.products {
+                    // jwstFilters must be present as a parsed property on every CoamResult
+                    let jwstFilters = product.jwstFilters
+
+                    // The raw filters string must not be empty for JWST products
+                    XCTAssertFalse(
+                        product.filters.isEmpty,
+                        "CoamResult.filters should not be empty for product \(product.obs_id)")
+
+                    // Every recognized JWST filter must round-trip through rawValue correctly
+                    for filter in jwstFilters {
+                        XCTAssertNotNil(
+                            JWSTFilter(rawValue: filter.rawValue),
+                            "Filter \(filter.rawValue) should be a valid JWSTFilter case")
+                        XCTAssertFalse(
+                            filter.scienceUse.isEmpty,
+                            "scienceUse must be non-empty for filter \(filter.rawValue)")
+                        XCTAssertGreaterThan(
+                            filter.pivotWavelength, 0,
+                            "pivotWavelength must be > 0 for filter \(filter.rawValue)")
+                    }
+                }
+            }
+
+            expectation.fulfill()
+        }
+
+        wait(for: [expectation], timeout: 120.0)
+    }
+
     // MARK: - JWST Observation Groups Integration Test
 
     func testGetJWSTObservationGroupsNGC628() {
