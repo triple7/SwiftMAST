@@ -400,11 +400,83 @@ public enum JWSTFilter: String, Codable, CaseIterable, Identifiable {
         }
     }
 
+    /// What this filter is designed to detect or measure.
+    ///
+    /// Based on the science use cases documented in the JWST instrument handbooks.
+    public var scienceUse: String {
+        switch self {
+        // MIRI Imaging
+        case .F560W: return "Stellar photospheres, warm dust continuum"
+        case .F770W: return "PAH emission (7.7 μm feature), warm dust"
+        case .F1000W: return "Silicate absorption/emission, warm dust continuum"
+        case .F1130W: return "PAH emission (11.3 μm feature)"
+        case .F1280W: return "Dust continuum, star-forming regions"
+        case .F1500W: return "Dust continuum, cool dust emission"
+        case .F1800W: return "Silicate emission, cool dust continuum"
+        case .F2100W: return "Cool dust emission, debris disks"
+        case .F2550W: return "Cold dust emission, asteroid thermal emission"
+        // MIRI Coronagraphic
+        case .F1065C: return "NH₃ feature, exoplanet atmospheres"
+        case .F1140C: return "CO₂ feature, exoplanet atmospheres"
+        case .F1550C: return "Exoplanet direct imaging, circumstellar disks"
+        case .F2300C: return "Exoplanet direct imaging, debris disks (Lyot coronagraph)"
+        // NIRCam SW Wide
+        case .F070W: return "General purpose imaging"
+        case .F090W: return "General purpose imaging"
+        case .F115W: return "General purpose imaging"
+        case .F150W: return "General purpose imaging"
+        case .F200W: return "General purpose imaging"
+        // NIRCam SW Medium
+        case .F140M: return "Cool stars, H₂O, CH₄"
+        case .F162M: return "Cool stars, off-band for H₂O"
+        case .F182M: return "Cool stars, H₂O, CH₄"
+        case .F210M: return "H₂O, CH₄"
+        // NIRCam SW Narrow
+        case .F164N: return "[FeII] emission (1.644 μm)"
+        case .F187N: return "Paschen-alpha (Pa-α) hydrogen emission"
+        case .F212N: return "H₂ molecular emission (2.12 μm)"
+        // NIRCam SW Extra-wide
+        case .F150W2: return "Blocking filter for F162M, F164N, and DHS"
+        // NIRCam LW Wide
+        case .F277W: return "General purpose imaging"
+        case .F356W: return "General purpose imaging"
+        case .F444W: return "General purpose imaging; blocking filter for F405N, F466N, F470N"
+        // NIRCam LW Extra-wide
+        case .F322W2:
+            return "Background minimum, primarily used with grisms; blocking filter for F323N"
+        // NIRCam LW Medium
+        case .F250M: return "CH₄, continuum"
+        case .F300M: return "Water ice (3.0 μm feature)"
+        case .F335M: return "PAH emission (3.3 μm feature), CH₄"
+        case .F360M: return "Brown dwarfs, planets, continuum"
+        case .F410M: return "Brown dwarfs, planets, H₂O, CH₄"
+        case .F430M: return "CO₂, N₂"
+        case .F460M: return "CO"
+        case .F480M: return "Brown dwarfs, planets, continuum"
+        // NIRCam LW Narrow
+        case .F323N: return "H₂ molecular emission (3.23 μm)"
+        case .F405N: return "Brackett-alpha (Br-α) hydrogen emission"
+        case .F466N: return "CO fundamental band emission"
+        case .F470N: return "H₂ molecular emission (4.69 μm)"
+        // NIRISS only
+        case .F158M: return "Continuum, stellar characterization"
+        case .F380M: return "CH₄, continuum, exoplanet transit spectroscopy"
+        // NIRSpec
+        case .F070LP: return "Spectroscopy 0.7–1.27 μm (paired with G140M/G140H)"
+        case .F100LP: return "Spectroscopy 1.0–1.9 μm (paired with G140M/G140H)"
+        case .F110W: return "Narrow-band target acquisition for brighter targets"
+        case .F140X: return "Target acquisition"
+        case .F170LP: return "Spectroscopy 1.7–3.2 μm (paired with G235M/G235H)"
+        case .F290LP: return "Spectroscopy 2.9–5.3 μm (paired with G395M/G395H)"
+        case .CLEAR: return "Target acquisition or full-range spectroscopy with PRISM (0.6–5.3 μm)"
+        }
+    }
+
     /// A human-readable description of the filter including its properties.
     public var description: String {
         let instStr = instruments.joined(separator: ", ")
         return
-            "\(rawValue) — \(instStr) \(filterType.rawValue) filter, λ_pivot = \(pivotWavelength) μm, Δλ = \(bandwidth) μm"
+            "\(rawValue) — \(instStr) \(filterType.rawValue) filter, λ_pivot = \(pivotWavelength) μm, Δλ = \(bandwidth) μm [\(scienceUse)]"
     }
 
     // MARK: - Parsing
