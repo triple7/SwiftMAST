@@ -1389,6 +1389,7 @@ extension SwiftMAST {
         instruments: [String]? = nil,
         calibLevels: [String] = ["3", "4"],
         pageSize: Int = 400,
+        sortOrder: JWSTProductSortOrder = .filter,
         result: @escaping ([JWSTObservationGroup]) -> Void
     ) {
         self.lookupTargetCoordinates(targetName: targetName) { coordinates in
@@ -1409,6 +1410,7 @@ extension SwiftMAST {
                 instruments: instruments,
                 calibLevels: calibLevels,
                 pageSize: pageSize,
+                sortOrder: sortOrder,
                 result: result
             )
         }
@@ -1434,6 +1436,7 @@ extension SwiftMAST {
         instruments: [String]? = nil,
         calibLevels: [String] = ["3", "4"],
         pageSize: Int = 400,
+        sortOrder: JWSTProductSortOrder = .filter,
         result: @escaping ([JWSTObservationGroup]) -> Void
     ) {
         self.log(
@@ -1507,7 +1510,8 @@ extension SwiftMAST {
                     return
                 }
 
-                let groups = self.buildObservationGroups(from: filteredResults)
+                let groups = self.buildObservationGroups(
+                    from: filteredResults, sortOrder: sortOrder)
 
                 self.log(
                     .OK,
@@ -1520,9 +1524,12 @@ extension SwiftMAST {
     }
 
     /// Build observation groups from a flat array of CoamResults.
-    /// Groups by obs_id prefix, sorts products within each group by filter wavelength,
+    /// Groups by obs_id prefix, sorts products within each group by the given sort order,
     /// and sorts groups by observation key.
-    internal func buildObservationGroups(from results: [CoamResult]) -> [JWSTObservationGroup] {
+    internal func buildObservationGroups(
+        from results: [CoamResult],
+        sortOrder: JWSTProductSortOrder = .filter
+    ) -> [JWSTObservationGroup] {
         // Group by observation key
         var grouped = [String: [CoamResult]]()
         for coam in results {
@@ -1537,7 +1544,7 @@ extension SwiftMAST {
         // Build sorted groups
         var groups = [JWSTObservationGroup]()
         for (key, products) in grouped {
-            let sorted = products.sorted { compareJWSTFilters($0.filters, $1.filters) }
+            let sorted = products.sorted { compareJWSTProducts($0, $1, by: sortOrder) }
             let instrument = sorted.first?.instrument_name ?? ""
             groups.append(
                 JWSTObservationGroup(

@@ -12,7 +12,10 @@ final class SwiftMASTTests: XCTestCase {
         obs_id: String = "obs-1",
         filters: String = "F606W",
         instrument_name: String = "ACS",
-        obs_collection: String = "HST"
+        obs_collection: String = "HST",
+        t_min: Float = 0.0,
+        t_max: Float = 0.0,
+        t_obs_release: Float = 0.0
     ) -> CoamResult {
         return CoamResult(
             calib_level: 3,
@@ -43,9 +46,9 @@ final class SwiftMASTTests: XCTestCase {
             sequence_number: 0,
             srcDen: 0,
             t_exptime: 0.0,
-            t_max: 0.0,
-            t_min: 0.0,
-            t_obs_release: 0.0,
+            t_max: t_max,
+            t_min: t_min,
+            t_obs_release: t_obs_release,
             target_classification: "",
             target_name: "M31",
             wavelength_region: "OPTICAL"
@@ -1949,5 +1952,113 @@ final class SwiftMASTTests: XCTestCase {
         }
 
         wait(for: [expectation], timeout: 120.0)
+    }
+
+    // MARK: - JWSTProductSortOrder unit tests
+
+    func testJWSTEffectiveTime() {
+        // t_min > 0: use t_min
+        let a = makeCoamResult(t_min: 59000.0, t_max: 59001.0, t_obs_release: 60000.0)
+        XCTAssertEqual(jwstEffectiveTime(a), 59000.0)
+
+        // t_min == 0, t_max > 0: use t_max
+        let b = makeCoamResult(t_min: 0.0, t_max: 59001.0, t_obs_release: 60000.0)
+        XCTAssertEqual(jwstEffectiveTime(b), 59001.0)
+
+        // t_min == 0, t_max == 0: fall back to t_obs_release
+        let c = makeCoamResult(t_min: 0.0, t_max: 0.0, t_obs_release: 60000.0)
+        XCTAssertEqual(jwstEffectiveTime(c), 60000.0)
+    }
+
+    func testCompareJWSTProductsByFilterWithTimeTiebreak() {
+        // Two products with same filter wavelength (F200W) — sort by t_min
+        let earlier = makeCoamResult(
+            filters: "F200W", t_min: 59000.0, t_max: 59001.0, t_obs_release: 60000.0)
+        let later = makeCoamResult(
+            filters: "F200W", t_min: 59100.0, t_max: 59101.0, t_obs_release: 60000.0)
+
+        XCTAssertTrue(
+            compareJWSTProducts(earlier, later, by: .filter), "earlier t_min should sort first")
+        XCTAssertFalse(
+            compareJWSTProducts(later, earlier, by: .filter), "later t_min should sort last")
+
+        // Different filters: wavelength wins regardless of time
+        let f200w = makeCoamResult(filters: "F200W", t_min: 59100.0, t_max: 0, t_obs_release: 0)
+        let f1000w = makeCoamResult(filters: "F1000W", t_min: 59000.0, t_max: 0, t_obs_release: 0)
+        XCTAssertTrue(
+            compareJWSTProducts(f200w, f1000w, by: .filter), "F200W < F1000W by wavelength")
+        XCTAssertFalse(
+            compareJWSTProducts(f1000w, f200w, by: .filter), "F1000W > F200W by wavelength")
+    }
+
+    func testCompareJWSTProductsByFilterTimeFallback() {
+        // t_min == 0, t_max > 0: tiebreak uses t_max
+        let usesTMax = makeCoamResult(
+            filters: "F200W", t_min: 0.0, t_max: 59001.0, t_obs_release: 60000.0)
+        let usesRelease = makeCoamResult(
+            filters: "F200W", t_min: 0.0, t_max: 0.0, t_obs_release: 61000.0)
+        // usesTMax effective = 59001, usesRelease effective = 61000 → usesTMax sorts first
+        XCTAssertTrue(compareJWSTProducts(usesTMax, usesRelease, by: .filter))
+        XCTAssertFalse(compareJWSTProducts(usesRelease, usesTMax, by: .filter))
+    }
+
+    func testCompareJWSTProductsByTimeWithFilterTiebreak() {
+        // Two products with same t_min — sort by filter wavelength
+        let f200w = makeCoamResult(filters: "F200W", t_min: 59000.0, t_max: 0, t_obs_release: 0)
+        let f1000w = makeCoamResult(filters: "F1000W", t_min: 59000.0, t_max: 0, t_obs_release: 0)
+
+        XCTAssertTrue(compareJWSTProducts(f200w, f1000w, by: .time), "F200W < F1000W as tiebreak")
+        XCTAssertFalse(compareJWSTProducts(f1000w, f200w, by: .time), "F1000W > F200W as tiebreak")
+
+        // Different times: earlier t_min wins regardless of filter
+        let earlierF1000w = makeCoamResult(
+            filters: "F1000W", t_min: 59000.0, t_max: 0, t_obs_release: 0)
+        let laterF200w = makeCoamResult(
+            filters: "F200W", t_min: 59100.0, t_max: 0, t_obs_release: 0)
+        XCTAssertTrue(
+            compareJWSTProducts(earlierF1000w, laterF200w, by: .time), "earlier time wins")
+        XCTAssertFalse(
+            compareJWSTProducts(laterF200w, earlierF1000w, by: .time), "later time loses")
+    }
+
+    func testBuildObservationGroupsByTime() {
+        let mast = SwiftMAST()
+
+        // Three MIRI products in the same group — different times and filters
+        let oldest = makeCoamResult(
+            obs_id: "jw02666-o007_t004_miri_f1000w", filters: "F1000W",
+            instrument_name: "MIRI/IMAGE", obs_collection: "JWST",
+            t_min: 59000.0, t_max: 0, t_obs_release: 0)
+        let middle = makeCoamResult(
+            obs_id: "jw02666-o007_t004_miri_f560w", filters: "F560W",
+            instrument_name: "MIRI/IMAGE", obs_collection: "JWST",
+            t_min: 59050.0, t_max: 0, t_obs_release: 0)
+        let newest = makeCoamResult(
+            obs_id: "jw02666-o007_t004_miri_f2100w", filters: "F2100W",
+            instrument_name: "MIRI/IMAGE", obs_collection: "JWST",
+            t_min: 59100.0, t_max: 0, t_obs_release: 0)
+
+        let groups = mast.buildObservationGroups(from: [newest, middle, oldest], sortOrder: .time)
+
+        XCTAssertEqual(groups.count, 1)
+        // Products should be sorted by t_min: oldest (F1000W=59000) → middle (F560W=59050) → newest (F2100W=59100)
+        XCTAssertEqual(groups[0].filterNames, ["F1000W", "F560W", "F2100W"])
+    }
+
+    func testBuildObservationGroupsByFilterIsDefault() {
+        let mast = SwiftMAST()
+
+        let f1000w = makeCoamResult(
+            obs_id: "jw02666-o007_t004_miri_f1000w", filters: "F1000W",
+            instrument_name: "MIRI/IMAGE", obs_collection: "JWST",
+            t_min: 59000.0, t_max: 0, t_obs_release: 0)
+        let f560w = makeCoamResult(
+            obs_id: "jw02666-o007_t004_miri_f560w", filters: "F560W",
+            instrument_name: "MIRI/IMAGE", obs_collection: "JWST",
+            t_min: 59100.0, t_max: 0, t_obs_release: 0)
+
+        // Default sort (no arg) should be .filter: F560W(560) < F1000W(1000)
+        let groups = mast.buildObservationGroups(from: [f1000w, f560w])
+        XCTAssertEqual(groups[0].filterNames, ["F560W", "F1000W"])
     }
 }
