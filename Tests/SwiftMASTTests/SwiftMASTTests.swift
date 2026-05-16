@@ -1871,6 +1871,41 @@ final class SwiftMASTTests: XCTestCase {
         XCTAssertEqual(filters[0].scienceUse, "Cool stars, H₂O, CH₄")
     }
 
+    // MARK: - HST WFC3/UVIS Filter Metadata
+
+    func testHSTFilterMetadata() {
+        let filter = HSTFilter.F606W
+        XCTAssertEqual(filter.instruments, ["WFC3/UVIS"])
+        XCTAssertEqual(filter.filterType, .wide)
+        XCTAssertEqual(filter.scienceUse, "WFPC2 wide V")
+        XCTAssertEqual(filter.pivotWavelengthAngstroms, 5889.2, accuracy: 0.001)
+        XCTAssertEqual(filter.bandwidthAngstroms, 2189.2)
+        XCTAssertEqual(filter.cumulativeThroughputWidthAngstroms, 2193)
+        XCTAssertEqual(filter.peakSystemThroughput, 0.29)
+        XCTAssertEqual(filter.likelySpaceColor, .yellow)
+        XCTAssertEqual(filter.likelySpaceColorHex, "#FACC15")
+    }
+
+    func testHSTFilterColorTagsAcrossWavelengths() {
+        XCTAssertEqual(HSTFilter.F275W.likelySpaceColor, .ultraviolet)
+        XCTAssertEqual(HSTFilter.F438W.likelySpaceColor, .blue)
+        XCTAssertEqual(HSTFilter.F502N.likelySpaceColor, .green)
+        XCTAssertEqual(HSTFilter.F656N.likelySpaceColor, .red)
+        XCTAssertEqual(HSTFilter.F814W.likelySpaceColor, .deepRed)
+    }
+
+    func testHSTFiltersOnCoamResultMultipleFilters() {
+        let coam = makeCoamResult(filters: "F814W;F606W", obs_collection: "HST")
+        let filters = coam.hstFilters
+        XCTAssertEqual(filters, [.F814W, .F606W])
+        XCTAssertEqual(filters.filterString, "F814W;F606W")
+    }
+
+    func testHSTFiltersOnCoamResultUnknownFilterIgnored() {
+        let coam = makeCoamResult(filters: "UNKNOWN;F560W", obs_collection: "JWST")
+        XCTAssertTrue(coam.hstFilters.isEmpty)
+    }
+
     // MARK: - getJWSTObservationGroups + jwstFilters integration test
 
     func testGetJWSTObservationGroupsJWSTFiltersPresent() {
