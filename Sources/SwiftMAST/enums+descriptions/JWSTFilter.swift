@@ -174,309 +174,74 @@ public enum JWSTFilter: String, Codable, CaseIterable, Identifiable {
 
     // MARK: - Properties
 
+    /// Detailed tabular metadata for the filter.
+    public var metadata: JWSTFilterMetadata {
+        Self.metadataByFilter[self]!
+    }
+
     /// The JWST instrument(s) this filter is available on.
     public var instruments: [String] {
-        switch self {
-        // MIRI
-        case .F560W, .F770W, .F1000W, .F1130W, .F1280W, .F1500W, .F1800W, .F2100W, .F2550W:
-            return ["MIRI"]
-        case .F1065C, .F1140C, .F1550C, .F2300C:
-            return ["MIRI"]
-
-        // NIRCam only
-        case .F070W:
-            return ["NIRCam"]
-        case .F162M, .F182M, .F210M:
-            return ["NIRCam"]
-        case .F164N, .F187N, .F212N:
-            return ["NIRCam"]
-        case .F150W2, .F322W2:
-            return ["NIRCam"]
-        case .F250M, .F300M, .F335M, .F360M, .F410M, .F460M:
-            return ["NIRCam"]
-        case .F323N, .F405N, .F466N, .F470N:
-            return ["NIRCam"]
-
-        // Shared NIRCam + NIRISS
-        case .F090W, .F115W, .F150W, .F200W:
-            return ["NIRCam", "NIRISS"]
-        case .F140M:
-            return ["NIRCam", "NIRISS"]
-        case .F277W, .F356W, .F444W:
-            return ["NIRCam", "NIRISS"]
-        case .F430M, .F480M:
-            return ["NIRCam", "NIRISS"]
-
-        // NIRISS only
-        case .F158M, .F380M:
-            return ["NIRISS"]
-
-        // NIRSpec
-        case .F070LP, .F100LP, .F110W, .F140X, .F170LP, .F290LP, .CLEAR:
-            return ["NIRSpec"]
-        }
+        metadata.instruments
     }
 
     /// The pivot (central) wavelength in micrometers (μm).
     public var pivotWavelength: Double {
-        switch self {
-        // MIRI Imaging
-        case .F560W: return 5.6
-        case .F770W: return 7.7
-        case .F1000W: return 10.0
-        case .F1130W: return 11.3
-        case .F1280W: return 12.8
-        case .F1500W: return 15.0
-        case .F1800W: return 18.0
-        case .F2100W: return 21.0
-        case .F2550W: return 25.5
-        // MIRI Coronagraphic
-        case .F1065C: return 10.65
-        case .F1140C: return 11.40
-        case .F1550C: return 15.50
-        case .F2300C: return 23.00
-        // NIRCam SW Wide
-        case .F070W: return 0.704
-        case .F090W: return 0.902
-        case .F115W: return 1.154
-        case .F150W: return 1.501
-        case .F200W: return 1.989
-        // NIRCam SW Medium
-        case .F140M: return 1.405
-        case .F162M: return 1.627
-        case .F182M: return 1.845
-        case .F210M: return 2.096
-        // NIRCam SW Narrow
-        case .F164N: return 1.645
-        case .F187N: return 1.874
-        case .F212N: return 2.121
-        // NIRCam SW Extra-wide
-        case .F150W2: return 1.672
-        // NIRCam LW Wide
-        case .F277W: return 2.776
-        case .F356W: return 3.565
-        case .F444W: return 4.402
-        // NIRCam LW Extra-wide
-        case .F322W2: return 3.247
-        // NIRCam LW Medium
-        case .F250M: return 2.503
-        case .F300M: return 2.996
-        case .F335M: return 3.362
-        case .F360M: return 3.623
-        case .F410M: return 4.083
-        case .F430M: return 4.281
-        case .F460M: return 4.630
-        case .F480M: return 4.817
-        // NIRCam LW Narrow
-        case .F323N: return 3.237
-        case .F405N: return 4.053
-        case .F466N: return 4.654
-        case .F470N: return 4.708
-        // NIRISS only
-        case .F158M: return 1.580
-        case .F380M: return 3.828
-        // NIRSpec
-        case .F070LP: return 0.7
-        case .F100LP: return 1.0
-        case .F110W: return 1.15
-        case .F140X: return 1.4
-        case .F170LP: return 1.7
-        case .F290LP: return 2.9
-        case .CLEAR: return 2.95
-        }
+        metadata.pivotWavelength
     }
 
     /// The bandwidth in micrometers (μm).
     /// For long-pass filters this represents the usable passband width.
     public var bandwidth: Double {
-        switch self {
-        // MIRI Imaging
-        case .F560W: return 1.2
-        case .F770W: return 2.2
-        case .F1000W: return 2.0
-        case .F1130W: return 0.7
-        case .F1280W: return 2.4
-        case .F1500W: return 3.0
-        case .F1800W: return 3.0
-        case .F2100W: return 5.0
-        case .F2550W: return 4.0
-        // MIRI Coronagraphic
-        case .F1065C: return 0.53
-        case .F1140C: return 0.57
-        case .F1550C: return 0.78
-        case .F2300C: return 4.60
-        // NIRCam SW Wide
-        case .F070W: return 0.128
-        case .F090W: return 0.194
-        case .F115W: return 0.225
-        case .F150W: return 0.318
-        case .F200W: return 0.461
-        // NIRCam SW Medium
-        case .F140M: return 0.142
-        case .F162M: return 0.168
-        case .F182M: return 0.238
-        case .F210M: return 0.205
-        // NIRCam SW Narrow
-        case .F164N: return 0.020
-        case .F187N: return 0.024
-        case .F212N: return 0.027
-        // NIRCam SW Extra-wide
-        case .F150W2: return 1.228
-        // NIRCam LW Wide
-        case .F277W: return 0.672
-        case .F356W: return 0.786
-        case .F444W: return 1.024
-        // NIRCam LW Extra-wide
-        case .F322W2: return 1.340
-        // NIRCam LW Medium
-        case .F250M: return 0.181
-        case .F300M: return 0.318
-        case .F335M: return 0.348
-        case .F360M: return 0.372
-        case .F410M: return 0.436
-        case .F430M: return 0.228
-        case .F460M: return 0.228
-        case .F480M: return 0.303
-        // NIRCam LW Narrow
-        case .F323N: return 0.038
-        case .F405N: return 0.046
-        case .F466N: return 0.054
-        case .F470N: return 0.051
-        // NIRISS only
-        case .F158M: return 0.165
-        case .F380M: return 0.205
-        // NIRSpec
-        case .F070LP: return 0.6
-        case .F100LP: return 0.9
-        case .F110W: return 0.3
-        case .F140X: return 1.2
-        case .F170LP: return 1.5
-        case .F290LP: return 2.4
-        case .CLEAR: return 4.7
-        }
+        metadata.bandwidth
     }
 
     /// The filter band type classification.
     public var filterType: JWSTFilterType {
-        switch self {
-        case .F560W, .F770W, .F1000W, .F1130W, .F1280W, .F1500W, .F1800W, .F2100W, .F2550W:
-            return .wide
-        case .F1065C, .F1140C, .F1550C, .F2300C:
-            return .coronagraphic
-        case .F070W, .F090W, .F115W, .F150W, .F200W, .F277W, .F356W, .F444W:
-            return .wide
-        case .F150W2, .F322W2:
-            return .extraWide
-        case .F140M, .F162M, .F182M, .F210M, .F250M, .F300M, .F335M, .F360M,
-            .F410M, .F430M, .F460M, .F480M, .F158M, .F380M:
-            return .medium
-        case .F164N, .F187N, .F212N, .F323N, .F405N, .F466N, .F470N:
-            return .narrow
-        case .F070LP, .F100LP, .F170LP, .F290LP:
-            return .longPass
-        case .F110W:
-            return .wide
-        case .F140X:
-            return .extraWide
-        case .CLEAR:
-            return .clear
-        }
+        metadata.filterType
     }
 
     /// The wavelength regime this filter belongs to.
     public var wavelengthRegime: String {
-        switch self {
-        case .F560W, .F770W, .F1000W, .F1130W, .F1280W, .F1500W, .F1800W,
-            .F2100W, .F2550W, .F1065C, .F1140C, .F1550C, .F2300C:
-            return "Mid-Infrared"
-        case .F070W, .F090W, .F115W, .F140M, .F150W, .F162M, .F164N, .F150W2,
-            .F182M, .F187N, .F200W, .F210M, .F212N, .F158M:
-            return "Near-Infrared (short)"
-        case .F250M, .F277W, .F300M, .F322W2, .F323N, .F335M, .F356W, .F360M,
-            .F380M, .F405N, .F410M, .F430M, .F444W, .F460M, .F466N, .F470N, .F480M:
-            return "Near-Infrared (long)"
-        case .F070LP, .F100LP, .F110W, .F140X, .F170LP, .F290LP, .CLEAR:
-            return "Near-Infrared (spectroscopy)"
+        metadata.wavelengthRegime
+    }
+
+    /// A display-oriented color tag for false-color astronomy imagery.
+    public var likelySpaceColor: JWSTFilterColorTag {
+        switch pivotWavelength {
+        case ..<1.2:
+            return .blue
+        case ..<2.0:
+            return .cyan
+        case ..<3.0:
+            return .green
+        case ..<5.0:
+            return .yellow
+        case ..<10.0:
+            return .orange
+        case ..<18.0:
+            return .red
+        default:
+            return .deepRed
         }
+    }
+
+    /// Hex color suitable for legends, previews, and filter chips.
+    public var likelySpaceColorHex: String {
+        likelySpaceColor.hex
     }
 
     /// What this filter is designed to detect or measure.
     ///
     /// Based on the science use cases documented in the JWST instrument handbooks.
     public var scienceUse: String {
-        switch self {
-        // MIRI Imaging
-        case .F560W: return "Stellar photospheres, warm dust continuum"
-        case .F770W: return "PAH emission (7.7 μm feature), warm dust"
-        case .F1000W: return "Silicate absorption/emission, warm dust continuum"
-        case .F1130W: return "PAH emission (11.3 μm feature)"
-        case .F1280W: return "Dust continuum, star-forming regions"
-        case .F1500W: return "Dust continuum, cool dust emission"
-        case .F1800W: return "Silicate emission, cool dust continuum"
-        case .F2100W: return "Cool dust emission, debris disks"
-        case .F2550W: return "Cold dust emission, asteroid thermal emission"
-        // MIRI Coronagraphic
-        case .F1065C: return "NH₃ feature, exoplanet atmospheres"
-        case .F1140C: return "CO₂ feature, exoplanet atmospheres"
-        case .F1550C: return "Exoplanet direct imaging, circumstellar disks"
-        case .F2300C: return "Exoplanet direct imaging, debris disks (Lyot coronagraph)"
-        // NIRCam SW Wide
-        case .F070W: return "General purpose imaging"
-        case .F090W: return "General purpose imaging"
-        case .F115W: return "General purpose imaging"
-        case .F150W: return "General purpose imaging"
-        case .F200W: return "General purpose imaging"
-        // NIRCam SW Medium
-        case .F140M: return "Cool stars, H₂O, CH₄"
-        case .F162M: return "Cool stars, off-band for H₂O"
-        case .F182M: return "Cool stars, H₂O, CH₄"
-        case .F210M: return "H₂O, CH₄"
-        // NIRCam SW Narrow
-        case .F164N: return "[FeII] emission (1.644 μm)"
-        case .F187N: return "Paschen-alpha (Pa-α) hydrogen emission"
-        case .F212N: return "H₂ molecular emission (2.12 μm)"
-        // NIRCam SW Extra-wide
-        case .F150W2: return "Blocking filter for F162M, F164N, and DHS"
-        // NIRCam LW Wide
-        case .F277W: return "General purpose imaging"
-        case .F356W: return "General purpose imaging"
-        case .F444W: return "General purpose imaging; blocking filter for F405N, F466N, F470N"
-        // NIRCam LW Extra-wide
-        case .F322W2:
-            return "Background minimum, primarily used with grisms; blocking filter for F323N"
-        // NIRCam LW Medium
-        case .F250M: return "CH₄, continuum"
-        case .F300M: return "Water ice (3.0 μm feature)"
-        case .F335M: return "PAH emission (3.3 μm feature), CH₄"
-        case .F360M: return "Brown dwarfs, planets, continuum"
-        case .F410M: return "Brown dwarfs, planets, H₂O, CH₄"
-        case .F430M: return "CO₂, N₂"
-        case .F460M: return "CO"
-        case .F480M: return "Brown dwarfs, planets, continuum"
-        // NIRCam LW Narrow
-        case .F323N: return "H₂ molecular emission (3.23 μm)"
-        case .F405N: return "Brackett-alpha (Br-α) hydrogen emission"
-        case .F466N: return "CO fundamental band emission"
-        case .F470N: return "H₂ molecular emission (4.69 μm)"
-        // NIRISS only
-        case .F158M: return "Continuum, stellar characterization"
-        case .F380M: return "CH₄, continuum, exoplanet transit spectroscopy"
-        // NIRSpec
-        case .F070LP: return "Spectroscopy 0.7–1.27 μm (paired with G140M/G140H)"
-        case .F100LP: return "Spectroscopy 1.0–1.9 μm (paired with G140M/G140H)"
-        case .F110W: return "Narrow-band target acquisition for brighter targets"
-        case .F140X: return "Target acquisition"
-        case .F170LP: return "Spectroscopy 1.7–3.2 μm (paired with G235M/G235H)"
-        case .F290LP: return "Spectroscopy 2.9–5.3 μm (paired with G395M/G395H)"
-        case .CLEAR: return "Target acquisition or full-range spectroscopy with PRISM (0.6–5.3 μm)"
-        }
+        metadata.scienceUse
     }
 
     /// A human-readable description of the filter including its properties.
     public var description: String {
         let instStr = instruments.joined(separator: ", ")
         return
-            "\(rawValue) — \(instStr) \(filterType.rawValue) filter, λ_pivot = \(pivotWavelength) μm, Δλ = \(bandwidth) μm [\(scienceUse)]"
+            "\(rawValue) — \(instStr) \(filterType.rawValue) filter, λ_pivot = \(pivotWavelength) μm, Δλ = \(bandwidth) μm, color = \(likelySpaceColor.rawValue) [\(scienceUse)]"
     }
 
     // MARK: - Parsing
@@ -496,7 +261,32 @@ public enum JWSTFilter: String, Codable, CaseIterable, Identifiable {
     }
 }
 
-// MARK: - Filter Type
+// MARK: - Supporting Types
+
+public struct JWSTFilterMetadata: Codable, Hashable {
+    public let instruments: [String]
+    public let pivotWavelength: Double
+    public let bandwidth: Double
+    public let filterType: JWSTFilterType
+    public let wavelengthRegime: String
+    public let scienceUse: String
+
+    public init(
+        instruments: [String],
+        pivotWavelength: Double,
+        bandwidth: Double,
+        filterType: JWSTFilterType,
+        wavelengthRegime: String,
+        scienceUse: String
+    ) {
+        self.instruments = instruments
+        self.pivotWavelength = pivotWavelength
+        self.bandwidth = bandwidth
+        self.filterType = filterType
+        self.wavelengthRegime = wavelengthRegime
+        self.scienceUse = scienceUse
+    }
+}
 
 /// Classification of JWST filter bandwidth types.
 public enum JWSTFilterType: String, Codable, CaseIterable, Identifiable {
@@ -509,6 +299,30 @@ public enum JWSTFilterType: String, Codable, CaseIterable, Identifiable {
     case clear = "Clear"
 
     public var id: String { rawValue }
+}
+
+public enum JWSTFilterColorTag: String, Codable, CaseIterable, Identifiable {
+    case blue = "Blue"
+    case cyan = "Cyan"
+    case green = "Green"
+    case yellow = "Yellow"
+    case orange = "Orange"
+    case red = "Red"
+    case deepRed = "Deep Red / Far-IR"
+
+    public var id: String { rawValue }
+
+    public var hex: String {
+        switch self {
+        case .blue: return "#3B82F6"
+        case .cyan: return "#22D3EE"
+        case .green: return "#22C55E"
+        case .yellow: return "#FACC15"
+        case .orange: return "#FB923C"
+        case .red: return "#EF4444"
+        case .deepRed: return "#B91C1C"
+        }
+    }
 }
 
 // MARK: - CoamResult Filter Integration
@@ -533,4 +347,68 @@ extension CoamResult {
     public var jwstFilters: [JWSTFilter] {
         return JWSTFilter.parseFilters(self.filters)
     }
+}
+
+// MARK: - Metadata Table
+
+extension JWSTFilter {
+    private static let miri = ["MIRI"]
+    private static let nircam = ["NIRCam"]
+    private static let niriss = ["NIRISS"]
+    private static let nirspec = ["NIRSpec"]
+    private static let nircamNiriss = ["NIRCam", "NIRISS"]
+
+    private static let metadataByFilter: [JWSTFilter: JWSTFilterMetadata] = [
+        .F560W: .init(instruments: miri, pivotWavelength: 5.6, bandwidth: 1.2, filterType: .wide, wavelengthRegime: "Mid-Infrared", scienceUse: "Stellar photospheres, warm dust continuum"),
+        .F770W: .init(instruments: miri, pivotWavelength: 7.7, bandwidth: 2.2, filterType: .wide, wavelengthRegime: "Mid-Infrared", scienceUse: "PAH emission (7.7 μm feature), warm dust"),
+        .F1000W: .init(instruments: miri, pivotWavelength: 10.0, bandwidth: 2.0, filterType: .wide, wavelengthRegime: "Mid-Infrared", scienceUse: "Silicate absorption/emission, warm dust continuum"),
+        .F1130W: .init(instruments: miri, pivotWavelength: 11.3, bandwidth: 0.7, filterType: .wide, wavelengthRegime: "Mid-Infrared", scienceUse: "PAH emission (11.3 μm feature)"),
+        .F1280W: .init(instruments: miri, pivotWavelength: 12.8, bandwidth: 2.4, filterType: .wide, wavelengthRegime: "Mid-Infrared", scienceUse: "Dust continuum, star-forming regions"),
+        .F1500W: .init(instruments: miri, pivotWavelength: 15.0, bandwidth: 3.0, filterType: .wide, wavelengthRegime: "Mid-Infrared", scienceUse: "Dust continuum, cool dust emission"),
+        .F1800W: .init(instruments: miri, pivotWavelength: 18.0, bandwidth: 3.0, filterType: .wide, wavelengthRegime: "Mid-Infrared", scienceUse: "Silicate emission, cool dust continuum"),
+        .F2100W: .init(instruments: miri, pivotWavelength: 21.0, bandwidth: 5.0, filterType: .wide, wavelengthRegime: "Mid-Infrared", scienceUse: "Cool dust emission, debris disks"),
+        .F2550W: .init(instruments: miri, pivotWavelength: 25.5, bandwidth: 4.0, filterType: .wide, wavelengthRegime: "Mid-Infrared", scienceUse: "Cold dust emission, asteroid thermal emission"),
+        .F1065C: .init(instruments: miri, pivotWavelength: 10.65, bandwidth: 0.53, filterType: .coronagraphic, wavelengthRegime: "Mid-Infrared", scienceUse: "NH₃ feature, exoplanet atmospheres"),
+        .F1140C: .init(instruments: miri, pivotWavelength: 11.40, bandwidth: 0.57, filterType: .coronagraphic, wavelengthRegime: "Mid-Infrared", scienceUse: "CO₂ feature, exoplanet atmospheres"),
+        .F1550C: .init(instruments: miri, pivotWavelength: 15.50, bandwidth: 0.78, filterType: .coronagraphic, wavelengthRegime: "Mid-Infrared", scienceUse: "Exoplanet direct imaging, circumstellar disks"),
+        .F2300C: .init(instruments: miri, pivotWavelength: 23.00, bandwidth: 4.60, filterType: .coronagraphic, wavelengthRegime: "Mid-Infrared", scienceUse: "Exoplanet direct imaging, debris disks (Lyot coronagraph)"),
+        .F070W: .init(instruments: nircam, pivotWavelength: 0.704, bandwidth: 0.128, filterType: .wide, wavelengthRegime: "Near-Infrared (short)", scienceUse: "General purpose imaging"),
+        .F090W: .init(instruments: nircamNiriss, pivotWavelength: 0.902, bandwidth: 0.194, filterType: .wide, wavelengthRegime: "Near-Infrared (short)", scienceUse: "General purpose imaging"),
+        .F115W: .init(instruments: nircamNiriss, pivotWavelength: 1.154, bandwidth: 0.225, filterType: .wide, wavelengthRegime: "Near-Infrared (short)", scienceUse: "General purpose imaging"),
+        .F150W: .init(instruments: nircamNiriss, pivotWavelength: 1.501, bandwidth: 0.318, filterType: .wide, wavelengthRegime: "Near-Infrared (short)", scienceUse: "General purpose imaging"),
+        .F200W: .init(instruments: nircamNiriss, pivotWavelength: 1.989, bandwidth: 0.461, filterType: .wide, wavelengthRegime: "Near-Infrared (short)", scienceUse: "General purpose imaging"),
+        .F140M: .init(instruments: nircamNiriss, pivotWavelength: 1.405, bandwidth: 0.142, filterType: .medium, wavelengthRegime: "Near-Infrared (short)", scienceUse: "Cool stars, H₂O, CH₄"),
+        .F162M: .init(instruments: nircam, pivotWavelength: 1.627, bandwidth: 0.168, filterType: .medium, wavelengthRegime: "Near-Infrared (short)", scienceUse: "Cool stars, off-band for H₂O"),
+        .F182M: .init(instruments: nircam, pivotWavelength: 1.845, bandwidth: 0.238, filterType: .medium, wavelengthRegime: "Near-Infrared (short)", scienceUse: "Cool stars, H₂O, CH₄"),
+        .F210M: .init(instruments: nircam, pivotWavelength: 2.096, bandwidth: 0.205, filterType: .medium, wavelengthRegime: "Near-Infrared (short)", scienceUse: "H₂O, CH₄"),
+        .F164N: .init(instruments: nircam, pivotWavelength: 1.645, bandwidth: 0.020, filterType: .narrow, wavelengthRegime: "Near-Infrared (short)", scienceUse: "[FeII] emission (1.644 μm)"),
+        .F187N: .init(instruments: nircam, pivotWavelength: 1.874, bandwidth: 0.024, filterType: .narrow, wavelengthRegime: "Near-Infrared (short)", scienceUse: "Paschen-alpha (Pa-α) hydrogen emission"),
+        .F212N: .init(instruments: nircam, pivotWavelength: 2.121, bandwidth: 0.027, filterType: .narrow, wavelengthRegime: "Near-Infrared (short)", scienceUse: "H₂ molecular emission (2.12 μm)"),
+        .F150W2: .init(instruments: nircam, pivotWavelength: 1.672, bandwidth: 1.228, filterType: .extraWide, wavelengthRegime: "Near-Infrared (short)", scienceUse: "Blocking filter for F162M, F164N, and DHS"),
+        .F277W: .init(instruments: nircamNiriss, pivotWavelength: 2.776, bandwidth: 0.672, filterType: .wide, wavelengthRegime: "Near-Infrared (long)", scienceUse: "General purpose imaging"),
+        .F356W: .init(instruments: nircamNiriss, pivotWavelength: 3.565, bandwidth: 0.786, filterType: .wide, wavelengthRegime: "Near-Infrared (long)", scienceUse: "General purpose imaging"),
+        .F444W: .init(instruments: nircamNiriss, pivotWavelength: 4.402, bandwidth: 1.024, filterType: .wide, wavelengthRegime: "Near-Infrared (long)", scienceUse: "General purpose imaging; blocking filter for F405N, F466N, F470N"),
+        .F322W2: .init(instruments: nircam, pivotWavelength: 3.247, bandwidth: 1.340, filterType: .extraWide, wavelengthRegime: "Near-Infrared (long)", scienceUse: "Background minimum, primarily used with grisms; blocking filter for F323N"),
+        .F250M: .init(instruments: nircam, pivotWavelength: 2.503, bandwidth: 0.181, filterType: .medium, wavelengthRegime: "Near-Infrared (long)", scienceUse: "CH₄, continuum"),
+        .F300M: .init(instruments: nircam, pivotWavelength: 2.996, bandwidth: 0.318, filterType: .medium, wavelengthRegime: "Near-Infrared (long)", scienceUse: "Water ice (3.0 μm feature)"),
+        .F335M: .init(instruments: nircam, pivotWavelength: 3.362, bandwidth: 0.348, filterType: .medium, wavelengthRegime: "Near-Infrared (long)", scienceUse: "PAH emission (3.3 μm feature), CH₄"),
+        .F360M: .init(instruments: nircam, pivotWavelength: 3.623, bandwidth: 0.372, filterType: .medium, wavelengthRegime: "Near-Infrared (long)", scienceUse: "Brown dwarfs, planets, continuum"),
+        .F410M: .init(instruments: nircam, pivotWavelength: 4.083, bandwidth: 0.436, filterType: .medium, wavelengthRegime: "Near-Infrared (long)", scienceUse: "Brown dwarfs, planets, H₂O, CH₄"),
+        .F430M: .init(instruments: nircamNiriss, pivotWavelength: 4.281, bandwidth: 0.228, filterType: .medium, wavelengthRegime: "Near-Infrared (long)", scienceUse: "CO₂, N₂"),
+        .F460M: .init(instruments: nircam, pivotWavelength: 4.630, bandwidth: 0.228, filterType: .medium, wavelengthRegime: "Near-Infrared (long)", scienceUse: "CO"),
+        .F480M: .init(instruments: nircamNiriss, pivotWavelength: 4.817, bandwidth: 0.303, filterType: .medium, wavelengthRegime: "Near-Infrared (long)", scienceUse: "Brown dwarfs, planets, continuum"),
+        .F323N: .init(instruments: nircam, pivotWavelength: 3.237, bandwidth: 0.038, filterType: .narrow, wavelengthRegime: "Near-Infrared (long)", scienceUse: "H₂ molecular emission (3.23 μm)"),
+        .F405N: .init(instruments: nircam, pivotWavelength: 4.053, bandwidth: 0.046, filterType: .narrow, wavelengthRegime: "Near-Infrared (long)", scienceUse: "Brackett-alpha (Br-α) hydrogen emission"),
+        .F466N: .init(instruments: nircam, pivotWavelength: 4.654, bandwidth: 0.054, filterType: .narrow, wavelengthRegime: "Near-Infrared (long)", scienceUse: "CO fundamental band emission"),
+        .F470N: .init(instruments: nircam, pivotWavelength: 4.708, bandwidth: 0.051, filterType: .narrow, wavelengthRegime: "Near-Infrared (long)", scienceUse: "H₂ molecular emission (4.69 μm)"),
+        .F158M: .init(instruments: niriss, pivotWavelength: 1.580, bandwidth: 0.165, filterType: .medium, wavelengthRegime: "Near-Infrared (short)", scienceUse: "Continuum, stellar characterization"),
+        .F380M: .init(instruments: niriss, pivotWavelength: 3.828, bandwidth: 0.205, filterType: .medium, wavelengthRegime: "Near-Infrared (long)", scienceUse: "CH₄, continuum, exoplanet transit spectroscopy"),
+        .F070LP: .init(instruments: nirspec, pivotWavelength: 0.7, bandwidth: 0.6, filterType: .longPass, wavelengthRegime: "Near-Infrared (spectroscopy)", scienceUse: "Spectroscopy 0.7–1.27 μm (paired with G140M/G140H)"),
+        .F100LP: .init(instruments: nirspec, pivotWavelength: 1.0, bandwidth: 0.9, filterType: .longPass, wavelengthRegime: "Near-Infrared (spectroscopy)", scienceUse: "Spectroscopy 1.0–1.9 μm (paired with G140M/G140H)"),
+        .F110W: .init(instruments: nirspec, pivotWavelength: 1.15, bandwidth: 0.3, filterType: .wide, wavelengthRegime: "Near-Infrared (spectroscopy)", scienceUse: "Narrow-band target acquisition for brighter targets"),
+        .F140X: .init(instruments: nirspec, pivotWavelength: 1.4, bandwidth: 1.2, filterType: .extraWide, wavelengthRegime: "Near-Infrared (spectroscopy)", scienceUse: "Target acquisition"),
+        .F170LP: .init(instruments: nirspec, pivotWavelength: 1.7, bandwidth: 1.5, filterType: .longPass, wavelengthRegime: "Near-Infrared (spectroscopy)", scienceUse: "Spectroscopy 1.7–3.2 μm (paired with G235M/G235H)"),
+        .F290LP: .init(instruments: nirspec, pivotWavelength: 2.9, bandwidth: 2.4, filterType: .longPass, wavelengthRegime: "Near-Infrared (spectroscopy)", scienceUse: "Spectroscopy 2.9–5.3 μm (paired with G395M/G395H)"),
+        .CLEAR: .init(instruments: nirspec, pivotWavelength: 2.95, bandwidth: 4.7, filterType: .clear, wavelengthRegime: "Near-Infrared (spectroscopy)", scienceUse: "Target acquisition or full-range spectroscopy with PRISM (0.6–5.3 μm)"),
+    ]
 }

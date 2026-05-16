@@ -1871,6 +1871,39 @@ final class SwiftMASTTests: XCTestCase {
         XCTAssertEqual(filters[0].scienceUse, "Cool stars, H₂O, CH₄")
     }
 
+    func testJWSTFilterMetadata() {
+        let filter = JWSTFilter.F560W
+        XCTAssertEqual(filter.instruments, ["MIRI"])
+        XCTAssertEqual(filter.filterType, .wide)
+        XCTAssertEqual(filter.scienceUse, "Stellar photospheres, warm dust continuum")
+        XCTAssertEqual(filter.pivotWavelength, 5.6)
+        XCTAssertEqual(filter.bandwidth, 1.2)
+        XCTAssertEqual(filter.wavelengthRegime, "Mid-Infrared")
+        XCTAssertEqual(filter.likelySpaceColor, .orange)
+        XCTAssertEqual(filter.likelySpaceColorHex, "#FB923C")
+    }
+
+    func testJWSTFilterColorTagsAcrossWavelengths() {
+        XCTAssertEqual(JWSTFilter.F090W.likelySpaceColor, .blue)
+        XCTAssertEqual(JWSTFilter.F150W.likelySpaceColor, .cyan)
+        XCTAssertEqual(JWSTFilter.F277W.likelySpaceColor, .green)
+        XCTAssertEqual(JWSTFilter.F444W.likelySpaceColor, .yellow)
+        XCTAssertEqual(JWSTFilter.F770W.likelySpaceColor, .orange)
+        XCTAssertEqual(JWSTFilter.F1500W.likelySpaceColor, .red)
+        XCTAssertEqual(JWSTFilter.F2100W.likelySpaceColor, .deepRed)
+    }
+
+    func testAllJWSTFiltersHaveMetadata() {
+        for filter in JWSTFilter.allCases {
+            XCTAssertFalse(filter.instruments.isEmpty)
+            XCTAssertGreaterThan(filter.pivotWavelength, 0)
+            XCTAssertGreaterThan(filter.bandwidth, 0)
+            XCTAssertFalse(filter.scienceUse.isEmpty)
+            XCTAssertFalse(filter.wavelengthRegime.isEmpty)
+            XCTAssertFalse(filter.likelySpaceColorHex.isEmpty)
+        }
+    }
+
     // MARK: - HST WFC3/UVIS Filter Metadata
 
     func testHSTFilterMetadata() {
