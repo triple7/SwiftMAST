@@ -1781,6 +1781,21 @@ final class SwiftMASTTests: XCTestCase {
         )
     }
 
+    func testHSTObservationGroupKey() {
+        XCTAssertEqual(
+            hstObservationGroupKey("hst_10775_62_wfc3_f606w"),
+            "hst_10775_62_wfc3"
+        )
+        XCTAssertEqual(
+            hstObservationGroupKey("hst_10775_62_wfpc2_f814w_f606w_wf"),
+            "hst_10775_62_wfpc2"
+        )
+        XCTAssertEqual(
+            observationGroupKey(makeCoamResult(obs_id: "hst_10775_62_wfc3_f814w", obs_collection: "HLA")),
+            "hst_10775_62_wfc3"
+        )
+    }
+
     func testBuildObservationGroups() {
         let mast = SwiftMAST()
 
@@ -1834,6 +1849,49 @@ final class SwiftMASTTests: XCTestCase {
         XCTAssertEqual(groups[1].products.count, 3)
         XCTAssertEqual(groups[1].filterNames, ["F560W", "F1000W", "F2100W"])
         XCTAssertEqual(groups[1].instrument, "MIRI/IMAGE")
+    }
+
+    func testBuildObservationGroupsForHSTAndJWST() {
+        let mast = SwiftMAST()
+
+        let hstF606W = makeCoamResult(
+            obs_id: "hst_10775_62_wfc3_f606w",
+            filters: "F606W",
+            instrument_name: "WFC3/UVIS",
+            obs_collection: "HST"
+        )
+        let hstF814W = makeCoamResult(
+            obs_id: "hst_10775_62_wfc3_f814w",
+            filters: "F814W",
+            instrument_name: "WFC3/UVIS",
+            obs_collection: "HST"
+        )
+        let jwstF200W = makeCoamResult(
+            obs_id: "jw01783-o004_t008_nircam_f200w",
+            filters: "F200W",
+            instrument_name: "NIRCAM/IMAGE",
+            obs_collection: "JWST"
+        )
+
+        let groups = mast.buildObservationGroups(from: [hstF814W, jwstF200W, hstF606W])
+
+        XCTAssertEqual(groups.count, 2)
+        XCTAssertEqual(groups[0].mission, "HST")
+        XCTAssertEqual(groups[0].observationKey, "hst_10775_62_wfc3")
+        XCTAssertEqual(groups[0].filterNames, ["F606W", "F814W"])
+        XCTAssertEqual(groups[1].mission, "JWST")
+        XCTAssertEqual(groups[1].observationKey, "jw01783-o004_t008_nircam")
+        XCTAssertEqual(groups[1].filterNames, ["F200W"])
+    }
+
+    func testCoamResultFilterColorMap() {
+        let hst = makeCoamResult(filters: "F606W;F814W", obs_collection: "HST")
+        XCTAssertEqual(hst.filterColorMap["F606W"]?.colorName, HSTFilter.F606W.likelySpaceColor.rawValue)
+        XCTAssertEqual(hst.filterColorMap["F814W"]?.hexColor, HSTFilter.F814W.likelySpaceColorHex)
+
+        let jwst = makeCoamResult(filters: "F560W;F1000W", obs_collection: "JWST")
+        XCTAssertEqual(jwst.filterColorMap["F560W"]?.colorName, JWSTFilter.F560W.likelySpaceColor.rawValue)
+        XCTAssertEqual(jwst.filterColorMap["F1000W"]?.hexColor, JWSTFilter.F1000W.likelySpaceColorHex)
     }
 
     // MARK: - jwstFilters on CoamResult (unit tests)
@@ -2016,6 +2074,59 @@ final class SwiftMASTTests: XCTestCase {
                 )
             }
 
+            expectation.fulfill()
+        }
+
+        wait(for: [expectation], timeout: 120.0)
+    }
+
+    func testGetObservationGroupsHSTAndJWSTNGC628() {
+        let expectation = XCTestExpectation(
+            description: "Get HST and JWST observation groups for NGC 628")
+        let mast = SwiftMAST()
+
+        mast.getObservationGroups(
+            targetName: "NGC 628",
+            missions: ObservationMission.jwstAndHST,
+            pageSize: 200
+        ) { groups in
+            XCTAssertFalse(groups.isEmpty, "Should find HST/JWST observation groups for NGC 628")
+            XCTAssertTrue(
+                groups.contains { $0.mission == "JWST" },
+                "Should include at least one JWST observation group")
+            XCTAssertTrue(
+                groups.contains { $0.mission == "HST" },
+                "Should include at least one HST observation group")
+
+            for group in groups {
+                XCTAssertFalse(group.observationKey.isEmpty)
+                XCTAssertFalse(group.products.isEmpty)
+                for product in group.products {
+                    XCTAssertFalse(product.filters.isEmpty)
+                    _ = product.filterColors
+                }
+            }
+
+            expectation.fulfill()
+        }
+
+        wait(for: [expectation], timeout: 120.0)
+    }
+
+    func testGetObservationGroupsHSTOnlyM31() {
+        let expectation = XCTestExpectation(description: "Get HST-only observation groups for M31")
+        let mast = SwiftMAST()
+
+        mast.getObservationGroups(
+            targetName: "M31",
+            missions: ObservationMission.hstOnly,
+            pageSize: 50
+        ) { groups in
+            XCTAssertFalse(groups.isEmpty, "Should find HST observation groups for M31")
+            XCTAssertTrue(groups.allSatisfy { $0.mission == "HST" })
+            XCTAssertTrue(groups.contains { group in
+                group.products.contains { !$0.hstFilters.isEmpty }
+            })
             expectation.fulfill()
         }
 

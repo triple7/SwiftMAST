@@ -1352,6 +1352,152 @@ extension SwiftMAST {
         return output
     }
 
+    // MARK: - Observation Groups
+
+    /** Query science products and group them by observation session for JWST, HST, or both.
+
+     This is the mission-generic version of `getJWSTObservationGroups`. Existing JWST-specific
+     functions remain available and call through the same grouping model.
+     */
+    public func getObservationGroups(
+        targetName: String,
+        missions: [ObservationMission] = ObservationMission.jwstAndHST,
+        instruments: [String]? = nil,
+        calibLevels: [String] = ["3", "4"],
+        pageSize: Int = 400,
+        sortOrder: ObservationProductSortOrder = .filter,
+        result: @escaping ([ObservationGroup]) -> Void
+    ) {
+        self.lookupTargetCoordinates(targetName: targetName) { coordinates in
+            guard let coordinates = coordinates else {
+                self.log(
+                    .RequestError,
+                    message: "getObservationGroups: Could not resolve target '\(targetName)'"
+                )
+                result([])
+                return
+            }
+
+            self.getObservationGroups(
+                targetName: targetName,
+                ra: coordinates.ra,
+                dec: coordinates.dec,
+                radius: coordinates.radius,
+                missions: missions,
+                instruments: instruments,
+                calibLevels: calibLevels,
+                pageSize: pageSize,
+                sortOrder: sortOrder,
+                result: result
+            )
+        }
+    }
+
+    /** Query science products at given coordinates and group them by observation session.
+
+     Parameters:
+     * targetName: String - the target identifier
+     * ra: Float - Right Ascension (degrees, J2000)
+     * dec: Float - Declination (degrees, J2000)
+     * radius: Float - Search radius in degrees
+     * missions: [ObservationMission] - `.jwst`, `.hst`, or both
+     * instruments: [String]? - optional instrument filter
+     * calibLevels: [String] - calibration levels (default: ["3", "4"])
+     * pageSize: Int - number of results per page (default: 400)
+     * result: Closure returning an array of ``ObservationGroup``
+     */
+    public func getObservationGroups(
+        targetName: String,
+        ra: Float,
+        dec: Float,
+        radius: Float,
+        missions: [ObservationMission] = ObservationMission.jwstAndHST,
+        instruments: [String]? = nil,
+        calibLevels: [String] = ["3", "4"],
+        pageSize: Int = 400,
+        sortOrder: ObservationProductSortOrder = .filter,
+        result: @escaping ([ObservationGroup]) -> Void
+    ) {
+        let collections = Array(Set(missions.flatMap(\.collectionNames))).sorted()
+        self.log(
+            .OK,
+            message:
+                "getObservationGroups: Starting for \(targetName) collections=\(collections.joined(separator: ",")) at RA=\(ra), Dec=\(dec), radius=\(radius)"
+        )
+
+        let filterOptions = ImageryFilterOptions(
+            collections: collections,
+            instruments: instruments,
+            calibLevels: calibLevels
+        )
+
+        self.setTargetId(targetId: targetName)
+        let service = Service.Mast_Caom_Filtered_Position
+        var params = service.serviceRequest(requestType: .advancedSearch)
+
+        params.setGeneralParameters(params: MAP.values.defaultGeneralParameters())
+        params.setParameter(param: MAP.pagesize, value: pageSize)
+        params.setParameter(param: MAP.page, value: 1)
+        let filterParams = filterOptions.toMASTFilters()
+        params.setFilterParameters(params: filterParams)
+        params.setParameters(params: [MAP.columns: "*", MAP.position: "\(ra), \(dec), \(radius)"])
+
+        let start = CACurrentMediaTime()
+        self.queryMast(
+            service: service, params: params, returnType: .json,
+            { success in
+                let end = CACurrentMediaTime()
+                self.log(
+                    .OK,
+                    message:
+                        "getObservationGroups: Query completed in \(String(format: "%.2f", end - start))s"
+                )
+
+                guard let table = self.targets[targetName] else {
+                    self.log(
+                        .RequestError,
+                        message: "getObservationGroups: No target table for '\(targetName)'"
+                    )
+                    result([])
+                    return
+                }
+
+                let coamResults = table.getCoamResults()
+                self.log(
+                    .OK,
+                    message: "getObservationGroups: Found \(coamResults.count) total products"
+                )
+
+                let lowerCollections = Set(collections.map { $0.lowercased() })
+                var filteredResults = coamResults.filter {
+                    lowerCollections.contains($0.obs_collection.lowercased())
+                }
+
+                if let instruments = instruments {
+                    let lowerInstruments = Set(instruments.map { $0.lowercased() })
+                    filteredResults = filteredResults.filter {
+                        lowerInstruments.contains($0.instrument_name.lowercased())
+                    }
+                }
+
+                guard !filteredResults.isEmpty else {
+                    self.log(.OK, message: "getObservationGroups: No products after filtering")
+                    result([])
+                    return
+                }
+
+                let groups = self.buildObservationGroups(
+                    from: filteredResults, sortOrder: sortOrder)
+
+                self.log(
+                    .OK,
+                    message: "getObservationGroups: Built \(groups.count) observation groups"
+                )
+
+                result(groups)
+            })
+    }
+
     // MARK: - JWST Observation Groups
 
     /** Query JWST science products and group them by observation session.
@@ -1392,28 +1538,15 @@ extension SwiftMAST {
         sortOrder: JWSTProductSortOrder = .filter,
         result: @escaping ([JWSTObservationGroup]) -> Void
     ) {
-        self.lookupTargetCoordinates(targetName: targetName) { coordinates in
-            guard let coordinates = coordinates else {
-                self.log(
-                    .RequestError,
-                    message:
-                        "getJWSTObservationGroups: Could not resolve target '\(targetName)'"
-                )
-                result([])
-                return
-            }
-            self.getJWSTObservationGroups(
-                targetName: targetName,
-                ra: coordinates.ra,
-                dec: coordinates.dec,
-                radius: coordinates.radius,
-                instruments: instruments,
-                calibLevels: calibLevels,
-                pageSize: pageSize,
-                sortOrder: sortOrder,
-                result: result
-            )
-        }
+        self.getObservationGroups(
+            targetName: targetName,
+            missions: ObservationMission.jwstOnly,
+            instruments: instruments,
+            calibLevels: calibLevels,
+            pageSize: pageSize,
+            sortOrder: sortOrder,
+            result: result
+        )
     }
 
     /** Query JWST science products at given coordinates and group by observation session.
@@ -1439,88 +1572,18 @@ extension SwiftMAST {
         sortOrder: JWSTProductSortOrder = .filter,
         result: @escaping ([JWSTObservationGroup]) -> Void
     ) {
-        self.log(
-            .OK,
-            message:
-                "getJWSTObservationGroups: Starting for \(targetName) at RA=\(ra), Dec=\(dec), radius=\(radius)"
-        )
-
-        var filterOptions = ImageryFilterOptions(
-            collections: ["JWST"],
+        self.getObservationGroups(
+            targetName: targetName,
+            ra: ra,
+            dec: dec,
+            radius: radius,
+            missions: ObservationMission.jwstOnly,
             instruments: instruments,
-            calibLevels: calibLevels
+            calibLevels: calibLevels,
+            pageSize: pageSize,
+            sortOrder: sortOrder,
+            result: result
         )
-
-        self.setTargetId(targetId: targetName)
-        let service = Service.Mast_Caom_Filtered_Position
-        var params = service.serviceRequest(requestType: .advancedSearch)
-
-        params.setGeneralParameters(params: MAP.values.defaultGeneralParameters())
-        params.setParameter(param: MAP.pagesize, value: pageSize)
-        params.setParameter(param: MAP.page, value: 1)
-        let filterParams = filterOptions.toMASTFilters()
-        params.setFilterParameters(params: filterParams)
-        params.setParameters(params: [MAP.columns: "*", MAP.position: "\(ra), \(dec), \(radius)"])
-
-        let start = CACurrentMediaTime()
-        self.queryMast(
-            service: service, params: params, returnType: .json,
-            { success in
-                let end = CACurrentMediaTime()
-                self.log(
-                    .OK,
-                    message:
-                        "getJWSTObservationGroups: Query completed in \(String(format: "%.2f", end - start))s"
-                )
-
-                guard let table = self.targets[targetName] else {
-                    self.log(
-                        .RequestError,
-                        message:
-                            "getJWSTObservationGroups: No target table for '\(targetName)'"
-                    )
-                    result([])
-                    return
-                }
-
-                let coamResults = table.getCoamResults()
-                self.log(
-                    .OK,
-                    message:
-                        "getJWSTObservationGroups: Found \(coamResults.count) total JWST products"
-                )
-
-                // Optionally filter by instrument
-                let filteredResults: [CoamResult]
-                if let instruments = instruments {
-                    let lowerInstruments = instruments.map { $0.lowercased() }
-                    filteredResults = coamResults.filter { coam in
-                        lowerInstruments.contains(coam.instrument_name.lowercased())
-                    }
-                } else {
-                    filteredResults = coamResults
-                }
-
-                guard !filteredResults.isEmpty else {
-                    self.log(
-                        .OK,
-                        message: "getJWSTObservationGroups: No products after filtering"
-                    )
-                    result([])
-                    return
-                }
-
-                let groups = self.buildObservationGroups(
-                    from: filteredResults, sortOrder: sortOrder)
-
-                self.log(
-                    .OK,
-                    message:
-                        "getJWSTObservationGroups: Built \(groups.count) observation groups"
-                )
-
-                result(groups)
-            })
     }
 
     /// Build observation groups from a flat array of CoamResults.
@@ -1528,12 +1591,12 @@ extension SwiftMAST {
     /// and sorts groups by observation key.
     internal func buildObservationGroups(
         from results: [CoamResult],
-        sortOrder: JWSTProductSortOrder = .filter
-    ) -> [JWSTObservationGroup] {
+        sortOrder: ObservationProductSortOrder = .filter
+    ) -> [ObservationGroup] {
         // Group by observation key
         var grouped = [String: [CoamResult]]()
         for coam in results {
-            let key = jwstObservationGroupKey(coam.obs_id)
+            let key = observationGroupKey(coam)
             if grouped[key] == nil {
                 grouped[key] = [coam]
             } else {
@@ -1542,12 +1605,14 @@ extension SwiftMAST {
         }
 
         // Build sorted groups
-        var groups = [JWSTObservationGroup]()
+        var groups = [ObservationGroup]()
         for (key, products) in grouped {
-            let sorted = products.sorted { compareJWSTProducts($0, $1, by: sortOrder) }
+            let sorted = products.sorted { compareObservationProducts($0, $1, by: sortOrder) }
             let instrument = sorted.first?.instrument_name ?? ""
+            let mission = sorted.first?.observationMission?.rawValue ?? sorted.first?.obs_collection ?? ""
             groups.append(
-                JWSTObservationGroup(
+                ObservationGroup(
+                    mission: mission,
                     observationKey: key,
                     instrument: instrument,
                     products: sorted
