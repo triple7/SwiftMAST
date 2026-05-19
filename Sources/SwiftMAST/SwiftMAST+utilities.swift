@@ -513,12 +513,219 @@ extension SwiftMAST {
         headerValue(keyword, in: headers)?.intValue ?? 0
     }
 
+    /// Convenience: get a floating-point value from headers.
+    private func headerDouble(_ keyword: String, in headers: [FITSHeaderUnit]) -> Double? {
+        headerValue(keyword, in: headers)?.doubleValue
+    }
+
     /// Determine whether an HDU contains renderable image data based on its headers and data size.
     private func hduContainsImage(headers: [FITSHeaderUnit], dataSize: Int) -> Bool {
         let naxis = headerInt("NAXIS", in: headers)
         let naxis1 = headerInt("NAXIS1", in: headers)
         let naxis2 = headerInt("NAXIS2", in: headers)
         return naxis >= 2 && naxis1 > 0 && naxis2 > 0 && dataSize > 0
+    }
+
+    /// Extract raw image HDU planes from a local FITS file without rendering them to JPEG.
+    ///
+    /// This is the FITS-aware entry point used by astronomy image pipelines. It preserves
+    /// raw scaled pixel values, merged headers, HDU roles, and WCS metadata so the app can
+    /// perform histogram stretching, weight masking, color blending, and WCS placement.
+    public func extractFITSObservationProduct(
+        fitsUrl: URL, coamResult: CoamResult
+    ) -> FITSObservationProduct? {
+        guard let data = try? Data(contentsOf: fitsUrl),
+            let fits = FitsFile.read(data)
+        else {
+            log(
+                .RequestError,
+                message: "extractFITSObservationProduct: Unable to read \(fitsUrl.lastPathComponent)"
+            )
+            return nil
+        }
+
+        let primaryHeaders = extractHeaderUnits(fits.prime.headerUnit)
+        let sourceFilename = fitsUrl.lastPathComponent
+        var planes = [FITSImagePlane]()
+
+        if let primaryPlane = extractImagePlane(
+            from: fits.prime,
+            extIndex: 0,
+            headers: primaryHeaders,
+            sourceFilename: sourceFilename
+        ) {
+            planes.append(primaryPlane)
+        }
+
+        for (index, hdu) in fits.HDUs.enumerated() {
+            guard let imageHDU = hdu as? ImageHDU else { continue }
+
+            let hduHeaders = extractHeaderUnits(imageHDU.headerUnit)
+            let xtension = (headerValue("XTENSION", in: hduHeaders)?.rawString ?? "").lowercased()
+            guard xtension == "image" else { continue }
+
+            let mergedHeaders = mergeHeaderUnits(primary: primaryHeaders, hdu: hduHeaders)
+            if let plane = extractImagePlane(
+                from: imageHDU,
+                extIndex: index + 1,
+                headers: mergedHeaders,
+                sourceFilename: sourceFilename
+            ) {
+                planes.append(plane)
+            }
+        }
+
+        return FITSObservationProduct(
+            coamResult: coamResult,
+            sourceFileLocation: fitsUrl,
+            primaryHeaders: primaryHeaders,
+            planes: planes
+        )
+    }
+
+    private func extractImagePlane(
+        from hdu: AnyImageHDU,
+        extIndex: Int,
+        headers: [FITSHeaderUnit],
+        sourceFilename: String
+    ) -> FITSImagePlane? {
+        let dataSize = hdu.dataUnit?.count ?? 0
+        guard hduContainsImage(headers: headers, dataSize: dataSize) else { return nil }
+
+        let width = headerInt("NAXIS1", in: headers)
+        let height = headerInt("NAXIS2", in: headers)
+        guard let pixels = decodeRawPixelBuffer(from: hdu, headers: headers) else { return nil }
+
+        let extName = headerValue("EXTNAME", in: headers)?.rawString
+        let role = FITSHDURoleClassifier.classify(headers: headers, sourceFilename: sourceFilename)
+
+        return FITSImagePlane(
+            role: role,
+            extName: extName?.isEmpty == true ? nil : extName,
+            extIndex: extIndex,
+            width: width,
+            height: height,
+            headers: headers,
+            pixels: pixels,
+            wcs: FITSWCS(headers: headers)
+        )
+    }
+
+    private func decodeRawPixelBuffer(
+        from hdu: AnyImageHDU,
+        headers: [FITSHeaderUnit]
+    ) -> FITSPixelBuffer? {
+        guard let dataUnit = hdu.dataUnit else { return nil }
+
+        let width = headerInt("NAXIS1", in: headers)
+        let height = headerInt("NAXIS2", in: headers)
+        let axisCount = max(headerInt("NAXIS", in: headers), 0)
+        let channelCount = max(headerInt("NAXIS3", in: headers), 1)
+        let expectedValueCount = width * height * channelCount
+        let bscale = Float(headerDouble("BSCALE", in: headers) ?? 1)
+        let bzero = Float(headerDouble("BZERO", in: headers) ?? 0)
+        let bitpix = headerInt("BITPIX", in: headers)
+
+        let decoded: ([Float], Int)?
+        switch hdu.bitpix {
+        case .UINT8:
+            decoded = decodeIntegerPixels(dataUnit, as: UInt8.self, expectedCount: expectedValueCount, bscale: bscale, bzero: bzero)
+        case .INT16:
+            decoded = decodeIntegerPixels(dataUnit, as: Int16.self, expectedCount: expectedValueCount, bscale: bscale, bzero: bzero)
+        case .INT32:
+            decoded = decodeIntegerPixels(dataUnit, as: Int32.self, expectedCount: expectedValueCount, bscale: bscale, bzero: bzero)
+        case .INT64:
+            decoded = decodeIntegerPixels(dataUnit, as: Int64.self, expectedCount: expectedValueCount, bscale: bscale, bzero: bzero)
+        case .FLOAT32:
+            decoded = decodeFloatPixels(dataUnit, expectedCount: expectedValueCount, bscale: bscale, bzero: bzero)
+        case .FLOAT64:
+            decoded = decodeDoublePixels(dataUnit, expectedCount: expectedValueCount, bscale: bscale, bzero: bzero)
+        case .none:
+            decoded = nil
+        }
+
+        guard let decoded else { return nil }
+
+        return FITSPixelBuffer(
+            width: width,
+            height: height,
+            axisCount: axisCount,
+            channelCount: channelCount,
+            bitpix: bitpix,
+            values: decoded.0,
+            invalidValueCount: decoded.1
+        )
+    }
+
+    private func decodeIntegerPixels<Integer: FixedWidthInteger>(
+        _ dataUnit: DataUnit,
+        as type: Integer.Type,
+        expectedCount: Int,
+        bscale: Float,
+        bzero: Float
+    ) -> ([Float], Int) {
+        dataUnit.withUnsafeBytes { rawBuffer in
+            let typedBuffer = rawBuffer.bindMemory(to: Integer.self)
+            let count = min(expectedCount, typedBuffer.count)
+            var values = [Float]()
+            values.reserveCapacity(count)
+
+            for index in 0..<count {
+                let rawValue = Integer(bigEndian: typedBuffer[index])
+                values.append(Float(rawValue) * bscale + bzero)
+            }
+
+            return (values, max(expectedCount - count, 0))
+        }
+    }
+
+    private func decodeFloatPixels(
+        _ dataUnit: DataUnit,
+        expectedCount: Int,
+        bscale: Float,
+        bzero: Float
+    ) -> ([Float], Int) {
+        dataUnit.withUnsafeBytes { rawBuffer in
+            let typedBuffer = rawBuffer.bindMemory(to: Float.self)
+            let count = min(expectedCount, typedBuffer.count)
+            var values = [Float]()
+            values.reserveCapacity(count)
+            var invalidCount = max(expectedCount - count, 0)
+
+            for index in 0..<count {
+                let rawValue = Float(bitPattern: typedBuffer[index].bitPattern.bigEndian)
+                let value = rawValue * bscale + bzero
+                if !value.isFinite { invalidCount += 1 }
+                values.append(value)
+            }
+
+            return (values, invalidCount)
+        }
+    }
+
+    private func decodeDoublePixels(
+        _ dataUnit: DataUnit,
+        expectedCount: Int,
+        bscale: Float,
+        bzero: Float
+    ) -> ([Float], Int) {
+        dataUnit.withUnsafeBytes { rawBuffer in
+            let typedBuffer = rawBuffer.bindMemory(to: Double.self)
+            let count = min(expectedCount, typedBuffer.count)
+            var values = [Float]()
+            values.reserveCapacity(count)
+            var invalidCount = max(expectedCount - count, 0)
+
+            for index in 0..<count {
+                let rawValue = Double(bitPattern: typedBuffer[index].bitPattern.bigEndian)
+                let scaledValue = rawValue * Double(bscale) + Double(bzero)
+                let value = Float(scaledValue)
+                if !scaledValue.isFinite || !value.isFinite { invalidCount += 1 }
+                values.append(value)
+            }
+
+            return (values, invalidCount)
+        }
     }
 
     /// Extract science products from a local FITS file.

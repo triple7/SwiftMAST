@@ -5,8 +5,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/andreasjk/fitscore.git",
       "state" : {
-        "revision" : "1852e022961f28c765810817a6e66b7513a8b4e0",
-        "version" : "0.3.1"
+        "revision" : "5419a16d2dfa945caaa95402650811ac7c8cb6fc",
+        "version" : "0.3.2"
       }
     },
     {
@@ -15,7 +15,7 @@
       "location" : "https://github.com/ifeLight/fitskit.git",
       "state" : {
         "branch" : "master",
-        "revision" : "82198ba97e5d7d14cc2d57b9b365265e760a81f4"
+        "revision" : "66f257f88adb69f9cef1605daa35987e29d52a13"
       }
     },
     {
