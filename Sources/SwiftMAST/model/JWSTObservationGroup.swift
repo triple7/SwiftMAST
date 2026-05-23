@@ -92,6 +92,14 @@ public struct ObservationFilterColor: Codable, Hashable {
     }
 }
 
+/// Subfolder names for downloaded observation product content.
+public enum ObservationProductContentType: String, Codable, CaseIterable, Identifiable {
+    case fit
+    case image
+
+    public var id: String { rawValue }
+}
+
 /// Extract the numeric wavelength from a JWST filter name for sorting.
 ///
 /// Examples:

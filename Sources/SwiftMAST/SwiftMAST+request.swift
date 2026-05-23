@@ -240,8 +240,10 @@ extension SwiftMAST {
                         } else {
                             // jpeg
                             let url = self.saveImageFile(
-                                target: targetName, collection: product.obs_collection,
-                                filter: product.filters, productType: productType, data: data)
+                                target: targetName,
+                                collection: product.observationMission?.rawValue ?? product.obs_collection,
+                                filter: product.filters, observationId: product.obs_id,
+                                productType: productType, data: data)
                             if let url = url {
                                 fitsData.append(FitsData(metadata: [:], url: url))
                                 self.log(
@@ -401,7 +403,7 @@ extension SwiftMAST {
                         //                    print("downloadFitsCutout: \(tempUrl)")
                         let url = self.saveImageFile(
                             target: targetName, collection: "PS1", filter: "OPTICAL",
-                            productType: .Jpeg, url: tempUrl!)
+                            observationId: "cutout", productType: .Jpeg, url: tempUrl!)
                         if let url = url {
                             urls.append(url)
                             self.log(

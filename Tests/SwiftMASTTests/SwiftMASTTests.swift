@@ -1894,6 +1894,34 @@ final class SwiftMASTTests: XCTestCase {
         XCTAssertEqual(jwst.filterColorMap["F1000W"]?.hexColor, JWSTFilter.F1000W.likelySpaceColorHex)
     }
 
+    func testObservationProductStoragePathIncludesObservationIdAndContentType() {
+        let mast = SwiftMAST()
+        let product = makeCoamResult(
+            obs_id: "jw02666-o007_t004_miri_f1000w",
+            filters: "F1000W;F770W",
+            instrument_name: "MIRI/IMAGE",
+            obs_collection: "JWST"
+        )
+
+        let fitFolder = mast.productStorageFolder(
+            target: "NGC 628", product: product, contentType: .fit)
+        let imageFolder = mast.productStorageFolder(
+            target: "NGC 628", product: product, contentType: .image)
+
+        XCTAssertTrue(
+            fitFolder.path.hasSuffix(
+                "MAST/NGC_628/JWST/jw02666-o007_t004_miri_f1000w/F1000W-F770W/fit"
+            ))
+        XCTAssertTrue(
+            imageFolder.path.hasSuffix(
+                "MAST/NGC_628/JWST/jw02666-o007_t004_miri_f1000w/F1000W-F770W/image"
+            ))
+        XCTAssertEqual(
+            mast.productFileName(target: "NGC 628", product: product, productType: .Fits),
+            "NGC_628_JWST_jw02666-o007_t004_miri_f1000w_F1000W-F770W.fits"
+        )
+    }
+
     // MARK: - jwstFilters on CoamResult (unit tests)
 
     func testJWSTFiltersOnCoamResultSingleFilter() {

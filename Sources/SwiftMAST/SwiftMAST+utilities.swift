@@ -16,7 +16,27 @@ import Zip
 
 extension SwiftMAST {
 
-    private func getproductFolder(target: String, collection: String) -> URL {
+    internal func storageSafePathComponent(_ value: String, fallback: String) -> String {
+        let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
+        let source = trimmed.isEmpty ? fallback : trimmed
+        let allowed = CharacterSet.alphanumerics.union(CharacterSet(charactersIn: "-_."))
+        let scalars = source.unicodeScalars.map { scalar -> Character in
+            allowed.contains(scalar) ? Character(scalar) : "_"
+        }
+        let collapsed = String(scalars).replacingOccurrences(
+            of: "__+", with: "_", options: .regularExpression)
+        return collapsed.trimmingCharacters(in: CharacterSet(charactersIn: "_")).isEmpty
+            ? fallback
+            : collapsed.trimmingCharacters(in: CharacterSet(charactersIn: "_"))
+    }
+
+    internal func productStorageFolder(
+        target: String,
+        mission: String,
+        observationId: String,
+        filter: String,
+        contentType: ObservationProductContentType
+    ) -> URL {
 
         // Get the Documents directory
         let documentsDirectory = FileManager.default.urls(
@@ -24,10 +44,51 @@ extension SwiftMAST {
         ).first!
 
         var MASTDirectory = documentsDirectory.appendingPathComponent("MAST", isDirectory: true)
-        MASTDirectory = MASTDirectory.appendingPathComponent(target, isDirectory: true)
+        MASTDirectory = MASTDirectory.appendingPathComponent(
+            storageSafePathComponent(target, fallback: "unknown-target"), isDirectory: true)
 
-        MASTDirectory = MASTDirectory.appendingPathComponent(collection, isDirectory: true)
+        MASTDirectory = MASTDirectory.appendingPathComponent(
+            storageSafePathComponent(mission, fallback: "unknown-mission"), isDirectory: true)
+        MASTDirectory = MASTDirectory.appendingPathComponent(
+            storageSafePathComponent(observationId, fallback: "unknown-observation"),
+            isDirectory: true)
+        MASTDirectory = MASTDirectory.appendingPathComponent(
+            storageSafePathComponent(
+                filter.replacingOccurrences(of: ";", with: "-"),
+                fallback: "unknown-filter"),
+            isDirectory: true)
+        MASTDirectory = MASTDirectory.appendingPathComponent(contentType.rawValue, isDirectory: true)
         return MASTDirectory
+    }
+
+    internal func productStorageFolder(
+        target: String,
+        product: CoamResult,
+        contentType: ObservationProductContentType
+    ) -> URL {
+        productStorageFolder(
+            target: target,
+            mission: product.observationMission?.rawValue ?? product.obs_collection,
+            observationId: product.obs_id,
+            filter: product.filters,
+            contentType: contentType
+        )
+    }
+
+    internal func productFileName(
+        target: String,
+        product: CoamResult,
+        productType: ProductType
+    ) -> String {
+        let targetName = storageSafePathComponent(target, fallback: "unknown-target")
+        let mission = storageSafePathComponent(
+            product.observationMission?.rawValue ?? product.obs_collection,
+            fallback: "unknown-mission")
+        let observationId = storageSafePathComponent(product.obs_id, fallback: "unknown-observation")
+        let filter = storageSafePathComponent(
+            product.filters.replacingOccurrences(of: ";", with: "-"),
+            fallback: "unknown-filter")
+        return "\(targetName)_\(mission)_\(observationId)_\(filter).\(productType.id)"
     }
 
     func unzipResponseData(_ data: Data, completion: @escaping ([URL]) -> Void) {
@@ -90,24 +151,25 @@ extension SwiftMAST {
     ) {
         print("saveAsset: \(urlString)")
 
-        var MASTDirectory = getproductFolder(target: targetName, collection: product.obs_collection)
-
-        // We want readable and identifiable URL paths
-        let filters = product.filters.replacingOccurrences(of: ";", with: "-")
-        MASTDirectory = MASTDirectory.appendingPathComponent(filters, isDirectory: true)
+        let fitsDirectory = productStorageFolder(
+            target: targetName, product: product, contentType: .fit)
+        let imageDirectory = productStorageFolder(
+            target: targetName, product: product, contentType: .image)
 
         do {
             try FileManager.default.createDirectory(
-                at: MASTDirectory, withIntermediateDirectories: true, attributes: nil)
+                at: fitsDirectory, withIntermediateDirectories: true, attributes: nil)
+            try FileManager.default.createDirectory(
+                at: imageDirectory, withIntermediateDirectories: true, attributes: nil)
 
-            let fileExtension = "_\(product.wavelength_region)_\(product.obs_id).fits"
-            let fileUrl = MASTDirectory.appendingPathComponent(fileExtension)
+            let fileName = productFileName(target: targetName, product: product, productType: .Fits)
+            let fileUrl = fitsDirectory.appendingPathComponent(fileName)
 
             try data.write(to: fileUrl)
             print("saveAsset: FITS file saved to \(fileUrl)")
 
-            let jpegUrl = MASTDirectory.appendingPathComponent(
-                fileExtension.replacingOccurrences(of: "fits", with: "jpg"))
+            let jpegUrl = imageDirectory.appendingPathComponent(
+                fileName.replacingOccurrences(of: ".fits", with: ".jpg"))
             let fitsData = convertFitsToJpeg(url: fileUrl, writeToUrl: jpegUrl)
 
             // Store the FITS metadata
@@ -140,14 +202,29 @@ extension SwiftMAST {
      no fits data
      */
     func saveImageFile(
-        target: String, collection: String, filter: String, productType: ProductType = .Jpeg,
-        url: URL? = nil, data: Data? = nil
+        target: String, collection: String, filter: String, observationId: String? = nil,
+        productType: ProductType = .Jpeg, url: URL? = nil, data: Data? = nil
     ) -> URL? {
         print("saveImageFile: \(target)_\(collection)_\(filter).\(productType.id)")
 
-        let MASTDirectory = getproductFolder(target: target, collection: collection)
+        let MASTDirectory = productStorageFolder(
+            target: target,
+            mission: collection,
+            observationId: observationId ?? "unknown-observation",
+            filter: filter,
+            contentType: .image
+        )
 
-        let fileExtension = "\(target)_\(collection)_\(filter).\(productType.id)"
+        let safeTarget = storageSafePathComponent(target, fallback: "unknown-target")
+        let safeCollection = storageSafePathComponent(collection, fallback: "unknown-mission")
+        let safeObservationId = storageSafePathComponent(
+            observationId ?? "unknown-observation",
+            fallback: "unknown-observation")
+        let safeFilter = storageSafePathComponent(
+            filter.replacingOccurrences(of: ";", with: "-"),
+            fallback: "unknown-filter")
+        let fileExtension =
+            "\(safeTarget)_\(safeCollection)_\(safeObservationId)_\(safeFilter).\(productType.id)"
         let imageUrl = MASTDirectory.appendingPathComponent(fileExtension)
 
         do {
@@ -178,15 +255,22 @@ extension SwiftMAST {
     ) {
         print("saveTempUrlToFile: \(targetName)")
 
-        let MASTDirectory = getproductFolder(target: targetName, collection: product.obs_collection)
+        let contentType: ObservationProductContentType = productType == .Fits ? .fit : .image
+        let MASTDirectory = productStorageFolder(
+            target: targetName, product: product, contentType: contentType)
+        let imageDirectory = productStorageFolder(
+            target: targetName, product: product, contentType: .image)
 
         do {
             try FileManager.default.createDirectory(
                 at: MASTDirectory, withIntermediateDirectories: true, attributes: nil)
+            if productType == .Fits {
+                try FileManager.default.createDirectory(
+                    at: imageDirectory, withIntermediateDirectories: true, attributes: nil)
+            }
 
-            let filters = product.filters.replacingOccurrences(of: ";", with: "-")
-            let fileExtension =
-                "\(targetName)_\(product.obs_collection)_\(filters)_\(product.obsid).\(productType.id)"
+            let fileExtension = productFileName(
+                target: targetName, product: product, productType: productType)
             let saveUrl = MASTDirectory.appendingPathComponent(fileExtension)
 
             // Remove existing file if it exists to avoid "item already exists" error
@@ -201,7 +285,7 @@ extension SwiftMAST {
                 print("saveTempUrlToFile: FITS file saved to \(saveUrl)")
 
                 // Convert FITS to JPEG for viewing
-                let jpegUrl = MASTDirectory.appendingPathComponent(
+                let jpegUrl = imageDirectory.appendingPathComponent(
                     fileExtension.replacingOccurrences(of: ".fits", with: ".jpg"))
                 let fitsData = convertFitsToJpeg(url: saveUrl, writeToUrl: jpegUrl)
 
