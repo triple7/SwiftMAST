@@ -1,15 +1,16 @@
 import Foundation
 
 public struct MASTSyslog: CustomStringConvertible {
-    let log: MASTError
-    let message: String
-    let timecode: String
+    public let log: MASTError
+    public let message: String
+    public let timecode: String
+    public let date: Date
 
-    init(log: MASTError, message: String) {
-        let date = Date()
+    public init(log: MASTError, message: String) {
+        self.date = Date()
         let dateFormatter = DateFormatter()
-        dateFormatter.dateFormat = "yyyy--MM-dd hh:mm:ss"
-        self.timecode = dateFormatter.string(from: date)
+        dateFormatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
+        self.timecode = dateFormatter.string(from: self.date)
 
         self.log = log
         self.message = message
@@ -17,6 +18,22 @@ public struct MASTSyslog: CustomStringConvertible {
 
     public var description: String {
         return "MAST: \(log)-\(message) \(timecode)"
+    }
+}
+
+// MARK: - Log Subscriber Protocol & Types
+
+/// Callback type for log event subscribers
+public typealias LogSubscriberCallback = (MASTSyslog) -> Void
+
+/// Wrapper to hold subscriber with identifier for unsubscription
+public class LogSubscriber {
+    public let id: String
+    public let callback: LogSubscriberCallback
+
+    public init(id: String, callback: @escaping LogSubscriberCallback) {
+        self.id = id
+        self.callback = callback
     }
 }
 
@@ -30,7 +47,7 @@ public class SwiftMAST: NSObject {
      */
     internal var currentTargetId: String?
     public var targets: [String: MASTTable]
-    private var targetAssets: [String: TargetAsset]
+    internal var targetAssets: [String: TargetAsset]
     // Storage for FITS metadata keyed by targetName
     public var fitsMetadataStore: [String: [FITSMetadata]]
     private var buffer: Int!
@@ -38,12 +55,68 @@ public class SwiftMAST: NSObject {
     private var expectedContentLength: Int?
     public var sysLog: [MASTSyslog]!
 
+    // MARK: - Log Subscribers
+    private var logSubscribers: [LogSubscriber] = []
+    private let subscriberQueue = DispatchQueue(
+        label: "com.swiftmast.logsubscribers", attributes: .concurrent)
+
     public override init() {
         self.targets = [String: MASTTable]()
         self.targetAssets = [String: TargetAsset]()
         self.fitsMetadataStore = [String: [FITSMetadata]]()
         self.buffer = 0
         self.sysLog = [MASTSyslog]()
+        self.logSubscribers = []
+    }
+
+    // MARK: - Log Subscription Management
+
+    /// Subscribe to log events with a callback
+    /// - Parameters:
+    ///   - id: Unique identifier for the subscriber (used for unsubscription)
+    ///   - callback: Function to call when a log event occurs
+    /// - Returns: The subscriber ID for later unsubscription
+    @discardableResult
+    public func subscribeToLogs(id: String, callback: @escaping LogSubscriberCallback) -> String {
+        let subscriber = LogSubscriber(id: id, callback: callback)
+        subscriberQueue.async(flags: .barrier) {
+            self.logSubscribers.append(subscriber)
+        }
+        return id
+    }
+
+    /// Unsubscribe from log events
+    /// - Parameter id: The subscriber ID to remove
+    public func unsubscribeFromLogs(id: String) {
+        subscriberQueue.async(flags: .barrier) {
+            self.logSubscribers.removeAll { $0.id == id }
+        }
+    }
+
+    /// Remove all log subscribers
+    public func clearLogSubscribers() {
+        subscriberQueue.async(flags: .barrier) {
+            self.logSubscribers.removeAll()
+        }
+    }
+
+    /// Log a message and notify all subscribers
+    /// - Parameters:
+    ///   - log: The log level/type
+    ///   - message: The log message
+    public func log(_ log: MASTError, message: String) {
+        let entry = MASTSyslog(log: log, message: message)
+        sysLog.append(entry)
+        notifySubscribers(entry: entry)
+    }
+
+    /// Notify all subscribers of a log entry
+    private func notifySubscribers(entry: MASTSyslog) {
+        subscriberQueue.sync {
+            for subscriber in self.logSubscribers {
+                subscriber.callback(entry)
+            }
+        }
     }
 
     /** Saves the targetID to retrieve during the download sequence
@@ -61,13 +134,21 @@ public class SwiftMAST: NSObject {
     /** Save the preview image for the first PS1 cutout
      */
     public func setPreviewImage(target: String, url: URL) {
+        guard self.targetAssets[target] != nil else {
+            print("setPreviewImage: No target asset for '\(target)', skipping preview")
+            return
+        }
         self.targetAssets[target]!.setPreview(url: url)
     }
 
     /** Append new fits data
      */
     public func appendFitsData(target: String, fitsData: FitsData) {
-        self.targetAssets[target]!.setFitsData(fitsData: fitsData)
+        if self.targetAssets[target] == nil {
+            print("appendFitsData: No target asset for '\(target)', storing metadata only")
+        } else {
+            self.targetAssets[target]!.setFitsData(fitsData: fitsData)
+        }
 
         // Store structured metadata if available
         if let metadata = fitsData.structuredMetadata {
@@ -173,26 +254,24 @@ extension SwiftMAST: URLSessionDelegate {
         let task = session.dataTask(with: request.getURL(dataSet: mission)) {
             [weak self] data, response, error in
             if error != nil {
-                self?.sysLog.append(
-                    MASTSyslog(log: .RequestError, message: error!.localizedDescription))
+                self?.log(.RequestError, message: error!.localizedDescription)
                 closure(false)
                 return
             }
             guard let response = response as? HTTPURLResponse else {
-                self?.sysLog.append(MASTSyslog(log: .RequestError, message: "response timed out"))
+                self?.log(.RequestError, message: "response timed out")
                 closure(false)
                 return
             }
             if response.statusCode != 200 {
                 let error = NSError(domain: "com.error", code: response.statusCode)
-                self?.sysLog.append(
-                    MASTSyslog(log: .RequestError, message: error.localizedDescription))
+                self?.log(.RequestError, message: error.localizedDescription)
                 closure(false)
             }
 
             let table = self?.parseJson(data: data!)
             self?.targets[mission.id] = table
-            self?.sysLog.append(MASTSyslog(log: .OK, message: "ephemerus downloaded"))
+            self?.log(.OK, message: "ephemerus downloaded")
             closure(true)
             return
         }
@@ -220,27 +299,25 @@ extension SwiftMAST: URLSessionDelegate {
         let task = session.dataTask(with: request.getURL(dataSet: mission)) {
             [weak self] data, response, error in
             if error != nil {
-                self?.sysLog.append(
-                    MASTSyslog(log: .RequestError, message: error!.localizedDescription))
+                self?.log(.RequestError, message: error!.localizedDescription)
                 closure(false)
                 return
             }
             guard let response = response as? HTTPURLResponse else {
-                self?.sysLog.append(MASTSyslog(log: .RequestError, message: "response timed out"))
+                self?.log(.RequestError, message: "response timed out")
                 closure(false)
                 return
             }
             if response.statusCode != 200 {
                 let error = NSError(domain: "com.error", code: response.statusCode)
-                self?.sysLog.append(
-                    MASTSyslog(log: .RequestError, message: error.localizedDescription))
+                self?.log(.RequestError, message: error.localizedDescription)
                 closure(false)
             }
 
             let text = String(decoding: data!, as: UTF8.self)
             let table = self?.parseCsvTable(text: text)
             self?.targets[mission.id] = table
-            self?.sysLog.append(MASTSyslog(log: .OK, message: "ephemerus downloaded"))
+            self?.log(.OK, message: "ephemerus downloaded")
             closure(true)
             return
         }

@@ -1,0 +1,3 @@
+https://mast.stsci.edu/api/v0/_jwst_inst_keywd.html
+https://archive.stsci.edu/jwst/keyword/latest/MIRIImagingKeywordsSchemaMetadata.html
+https://archive.stsci.edu/missions-and-data

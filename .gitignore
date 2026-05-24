@@ -1,2 +1,18 @@
 .build
 .build/*
+Resources/fits/
+Resources/fits/*.fits
+Resources/fits/*.fits.gz
+
+# Generated results – keep the folder but ignore its contents
+Resources/results/*
+!Resources/results/.gitkeep
+
+# Python cache files
+__pycache__/
+*.pyc
+
+.venv/
+
+research/fit-headers/*.key
+research/mastFiles

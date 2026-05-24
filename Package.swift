@@ -20,6 +20,9 @@ let package = Package(
         .executable(
             name: "TestFitsConversion",
             targets: ["TestFitsConversion"]),
+        .executable(
+            name: "FITSCoreDemo",
+            targets: ["FITSCoreDemo"]),
     ],
     dependencies: [
         .package(url: "https://github.com/triple7/SwiftQValue", branch: "main"),
@@ -51,6 +54,12 @@ let package = Package(
                 .product(name: "FITSKit", package: "fitskit"),
             ],
             path: "Sources/TestFitsConversion"),
+        .executableTarget(
+            name: "FITSCoreDemo",
+            dependencies: [
+                .product(name: "FITSKit", package: "fitskit")
+            ],
+            path: "Sources/FITSCoreDemo"),
         .testTarget(
             name: "SwiftMASTTests",
             dependencies: ["SwiftMAST"]),

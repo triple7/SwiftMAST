@@ -21,30 +21,28 @@ extension SwiftMAST {
         var gotError = false
         if error != nil {
             print("requestIsValid: \(error!.localizedDescription)")
-            self.sysLog.append(MASTSyslog(log: .RequestError, message: error!.localizedDescription))
+            self.log(.RequestError, message: error!.localizedDescription)
             gotError = true
         }
         if (response as? HTTPURLResponse) == nil {
-            self.sysLog.append(MASTSyslog(log: .RequestError, message: "response timed out"))
+            self.log(.RequestError, message: "response timed out")
             gotError = true
         }
         if let response = response {
             let urlResponse = (response as! HTTPURLResponse)
             if urlResponse.statusCode != 200 {
                 let error = NSError(domain: "com.error", code: urlResponse.statusCode)
-                self.sysLog.append(
-                    MASTSyslog(log: .RequestError, message: error.localizedDescription))
+                self.log(.RequestError, message: error.localizedDescription)
                 gotError = true
             }
         } else {
 
-            self.sysLog.append(
-                MASTSyslog(log: .RequestError, message: "response timed out or no connection"))
+            self.log(.RequestError, message: "response timed out or no connection")
             gotError = true
         }
         if !gotError {
             let message = url != nil ? url!.absoluteString : "data"
-            self.sysLog.append(MASTSyslog(log: .OK, message: "\(message) downloaded"))
+            self.log(.OK, message: "\(message) downloaded")
         }
         return !gotError
     }
@@ -76,28 +74,45 @@ extension SwiftMAST {
         let session = URLSession(configuration: configuration, delegate: self, delegateQueue: queue)
 
         let task = session.dataTask(with: url) { [weak self] data, response, error in
-
-            if self!.requestIsValid(error: error, response: response) {
-                var table: MASTTable!
-                switch returnType {
-                case .json:
-                    table = self?.parseJson(data: data!)
-                case .xml:
-                    table = self?.parseXml(data: data!)
-                default:
-                    self?.sysLog.append(
-                        MASTSyslog(
-                            log: .RequestError,
-                            message: "Return type not recognized or not yet available"))
-                    closure(false)
-                    return
-                }
-
-                self?.targets[self!.currentTargetId!] = table
-                closure(true)
+            guard let self = self else {
+                closure(false)
                 return
             }
-            closure(false)
+            guard self.requestIsValid(error: error, response: response) else {
+                closure(false)
+                return
+            }
+            guard let data = data else {
+                self.log(.RequestError, message: "No data returned from MAST request")
+                closure(false)
+                return
+            }
+
+            var table: MASTTable?
+            switch returnType {
+            case .json:
+                table = self.parseJson(data: data)
+            case .xml:
+                table = self.parseXml(data: data)
+            default:
+                self.log(
+                    .RequestError, message: "Return type not recognized or not yet available")
+                closure(false)
+                return
+            }
+
+            guard let targetId = self.currentTargetId else {
+                self.log(.RequestError, message: "Target id not set before queryMast")
+                closure(false)
+                return
+            }
+            if let table = table {
+                self.targets[targetId] = table
+                closure(true)
+            } else {
+                self.log(.RequestError, message: "Failed to parse response table")
+                closure(false)
+            }
         }
         task.resume()
     }
@@ -112,9 +127,7 @@ extension SwiftMAST {
         service: Service, coamResults: [CoamResult], _ closure: @escaping (Bool, [URL]) -> Void
     ) {
         print("requestProductBundle: getting \(coamResults.count) URLs in tar.gz bundle")
-        self.sysLog.append(
-            MASTSyslog(log: .OK, message: "Starting bundle download: \(coamResults.count) products")
-        )
+        self.log(.OK, message: "Starting bundle download: \(coamResults.count) products")
         let urls = coamResults.map { ["uri", $0.dataURL] }.filter { $0[1] != "" }
         let jsonData = try! JSONEncoder().encode(urls)
         var request = URLRequest(
@@ -128,20 +141,18 @@ extension SwiftMAST {
 
         let task = session.dataTask(with: request) { data, response, error in
             guard error == nil else {
-                self.sysLog.append(
-                    MASTSyslog(log: .RequestError, message: error!.localizedDescription))
+                self.log(.RequestError, message: error!.localizedDescription)
                 closure(false, [])
                 return
             }
             guard let response = response as? HTTPURLResponse else {
-                self.sysLog.append(MASTSyslog(log: .RequestError, message: "response timed out"))
+                self.log(.RequestError, message: "response timed out")
                 closure(false, [])
                 return
             }
             if response.statusCode != 200 {
                 let error = NSError(domain: "com.error", code: response.statusCode)
-                self.sysLog.append(
-                    MASTSyslog(log: .RequestError, message: error.localizedDescription))
+                self.log(.RequestError, message: error.localizedDescription)
                 closure(false, [])
                 return
             }
@@ -151,10 +162,8 @@ extension SwiftMAST {
             self.unzipResponseData(
                 data!,
                 completion: { urls in
-                    self.sysLog.append(
-                        MASTSyslog(
-                            log: .OK,
-                            message: "Bundle download completed: \(urls.count) files extracted"))
+                    self.log(
+                        .OK, message: "Bundle download completed: \(urls.count) files extracted")
                     closure(true, urls)
                 })
 
@@ -172,24 +181,22 @@ extension SwiftMAST {
             (productType == .Fits ? $0.dataURL : $0.jpegURL) != ""
         }
         print("Direct downloads for \(productType.id) \(remainingProducts.count)")
-        self.sysLog.append(
-            MASTSyslog(
-                log: .OK,
-                message:
-                    "Starting download: \(remainingProducts.count) \(productType.id) products for \(targetName)"
-            ))
+        self.log(
+            .OK,
+            message:
+                "Starting download: \(remainingProducts.count) \(productType.id) products for \(targetName)"
+        )
         var fitsData = [FitsData]()
 
         // Create a recursive function to handle the download
         func downloadNextproduct() {
             guard !remainingProducts.isEmpty else {
                 // All products have been downloaded, call the completion handler
-                self.sysLog.append(
-                    MASTSyslog(
-                        log: .OK,
-                        message:
-                            "Download completed: \(fitsData.count) \(productType.id) products for \(targetName)"
-                    ))
+                self.log(
+                    .OK,
+                    message:
+                        "Download completed: \(fitsData.count) \(productType.id) products for \(targetName)"
+                )
                 completion(fitsData)
                 return
             }
@@ -219,12 +226,11 @@ extension SwiftMAST {
                                 completion: { fits in
                                     if let fits = fits {
                                         fitsData.append(fits)
-                                        self.sysLog.append(
-                                            MASTSyslog(
-                                                log: .OK,
-                                                message:
-                                                    "Downloaded FITS: \(product.obs_collection) for \(targetName)"
-                                            ))
+                                        self.log(
+                                            .OK,
+                                            message:
+                                                "Downloaded FITS: \(product.obs_collection) for \(targetName)"
+                                        )
                                     }
                                     // Call the recursive function to download the next object
                                     serialQueue.async {
@@ -234,16 +240,17 @@ extension SwiftMAST {
                         } else {
                             // jpeg
                             let url = self.saveImageFile(
-                                target: targetName, collection: product.obs_collection,
-                                filter: product.filters, productType: productType, data: data)
+                                target: targetName,
+                                collection: product.observationMission?.rawValue ?? product.obs_collection,
+                                filter: product.filters, observationId: product.obs_id,
+                                productType: productType, data: data)
                             if let url = url {
                                 fitsData.append(FitsData(metadata: [:], url: url))
-                                self.sysLog.append(
-                                    MASTSyslog(
-                                        log: .OK,
-                                        message:
-                                            "Downloaded JPEG: \(product.obs_collection) for \(targetName)"
-                                    ))
+                                self.log(
+                                    .OK,
+                                    message:
+                                        "Downloaded JPEG: \(product.obs_collection) for \(targetName)"
+                                )
                             }
 
                             // Call the recursive function to download the next object
@@ -254,11 +261,9 @@ extension SwiftMAST {
                         }
 
                     } else {
-                        self.sysLog.append(
-                            MASTSyslog(
-                                log: .RequestError,
-                                message:
-                                    "Failed to download product: \(productUrl) for \(targetName)"))
+                        self.log(
+                            .RequestError,
+                            message: "Failed to download product: \(productUrl) for \(targetName)")
                         serialQueue.async {
                             downloadNextproduct()
                         }
@@ -290,23 +295,20 @@ extension SwiftMAST {
         print(
             "DirectDownload for \(productType.id) has \(remainingProducts.count) products to download."
         )
-        self.sysLog.append(
-            MASTSyslog(
-                log: .OK,
-                message:
-                    "Starting direct download: \(remainingProducts.count) \(productType.id) products for \(targetName)"
-            ))
+        self.log(
+            .OK,
+            message:
+                "Starting direct download: \(remainingProducts.count) \(productType.id) products for \(targetName)"
+        )
         var urls = [URL]()
 
         // Create a recursive function to handle the download
         func downloadNextproduct() {
             guard !remainingProducts.isEmpty else {
                 // All products have been downloaded, call the completion handler
-                self.sysLog.append(
-                    MASTSyslog(
-                        log: .OK,
-                        message:
-                            "Direct download completed: \(urls.count) products for \(targetName)"))
+                self.log(
+                    .OK,
+                    message: "Direct download completed: \(urls.count) products for \(targetName)")
                 completion(urls)
                 return
             }
@@ -333,12 +335,11 @@ extension SwiftMAST {
                             completion: { url in
                                 if let url = url {
                                     urls.append(url)
-                                    self.sysLog.append(
-                                        MASTSyslog(
-                                            log: .OK,
-                                            message:
-                                                "Downloaded direct product: \(product.obs_collection) for \(targetName)"
-                                        ))
+                                    self.log(
+                                        .OK,
+                                        message:
+                                            "Downloaded direct product: \(product.obs_collection) for \(targetName)"
+                                    )
                                 }
                                 // Call the recursive function to download the next object
                                 serialQueue.async {
@@ -346,10 +347,9 @@ extension SwiftMAST {
                                 }
                             })
                     } else {
-                        self.sysLog.append(
-                            MASTSyslog(
-                                log: .RequestError,
-                                message: "Failed direct download: \(productUrl) for \(targetName)"))
+                        self.log(
+                            .RequestError,
+                            message: "Failed direct download: \(productUrl) for \(targetName)")
                         serialQueue.async {
                             downloadNextproduct()
                         }
@@ -376,10 +376,7 @@ extension SwiftMAST {
         targetName: String, urls: [URL], colored: Bool = true, completion: @escaping ([URL]) -> Void
     ) {
         print("downloadPS1Cutouts: \(targetName)")
-        self.sysLog.append(
-            MASTSyslog(
-                log: .OK,
-                message: "Starting PS1 cutout download: \(urls.count) URLs for \(targetName)"))
+        self.log(.OK, message: "Starting PS1 cutout download: \(urls.count) URLs for \(targetName)")
         let serialQueue = DispatchQueue(label: "downloadUrlsQueue")
 
         var remainingUrls = urls
@@ -389,11 +386,9 @@ extension SwiftMAST {
             guard !remainingUrls.isEmpty else {
                 // All urls have been downloaded, call the completion handler
                 print("All URLS downloaded")
-                self.sysLog.append(
-                    MASTSyslog(
-                        log: .OK,
-                        message:
-                            "PS1 cutout download completed: \(urls.count) URLs for \(targetName)"))
+                self.log(
+                    .OK,
+                    message: "PS1 cutout download completed: \(urls.count) URLs for \(targetName)")
                 completion(urls)
                 return
             }
@@ -408,26 +403,24 @@ extension SwiftMAST {
                         //                    print("downloadFitsCutout: \(tempUrl)")
                         let url = self.saveImageFile(
                             target: targetName, collection: "PS1", filter: "OPTICAL",
-                            productType: .Jpeg, url: tempUrl!)
+                            observationId: "cutout", productType: .Jpeg, url: tempUrl!)
                         if let url = url {
                             urls.append(url)
-                            self.sysLog.append(
-                                MASTSyslog(
-                                    log: .OK,
-                                    message:
-                                        "Downloaded PS1 cutout: \(url.lastPathComponent) for \(targetName)"
-                                ))
+                            self.log(
+                                .OK,
+                                message:
+                                    "Downloaded PS1 cutout: \(url.lastPathComponent) for \(targetName)"
+                            )
                         }
                         serialQueue.async {
                             downloadNextUrl()
                         }
                     } else {
-                        self.sysLog.append(
-                            MASTSyslog(
-                                log: .RequestError,
-                                message:
-                                    "Failed PS1 cutout download from \(url.absoluteString) for \(targetName)"
-                            ))
+                        self.log(
+                            .RequestError,
+                            message:
+                                "Failed PS1 cutout download from \(url.absoluteString) for \(targetName)"
+                        )
                         serialQueue.async {
                             downloadNextUrl()
                         }
@@ -486,8 +479,7 @@ extension SwiftMAST {
                     completion(nedResolver)
                 } catch let error {
                     print("issue with resolver: \(error)")
-                    self.sysLog.append(
-                        MASTSyslog(log: .RequestError, message: error.localizedDescription))
+                    self.log(.RequestError, message: error.localizedDescription)
 
                     completion(nil)
                 }
@@ -542,10 +534,8 @@ extension SwiftMAST {
                 //                print(String(data: data!, encoding: .utf8))
                 let result = try! JSONDecoder().decode(MASTTAPResponse.self, from: data!)
 
-                self?.sysLog.append(
-                    MASTSyslog(
-                        log: .OK,
-                        message: "query \(mASTTapRequest.getSelectQuery()) result downloaded"))
+                self?.log(
+                    .OK, message: "query \(mASTTapRequest.getSelectQuery()) result downloaded")
                 closure(result)
                 return
 

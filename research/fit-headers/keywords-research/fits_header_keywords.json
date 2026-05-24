@@ -1,0 +1,5281 @@
+{
+    "_metadata": {
+        "title": "FITS Header Keywords Research",
+        "description": "Comprehensive catalog of FITS header keywords gathered from the FITS standard, JWST MIRI Imaging schema metadata (STScI), HST, and other missions archived at MAST.",
+        "sources": [
+            "FITS Standard (IAU FITS Working Group)",
+            "https://archive.stsci.edu/jwst/keyword/latest/MIRIImagingKeywordsSchemaMetadata.html",
+            "https://archive.stsci.edu/missions-and-data",
+            "FITSHeaderKeywords.json (project-local)"
+        ],
+        "missions_at_stsci": {
+            "active": [
+                "HST",
+                "JWST",
+                "TESS",
+                "Roman",
+                "SwiftUVOT",
+                "XMM-OM",
+                "Gaia"
+            ],
+            "legacy": [
+                "Kepler",
+                "K2",
+                "IUE",
+                "GALEX",
+                "FUSE",
+                "Copernicus",
+                "EPOCh",
+                "EUVE",
+                "HUT",
+                "UIT",
+                "WUPPE",
+                "HPOL",
+                "BEFS",
+                "IMAPS",
+                "TUES"
+            ],
+            "contributed": [
+                "FIMS-SPEAR"
+            ],
+            "ground_based": [
+                "Pan-STARRS",
+                "VLA-FIRST",
+                "SDSS"
+            ],
+            "catalogs": [
+                "GSC",
+                "DSS",
+                "HSC",
+                "HSLA"
+            ]
+        },
+        "date_compiled": "2026-03-28"
+    },
+    "keywords": {
+        "SIMPLE": {
+            "description": "File conforms to the FITS standard",
+            "category": "Structural",
+            "datatype": "boolean",
+            "comment": "Data conform to FITS standard",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "FITS Standard",
+                "JWST",
+                "HST",
+                "TESS",
+                "Kepler",
+                "K2",
+                "GALEX",
+                "Spitzer",
+                "Chandra",
+                "Pan-STARRS"
+            ],
+            "mandatory": true
+        },
+        "BITPIX": {
+            "description": "Number of bits per data pixel. Allowed values: 8, 16, 32, 64 (integer), -32 (float), -64 (double).",
+            "category": "Structural",
+            "datatype": "integer",
+            "comment": "bits per data value",
+            "hdu": [
+                "PRIMARY",
+                "SCI",
+                "ERR",
+                "DQ",
+                "GROUPDQ",
+                "REFOUT"
+            ],
+            "missions": [
+                "FITS Standard",
+                "JWST",
+                "HST",
+                "TESS",
+                "Kepler",
+                "K2",
+                "GALEX",
+                "Spitzer",
+                "Pan-STARRS"
+            ],
+            "mandatory": true
+        },
+        "NAXIS": {
+            "description": "Number of data array dimensions",
+            "category": "Structural",
+            "datatype": "integer",
+            "comment": "Number of axes",
+            "hdu": [
+                "PRIMARY",
+                "SCI",
+                "ERR",
+                "DQ",
+                "GROUPDQ",
+                "REFOUT"
+            ],
+            "missions": [
+                "FITS Standard",
+                "JWST",
+                "HST",
+                "TESS",
+                "Kepler",
+                "GALEX",
+                "Spitzer",
+                "Pan-STARRS"
+            ],
+            "mandatory": true
+        },
+        "NAXIS1": {
+            "description": "Length of data axis 1 (columns)",
+            "category": "Structural",
+            "datatype": "integer",
+            "comment": "Size of the axis",
+            "hdu": [
+                "PRIMARY",
+                "SCI",
+                "ERR",
+                "DQ",
+                "GROUPDQ",
+                "REFOUT"
+            ],
+            "missions": [
+                "FITS Standard",
+                "JWST",
+                "HST",
+                "TESS",
+                "Kepler",
+                "GALEX",
+                "Spitzer",
+                "Pan-STARRS"
+            ],
+            "mandatory": true
+        },
+        "NAXIS2": {
+            "description": "Length of data axis 2 (rows)",
+            "category": "Structural",
+            "datatype": "integer",
+            "comment": "Size of the axis",
+            "hdu": [
+                "PRIMARY",
+                "SCI",
+                "ERR",
+                "DQ",
+                "GROUPDQ",
+                "REFOUT"
+            ],
+            "missions": [
+                "FITS Standard",
+                "JWST",
+                "HST",
+                "TESS",
+                "Kepler",
+                "GALEX",
+                "Spitzer",
+                "Pan-STARRS"
+            ],
+            "mandatory": true
+        },
+        "NAXIS3": {
+            "description": "Length of data axis 3 (planes/channels)",
+            "category": "Structural",
+            "datatype": "integer",
+            "comment": "Size of the axis",
+            "hdu": [
+                "PRIMARY",
+                "SCI",
+                "GROUPDQ",
+                "REFOUT"
+            ],
+            "missions": [
+                "FITS Standard",
+                "JWST",
+                "HST"
+            ],
+            "mandatory": false
+        },
+        "NAXIS4": {
+            "description": "Length of data axis 4",
+            "category": "Structural",
+            "datatype": "integer",
+            "comment": "Size of the axis",
+            "hdu": [
+                "PRIMARY",
+                "SCI",
+                "GROUPDQ",
+                "REFOUT"
+            ],
+            "missions": [
+                "FITS Standard",
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "EXTEND": {
+            "description": "File may contain standard extensions",
+            "category": "Structural",
+            "datatype": "boolean",
+            "comment": "file may contain standard extensions",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "FITS Standard",
+                "JWST",
+                "HST",
+                "TESS",
+                "Kepler",
+                "GALEX"
+            ],
+            "mandatory": false
+        },
+        "NEXTEND": {
+            "description": "Number of file extensions",
+            "category": "Structural",
+            "datatype": "integer",
+            "comment": "Number of file extensions",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "FITS Standard",
+                "JWST",
+                "HST"
+            ],
+            "mandatory": false
+        },
+        "PCOUNT": {
+            "description": "Number of bytes of supplemental data (parameter count)",
+            "category": "Structural",
+            "datatype": "integer",
+            "comment": "number of parameter bytes following data table",
+            "hdu": [
+                "SCI",
+                "ERR",
+                "DQ",
+                "GROUPDQ",
+                "REFOUT"
+            ],
+            "missions": [
+                "FITS Standard",
+                "JWST",
+                "HST"
+            ],
+            "mandatory": true
+        },
+        "GCOUNT": {
+            "description": "Number of data groups",
+            "category": "Structural",
+            "datatype": "integer",
+            "comment": "number of groups",
+            "hdu": [
+                "SCI",
+                "ERR",
+                "DQ",
+                "GROUPDQ",
+                "REFOUT"
+            ],
+            "missions": [
+                "FITS Standard",
+                "JWST",
+                "HST"
+            ],
+            "mandatory": true
+        },
+        "XTENSION": {
+            "description": "Type of extension (IMAGE, BINTABLE, TABLE)",
+            "category": "Structural",
+            "datatype": "string",
+            "comment": "FITS extension type",
+            "hdu": [
+                "SCI",
+                "ERR",
+                "DQ",
+                "GROUPDQ",
+                "REFOUT",
+                "ASDF"
+            ],
+            "missions": [
+                "FITS Standard",
+                "JWST",
+                "HST"
+            ],
+            "mandatory": true
+        },
+        "EXTNAME": {
+            "description": "Name of the extension",
+            "category": "Structural",
+            "datatype": "string",
+            "comment": "Extension name",
+            "hdu": [
+                "SCI",
+                "ERR",
+                "DQ",
+                "GROUPDQ",
+                "REFOUT"
+            ],
+            "missions": [
+                "FITS Standard",
+                "JWST",
+                "HST",
+                "TESS",
+                "Kepler",
+                "GALEX"
+            ],
+            "mandatory": false
+        },
+        "EXTVER": {
+            "description": "Version number of the extension",
+            "category": "Structural",
+            "datatype": "integer",
+            "comment": "Extension version number",
+            "hdu": [
+                "SCI",
+                "ERR",
+                "DQ",
+                "GROUPDQ",
+                "REFOUT"
+            ],
+            "missions": [
+                "FITS Standard",
+                "JWST",
+                "HST"
+            ],
+            "mandatory": false
+        },
+        "EXTLEVEL": {
+            "description": "Hierarchical level of the extension",
+            "category": "Structural",
+            "datatype": "integer",
+            "comment": "Hierarchical level of the extension",
+            "hdu": [
+                "SCI"
+            ],
+            "missions": [
+                "FITS Standard"
+            ],
+            "mandatory": false
+        },
+        "BSCALE": {
+            "description": "Linear scaling factor for data values: physical = BZERO + BSCALE × array_value",
+            "category": "Data Scaling",
+            "datatype": "float",
+            "comment": "scale factor for array value to physical value",
+            "hdu": [
+                "SCI",
+                "REFOUT"
+            ],
+            "missions": [
+                "FITS Standard",
+                "JWST",
+                "HST",
+                "TESS",
+                "Pan-STARRS"
+            ],
+            "mandatory": false
+        },
+        "BZERO": {
+            "description": "Zero point offset for data values: physical = BZERO + BSCALE × array_value",
+            "category": "Data Scaling",
+            "datatype": "float",
+            "comment": "physical value for an array value of zero",
+            "hdu": [
+                "SCI",
+                "REFOUT"
+            ],
+            "missions": [
+                "FITS Standard",
+                "JWST",
+                "HST",
+                "TESS",
+                "Pan-STARRS"
+            ],
+            "mandatory": false
+        },
+        "BUNIT": {
+            "description": "Physical unit of the data array values (e.g., DN, MJy/sr, electrons/s)",
+            "category": "Data Scaling",
+            "datatype": "string",
+            "comment": "physical units of the data array values",
+            "hdu": [
+                "SCI"
+            ],
+            "missions": [
+                "FITS Standard",
+                "JWST",
+                "HST",
+                "TESS",
+                "Kepler",
+                "Spitzer"
+            ],
+            "mandatory": false
+        },
+        "BTYPE": {
+            "description": "Type of data (e.g., surface brightness, flux)",
+            "category": "Data Scaling",
+            "datatype": "string",
+            "comment": "Type of data",
+            "hdu": [
+                "SCI"
+            ],
+            "missions": [
+                "FITS Standard",
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "BLANK": {
+            "description": "Value representing undefined pixels in integer arrays",
+            "category": "Data Scaling",
+            "datatype": "integer",
+            "comment": "Value representing undefined pixels",
+            "hdu": [
+                "PRIMARY",
+                "SCI"
+            ],
+            "missions": [
+                "FITS Standard"
+            ],
+            "mandatory": false
+        },
+        "DATAMAX": {
+            "description": "Maximum data value in the array",
+            "category": "Data Scaling",
+            "datatype": "float",
+            "comment": "Maximum data value",
+            "hdu": [
+                "PRIMARY",
+                "SCI"
+            ],
+            "missions": [
+                "FITS Standard",
+                "HST",
+                "Pan-STARRS"
+            ],
+            "mandatory": false
+        },
+        "DATAMIN": {
+            "description": "Minimum data value in the array",
+            "category": "Data Scaling",
+            "datatype": "float",
+            "comment": "Minimum data value",
+            "hdu": [
+                "PRIMARY",
+                "SCI"
+            ],
+            "missions": [
+                "FITS Standard",
+                "HST",
+                "Pan-STARRS"
+            ],
+            "mandatory": false
+        },
+        "DATE": {
+            "description": "File creation date in UTC (YYYY-MM-DDThh:mm:ss format)",
+            "category": "Time",
+            "datatype": "string",
+            "comment": "UTC date file created",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "FITS Standard",
+                "JWST",
+                "HST",
+                "TESS",
+                "Kepler",
+                "GALEX",
+                "Spitzer",
+                "Pan-STARRS"
+            ],
+            "mandatory": false
+        },
+        "DATE-OBS": {
+            "description": "Date of observation start (UTC) in YYYY-MM-DD or YYYY-MM-DDThh:mm:ss format",
+            "category": "Time",
+            "datatype": "string",
+            "comment": "UTC date at start of exposure",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "FITS Standard",
+                "JWST",
+                "HST",
+                "TESS",
+                "Kepler",
+                "K2",
+                "GALEX",
+                "Spitzer",
+                "Chandra",
+                "Pan-STARRS",
+                "SwiftUVOT",
+                "XMM-OM"
+            ],
+            "mandatory": false
+        },
+        "DATE-BEG": {
+            "description": "Date-time of observation start (ISO 8601 format)",
+            "category": "Time",
+            "datatype": "string",
+            "comment": "Date-time start of exposure",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "FITS Standard",
+                "JWST",
+                "TESS"
+            ],
+            "mandatory": false
+        },
+        "DATE-END": {
+            "description": "Date-time of observation end (ISO 8601 format)",
+            "category": "Time",
+            "datatype": "string",
+            "comment": "Date-time end of exposure",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "FITS Standard",
+                "JWST",
+                "TESS",
+                "HST"
+            ],
+            "mandatory": false
+        },
+        "TIME-OBS": {
+            "description": "Time of observation start (UTC) in hh:mm:ss format",
+            "category": "Time",
+            "datatype": "string",
+            "comment": "UTC time at start of exposure",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "FITS Standard",
+                "JWST",
+                "HST",
+                "GALEX",
+                "Pan-STARRS"
+            ],
+            "mandatory": false
+        },
+        "TIMESYS": {
+            "description": "Principal time system for time-related keywords (e.g., UTC, TDB, TT)",
+            "category": "Time",
+            "datatype": "string",
+            "comment": "principal time system for time-related keywords",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "FITS Standard",
+                "JWST",
+                "HST",
+                "TESS",
+                "Kepler"
+            ],
+            "mandatory": false
+        },
+        "TIMEUNIT": {
+            "description": "Default unit for time values (e.g., 's' for seconds, 'd' for days)",
+            "category": "Time",
+            "datatype": "string",
+            "comment": "Default unit applicable to all time values",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "FITS Standard",
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "MJD-OBS": {
+            "description": "Modified Julian Date of observation start",
+            "category": "Time",
+            "datatype": "float",
+            "comment": "Modified Julian Date of observation start",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "FITS Standard",
+                "JWST",
+                "HST",
+                "TESS",
+                "Pan-STARRS"
+            ],
+            "mandatory": false
+        },
+        "MJD-BEG": {
+            "description": "Modified Julian Date of exposure start",
+            "category": "Time",
+            "datatype": "float",
+            "comment": "[d] exposure start time in MJD",
+            "hdu": [
+                "SCI"
+            ],
+            "missions": [
+                "FITS Standard",
+                "JWST",
+                "TESS"
+            ],
+            "mandatory": false
+        },
+        "MJD-MID": {
+            "description": "Modified Julian Date of exposure midpoint",
+            "category": "Time",
+            "datatype": "float",
+            "comment": "Modified Julian Date of exposure midpoint",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "MJD-AVG": {
+            "description": "Modified Julian Date of exposure midpoint (average)",
+            "category": "Time",
+            "datatype": "float",
+            "comment": "[d] exposure mid-point in MJD",
+            "hdu": [
+                "SCI"
+            ],
+            "missions": [
+                "FITS Standard",
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "MJD-END": {
+            "description": "Modified Julian Date of exposure end",
+            "category": "Time",
+            "datatype": "float",
+            "comment": "[d] exposure end time in MJD",
+            "hdu": [
+                "SCI"
+            ],
+            "missions": [
+                "FITS Standard",
+                "JWST",
+                "TESS"
+            ],
+            "mandatory": false
+        },
+        "EXPSTART": {
+            "description": "Exposure start time in Modified Julian Date",
+            "category": "Exposure",
+            "datatype": "float",
+            "comment": "[d] exposure start time in MJD",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "JWST",
+                "HST"
+            ],
+            "mandatory": false
+        },
+        "EXPMID": {
+            "description": "Exposure mid time in Modified Julian Date",
+            "category": "Exposure",
+            "datatype": "float",
+            "comment": "[d] exposure mid time in MJD",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "JWST",
+                "HST"
+            ],
+            "mandatory": false
+        },
+        "EXPEND": {
+            "description": "Exposure end time in Modified Julian Date",
+            "category": "Exposure",
+            "datatype": "float",
+            "comment": "[d] exposure end time in MJD",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "JWST",
+                "HST"
+            ],
+            "mandatory": false
+        },
+        "EXPTIME": {
+            "description": "Exposure time in seconds",
+            "category": "Exposure",
+            "datatype": "float",
+            "comment": "[s] Exposure time",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "FITS Standard",
+                "JWST",
+                "HST",
+                "TESS",
+                "Kepler",
+                "K2",
+                "GALEX",
+                "Spitzer",
+                "Chandra",
+                "Pan-STARRS",
+                "SwiftUVOT",
+                "XMM-OM"
+            ],
+            "mandatory": false
+        },
+        "EFFEXPTM": {
+            "description": "Effective exposure time corrected for dead time (seconds)",
+            "category": "Exposure",
+            "datatype": "float",
+            "comment": "[s] Effective exposure time",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "EFFINTTM": {
+            "description": "Effective integration time (seconds)",
+            "category": "Exposure",
+            "datatype": "float",
+            "comment": "[s] Effective integration time",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "DURATION": {
+            "description": "Total duration of exposure: integration time × number of integrations (seconds)",
+            "category": "Exposure",
+            "datatype": "float",
+            "comment": "[s] Total duration of exposure",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "XPOSURE": {
+            "description": "Effective exposure time in seconds (in SCI extension)",
+            "category": "Exposure",
+            "datatype": "float",
+            "comment": "[s] Effective exposure time",
+            "hdu": [
+                "SCI"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "TELAPSE": {
+            "description": "Total elapsed exposure time in seconds",
+            "category": "Exposure",
+            "datatype": "float",
+            "comment": "[s] Total elapsed exposure time",
+            "hdu": [
+                "SCI"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "TEXPTIME": {
+            "description": "Total exposure time of all pointings in a resampled product (seconds)",
+            "category": "Resampling",
+            "datatype": "float",
+            "comment": "[s] Total exposure time for all pointings",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "NINTS": {
+            "description": "Number of integrations within the exposure",
+            "category": "Exposure",
+            "datatype": "integer",
+            "comment": "Number of integrations in exposure",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "NGROUPS": {
+            "description": "Number of groups per integration",
+            "category": "Exposure",
+            "datatype": "integer",
+            "comment": "Number of groups in integration",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "NFRAMES": {
+            "description": "Number of frames in a group",
+            "category": "Exposure",
+            "datatype": "integer",
+            "comment": "Number of frames per group",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "GROUPGAP": {
+            "description": "Number of frames skipped between groups",
+            "category": "Exposure",
+            "datatype": "integer",
+            "comment": "Number of frames dropped between groups",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "NSAMPLES": {
+            "description": "Number of A/D samples per pixel read",
+            "category": "Exposure",
+            "datatype": "integer",
+            "comment": "Number of A/D samples per pixel",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "TSAMPLE": {
+            "description": "Time between samples (microseconds)",
+            "category": "Exposure",
+            "datatype": "float",
+            "comment": "[us] Time between samples",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "TFRAME": {
+            "description": "Time between start of successive frames (seconds)",
+            "category": "Exposure",
+            "datatype": "float",
+            "comment": "[s] Time between frames",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "TGROUP": {
+            "description": "Time between start of successive groups (seconds)",
+            "category": "Exposure",
+            "datatype": "float",
+            "comment": "[s] Time between groups",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "READPATT": {
+            "description": "Readout pattern name (pre-defined NFRAMES, GROUPGAP, NRESETS combination)",
+            "category": "Exposure",
+            "datatype": "string",
+            "comment": "Readout pattern",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "EXP_TYPE": {
+            "description": "Exposure type (e.g., MIR_IMAGE, NRC_IMAGE, NRS_MSASPEC)",
+            "category": "Exposure",
+            "datatype": "string",
+            "comment": "Type of data in the exposure",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "EXPRIPAR": {
+            "description": "Whether exposure is PRIME, PARALLEL_COORDINATED, or PARALLEL_PURE",
+            "category": "Exposure",
+            "datatype": "string",
+            "comment": "prime or parallel exposure indicator",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "EXPCOUNT": {
+            "description": "Monotonically increasing exposure count within a visit",
+            "category": "Exposure",
+            "datatype": "integer",
+            "comment": "Running count of exposures in visit",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "DATAMODE": {
+            "description": "Post-processing method used in FPAP; maps to readout pattern",
+            "category": "Exposure",
+            "datatype": "integer",
+            "comment": "post-processing method used in FPAP",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "DATAPROB": {
+            "description": "Science telemetry indicated data problems (T or F)",
+            "category": "Exposure",
+            "datatype": "boolean",
+            "comment": "Science telemetry indicated a problem",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "DRPFRMS1": {
+            "description": "Number of frames dropped prior to first integration",
+            "category": "Exposure",
+            "datatype": "integer",
+            "comment": "Number of frames dropped before 1st integration",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "DRPFRMS3": {
+            "description": "Number of frames dropped between integrations",
+            "category": "Exposure",
+            "datatype": "integer",
+            "comment": "Number of frames dropped between integrations",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "NRESETS": {
+            "description": "Number of resets separating integrations within an exposure",
+            "category": "Exposure",
+            "datatype": "integer",
+            "comment": "Number of reset frames between integrations",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "NRSTSTRT": {
+            "description": "Number of resets at the start of exposure",
+            "category": "Exposure",
+            "datatype": "integer",
+            "comment": "Number of reset frames at start of exposure",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "NOUTPUTS": {
+            "description": "Number of detector amplifier outputs used (1, 4, or 5)",
+            "category": "Exposure",
+            "datatype": "integer",
+            "comment": "Number of detector outputs used",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "SCA_NUM": {
+            "description": "Sensor Chip Assembly number (1–18)",
+            "category": "Exposure",
+            "datatype": "integer",
+            "comment": "Sensor Chip Assembly number",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "FRMDIVSR": {
+            "description": "Frame divisor used on-board when averaging multiple frames into a group",
+            "category": "Exposure",
+            "datatype": "integer",
+            "comment": "Divisor applied to frame-averaged groups",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "GAINFACT": {
+            "description": "Data scaling factor ratio between gain=2 and nominal gain=1",
+            "category": "Exposure",
+            "datatype": "float",
+            "comment": "Gain scale factor",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "SCTARATE": {
+            "description": "Spacecraft clock time adjustment rate (milliseconds/second)",
+            "category": "Exposure",
+            "datatype": "float",
+            "comment": "[ms/s] Spacecraft Clock Time Adjust RATE",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "ZEROFRAM": {
+            "description": "Zero frame was read separately (T or F)",
+            "category": "Exposure",
+            "datatype": "boolean",
+            "comment": "Zero frame was downlinked separately",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "EXSEGTOT": {
+            "description": "Total number of segments in a TSO single exposure",
+            "category": "Exposure",
+            "datatype": "integer",
+            "comment": "total number segments",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "EXSEGNUM": {
+            "description": "Sequential segment number within a TSO single exposure",
+            "category": "Exposure",
+            "datatype": "integer",
+            "comment": "sequential segment number",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "INTSTART": {
+            "description": "Number of the first integration in a segmented exposure product",
+            "category": "Exposure",
+            "datatype": "integer",
+            "comment": "Starting integration number in this segment",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "INTEND": {
+            "description": "Number of the last integration in a segmented exposure product",
+            "category": "Exposure",
+            "datatype": "integer",
+            "comment": "Ending integration number in this segment",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "OSF_FILE": {
+            "description": "Observatory Status File name for this exposure",
+            "category": "Exposure",
+            "datatype": "string",
+            "comment": "Observatory Status File name",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "EXPSTENG": {
+            "description": "UTC exposure start time from engineering data stream",
+            "category": "Exposure",
+            "datatype": "string",
+            "comment": "UTC exposure start time from engineering data",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "ORIGIN": {
+            "description": "Institution that created the FITS file",
+            "category": "Program",
+            "datatype": "string",
+            "comment": "institution responsible for creating FITS file",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "FITS Standard",
+                "JWST",
+                "HST",
+                "TESS",
+                "Kepler",
+                "GALEX",
+                "Pan-STARRS"
+            ],
+            "mandatory": false
+        },
+        "TELESCOP": {
+            "description": "Telescope used to acquire the data",
+            "category": "Instrument",
+            "datatype": "string",
+            "comment": "telescope used to acquire the data",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "FITS Standard",
+                "JWST",
+                "HST",
+                "TESS",
+                "Kepler",
+                "K2",
+                "GALEX",
+                "Spitzer",
+                "Chandra",
+                "Pan-STARRS",
+                "SwiftUVOT",
+                "XMM-OM"
+            ],
+            "mandatory": false
+        },
+        "INSTRUME": {
+            "description": "Instrument used to acquire the data",
+            "category": "Instrument",
+            "datatype": "string",
+            "comment": "Instrument used to acquire the data",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "FITS Standard",
+                "JWST",
+                "HST",
+                "TESS",
+                "Kepler",
+                "K2",
+                "GALEX",
+                "Spitzer",
+                "Chandra",
+                "SwiftUVOT",
+                "XMM-OM"
+            ],
+            "mandatory": false
+        },
+        "DETECTOR": {
+            "description": "Detector used to acquire the data (e.g., MIRIMAGE, NRCA1, NIS)",
+            "category": "Instrument",
+            "datatype": "string",
+            "comment": "Name of detector used to acquire the data",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "JWST",
+                "HST",
+                "TESS",
+                "Chandra"
+            ],
+            "mandatory": false
+        },
+        "FILTER": {
+            "description": "Name of the filter element used during observation",
+            "category": "Instrument",
+            "datatype": "string",
+            "comment": "Name of the filter element used",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "JWST",
+                "HST",
+                "TESS",
+                "GALEX",
+                "Spitzer",
+                "Chandra",
+                "Pan-STARRS",
+                "SwiftUVOT",
+                "XMM-OM"
+            ],
+            "mandatory": false
+        },
+        "FILTER1": {
+            "description": "First filter element (multi-filter instruments)",
+            "category": "Instrument",
+            "datatype": "string",
+            "comment": "First filter element",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "HST"
+            ],
+            "mandatory": false
+        },
+        "FILTER2": {
+            "description": "Second filter element (multi-filter instruments)",
+            "category": "Instrument",
+            "datatype": "string",
+            "comment": "Second filter element",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "HST"
+            ],
+            "mandatory": false
+        },
+        "PUPIL": {
+            "description": "Pupil wheel element (e.g., CLEAR, MASKBAR, NRM, GRISMR)",
+            "category": "Instrument",
+            "datatype": "string",
+            "comment": "Pupil wheel element",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "GRATING": {
+            "description": "Grating used during observation (e.g., PRISM, G140M, G235H)",
+            "category": "Instrument",
+            "datatype": "string",
+            "comment": "Grating used during observation",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "JWST",
+                "HST",
+                "FUSE",
+                "IUE"
+            ],
+            "mandatory": false
+        },
+        "CHANNEL": {
+            "description": "Instrument channel (e.g., SHORT, LONG, 12, 34 for MIRI MRS)",
+            "category": "Instrument",
+            "datatype": "string",
+            "comment": "Instrument channel",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "JWST",
+                "Spitzer"
+            ],
+            "mandatory": false
+        },
+        "BAND": {
+            "description": "Wavelength band (e.g., SHORT, MEDIUM, LONG for MIRI MRS)",
+            "category": "Instrument",
+            "datatype": "string",
+            "comment": "Wavelength band",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "JWST",
+                "GALEX",
+                "Pan-STARRS"
+            ],
+            "mandatory": false
+        },
+        "MODULE": {
+            "description": "NIRCam module used (A, B, or MULTIPLE)",
+            "category": "Instrument",
+            "datatype": "string",
+            "comment": "NIRCam module used",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "LAMP": {
+            "description": "Internal lamp state for all science instruments (NONE or name)",
+            "category": "Instrument",
+            "datatype": "string",
+            "comment": "Internal lamp state",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "CORONMSK": {
+            "description": "MIRI coronagraph mask in use (e.g., 4QPM_1065, LYOT)",
+            "category": "Instrument",
+            "datatype": "string",
+            "comment": "MIRI coronagraph mask in use",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "FXD_SLIT": {
+            "description": "NIRSpec fixed slit aperture name (S200A1, S200A2, S200B1, S400A1, S1600A1)",
+            "category": "Instrument",
+            "datatype": "string",
+            "comment": "NIRSpec fixed slit aperture name",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "OPMODE": {
+            "description": "NIRSpec operating mode (MSASPEC, IFU, IMAGE, FIXEDSLIT, etc.)",
+            "category": "Instrument",
+            "datatype": "string",
+            "comment": "NIRSpec lamp operating mode",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "CCCSTATE": {
+            "description": "MIRI contamination control cover state (OPEN, CLOSED, LOCKED)",
+            "category": "Instrument",
+            "datatype": "string",
+            "comment": "Contamination control cover state",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "DETMODE": {
+            "description": "Detector mode: FLUSH_MODE, TEST_PATTERN, CLOCKING, or EXPOSURE",
+            "category": "Instrument",
+            "datatype": "string",
+            "comment": "Detector mode",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "DATAMODL": {
+            "description": "Type of data model (e.g., ImageModel, CubeModel)",
+            "category": "Instrument",
+            "datatype": "string",
+            "comment": "Type of data model",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "FOCUSPOS": {
+            "description": "FGS focus mechanism position in millimeters (−4.0 to 4.0)",
+            "category": "Instrument",
+            "datatype": "float",
+            "comment": "FGS focus mechanism position",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "FWCPOS": {
+            "description": "NIRISS filter wheel encoder position (millimeters)",
+            "category": "Instrument",
+            "datatype": "float",
+            "comment": "NIRISS filter wheel encoder position",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "PWCPOS": {
+            "description": "NIRISS pupil wheel encoder position (millimeters)",
+            "category": "Instrument",
+            "datatype": "float",
+            "comment": "NIRISS pupil wheel encoder position",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "PILIN": {
+            "description": "Pupil imaging lens in use (T or F)",
+            "category": "Instrument",
+            "datatype": "boolean",
+            "comment": "Pupil imaging lens in use",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "MIRNGRPS": {
+            "description": "MIRI flight system number of groups",
+            "category": "Instrument",
+            "datatype": "integer",
+            "comment": "MIRI flight system number of groups",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "MIRNFRMS": {
+            "description": "MIRI flight system number of frames",
+            "category": "Instrument",
+            "datatype": "integer",
+            "comment": "MIRI flight system number of frames",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "PROPAPER": {
+            "description": "Proposed aperture name",
+            "category": "Instrument",
+            "datatype": "string",
+            "comment": "Proposed aperture name",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "HST"
+            ],
+            "mandatory": false
+        },
+        "APERTURE": {
+            "description": "Aperture name used for the observation",
+            "category": "Instrument",
+            "datatype": "string",
+            "comment": "Aperture name",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "HST",
+                "GALEX",
+                "Chandra",
+                "IUE"
+            ],
+            "mandatory": false
+        },
+        "PREIMAGE": {
+            "description": "Name of reference image used to measure position for this source",
+            "category": "Instrument",
+            "datatype": "string",
+            "comment": "Pre-image filename",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "HST"
+            ],
+            "mandatory": false
+        },
+        "CMD_TSEL": {
+            "description": "SCE test pattern: COLUMNS, ROWS, FRAMES, or ALL",
+            "category": "Instrument",
+            "datatype": "string",
+            "comment": "SCE test pattern",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "IS_IMPRT": {
+            "description": "Exposure flagged as a leakcal or imprint exposure",
+            "category": "Instrument",
+            "datatype": "boolean",
+            "comment": "Imprint flag",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "MSASTATE": {
+            "description": "NIRSpec MSA state: ALLOPEN, ALLCLOSED, or CONFIGURED",
+            "category": "Instrument",
+            "datatype": "string",
+            "comment": "NIRSpec MSA state",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "MSAMETFL": {
+            "description": "NIRSpec MSA metadata file name",
+            "category": "Instrument",
+            "datatype": "string",
+            "comment": "NIRSpec MSA metadata file name",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "MSAMETID": {
+            "description": "Unique identifier within a visit for MSA configuration collection",
+            "category": "Instrument",
+            "datatype": "integer",
+            "comment": "MSA configuration identifier",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "MSACONID": {
+            "description": "Unique identifier of all MSA configurations within a visit",
+            "category": "Instrument",
+            "datatype": "integer",
+            "comment": "MSA configuration group identifier",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "NRS_NORM": {
+            "description": "Number of normal pixels per block in NIRSpec IRS2 readout",
+            "category": "Instrument",
+            "datatype": "integer",
+            "comment": "Normal pixels per block in IRS2 readout",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "NRS_REF": {
+            "description": "Number of interleaved reference pixels per block in NIRSpec IRS2 readout",
+            "category": "Instrument",
+            "datatype": "integer",
+            "comment": "Reference pixels per block in IRS2 readout",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "GWA_XTIL": {
+            "description": "NIRSpec grating wheel averaged X-tilt sensor value",
+            "category": "Instrument",
+            "datatype": "float",
+            "comment": "Grating wheel averaged X-tilt",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "GWA_YTIL": {
+            "description": "NIRSpec grating wheel averaged Y-tilt sensor value",
+            "category": "Instrument",
+            "datatype": "float",
+            "comment": "Grating wheel averaged Y-tilt",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "GWA_TILT": {
+            "description": "NIRSpec grating wheel temperature sensor calibrated value",
+            "category": "Instrument",
+            "datatype": "float",
+            "comment": "Grating wheel temperature sensor",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "GWA_PXAV": {
+            "description": "NIRSpec grating wheel REC-averaged calibrated X-tilt value",
+            "category": "Instrument",
+            "datatype": "float",
+            "comment": "Grating wheel REC-averaged X-tilt",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "GWA_PYAV": {
+            "description": "NIRSpec grating wheel REC-averaged calibrated Y-tilt value",
+            "category": "Instrument",
+            "datatype": "float",
+            "comment": "Grating wheel REC-averaged Y-tilt",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "GWA_XP_V": {
+            "description": "NIRSpec grating wheel X-position tilt sensor calibrated value",
+            "category": "Instrument",
+            "datatype": "float",
+            "comment": "Grating wheel X-position tilt sensor",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "GWA_YP_V": {
+            "description": "NIRSpec grating wheel Y-position tilt sensor calibrated value",
+            "category": "Instrument",
+            "datatype": "float",
+            "comment": "Grating wheel Y-position tilt sensor",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "OBJECT": {
+            "description": "Name of the observed object",
+            "category": "Observation",
+            "datatype": "string",
+            "comment": "Name of the observed object",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "FITS Standard",
+                "JWST",
+                "HST",
+                "TESS",
+                "Kepler",
+                "K2",
+                "GALEX",
+                "Spitzer",
+                "Pan-STARRS"
+            ],
+            "mandatory": false
+        },
+        "OBS_ID": {
+            "description": "Programmatic observation identifier",
+            "category": "Observation",
+            "datatype": "string",
+            "comment": "Programmatic observation identifier",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "JWST",
+                "HST",
+                "Chandra"
+            ],
+            "mandatory": false
+        },
+        "OBSERVTN": {
+            "description": "Observation number within the program",
+            "category": "Observation",
+            "datatype": "string",
+            "comment": "Observation number",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "PROGRAM": {
+            "description": "Program number (proposal ID)",
+            "category": "Observation",
+            "datatype": "string",
+            "comment": "Program number",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "JWST",
+                "HST"
+            ],
+            "mandatory": false
+        },
+        "VISIT": {
+            "description": "Visit number within the observation",
+            "category": "Observation",
+            "datatype": "string",
+            "comment": "Visit number",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "VISIT_ID": {
+            "description": "Full visit identifier string",
+            "category": "Observation",
+            "datatype": "string",
+            "comment": "Visit identifier",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "VISITGRP": {
+            "description": "Visit group identifier for parallel synchronization",
+            "category": "Observation",
+            "datatype": "string",
+            "comment": "Visit group identifier",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "SEQ_ID": {
+            "description": "Parallel sequence identifier within a group",
+            "category": "Observation",
+            "datatype": "string",
+            "comment": "Parallel sequence identifier",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "ACT_ID": {
+            "description": "Activity identifier (base-36) within a sequence",
+            "category": "Observation",
+            "datatype": "string",
+            "comment": "Activity identifier",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "EXPOSURE": {
+            "description": "Exposure request number",
+            "category": "Observation",
+            "datatype": "string",
+            "comment": "Exposure request number",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "TEMPLATE": {
+            "description": "Observation template used (APT template name)",
+            "category": "Observation",
+            "datatype": "string",
+            "comment": "Observation template used",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "OBSLABEL": {
+            "description": "Proposer-defined label for the observation",
+            "category": "Observation",
+            "datatype": "string",
+            "comment": "Proposer label for the observation",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "OBSFOLDR": {
+            "description": "APT observation folder name containing this observation",
+            "category": "Observation",
+            "datatype": "string",
+            "comment": "Name of the APT observation folder",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "OBSMODE": {
+            "description": "Observation mode",
+            "category": "Observation",
+            "datatype": "string",
+            "comment": "Observation mode",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "HST",
+                "Chandra",
+                "XMM-OM"
+            ],
+            "mandatory": false
+        },
+        "OBSTYPE": {
+            "description": "Observation type (e.g., IMAGING, SPECTROSCOPIC)",
+            "category": "Observation",
+            "datatype": "string",
+            "comment": "Observation type",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "HST",
+                "Pan-STARRS"
+            ],
+            "mandatory": false
+        },
+        "BKGDTARG": {
+            "description": "Exposure is flagged as a background target",
+            "category": "Observation",
+            "datatype": "boolean",
+            "comment": "Background target",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "IS_PSF": {
+            "description": "Exposure intended as a PSF reference observation",
+            "category": "Observation",
+            "datatype": "boolean",
+            "comment": "PSF reference observation",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "SELFREF": {
+            "description": "Coronagraphic observation is a self-referencing PSF survey",
+            "category": "Observation",
+            "datatype": "boolean",
+            "comment": "Self-referencing PSF survey",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "ENG_QUAL": {
+            "description": "Engineering database quality flag (OK or SUSPECT)",
+            "category": "Observation",
+            "datatype": "string",
+            "comment": "Engineering DB quality indicator",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "ENGQLPTG": {
+            "description": "Source and quality of spacecraft pointing keywords",
+            "category": "Observation",
+            "datatype": "string",
+            "comment": "Source of pointing keyword values",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "TARGPROP": {
+            "description": "Proposer-preferred name for the target (2–31 characters)",
+            "category": "Target",
+            "datatype": "string",
+            "comment": "Proposer's name for the target",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "JWST",
+                "HST"
+            ],
+            "mandatory": false
+        },
+        "TARGNAME": {
+            "description": "Target name as specified in the proposal or standard catalog name",
+            "category": "Target",
+            "datatype": "string",
+            "comment": "Standard astronomical catalog name for target",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "JWST",
+                "HST",
+                "Chandra"
+            ],
+            "mandatory": false
+        },
+        "TARGTYPE": {
+            "description": "Target type: FIXED, MOVING, or GENERIC",
+            "category": "Target",
+            "datatype": "string",
+            "comment": "Type of target (fixed, moving, generic)",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "TARG_RA": {
+            "description": "Right ascension of the target at mid-exposure (degrees)",
+            "category": "Target",
+            "datatype": "float",
+            "comment": "[deg] Target RA at mid time of exposure",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "JWST",
+                "HST",
+                "Chandra",
+                "SwiftUVOT"
+            ],
+            "mandatory": false
+        },
+        "TARG_DEC": {
+            "description": "Declination of the target at mid-exposure (degrees)",
+            "category": "Target",
+            "datatype": "float",
+            "comment": "[deg] Target Dec at mid time of exposure",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "JWST",
+                "HST",
+                "Chandra",
+                "SwiftUVOT"
+            ],
+            "mandatory": false
+        },
+        "RA_TARG": {
+            "description": "Right ascension of the target (degrees) — alternate form",
+            "category": "Target",
+            "datatype": "float",
+            "comment": "[deg] Right ascension of the target",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "HST",
+                "GALEX",
+                "Spitzer"
+            ],
+            "mandatory": false
+        },
+        "DEC_TARG": {
+            "description": "Declination of the target (degrees) — alternate form",
+            "category": "Target",
+            "datatype": "float",
+            "comment": "[deg] Declination of the target",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "HST",
+                "GALEX",
+                "Spitzer"
+            ],
+            "mandatory": false
+        },
+        "TARGURA": {
+            "description": "Target right ascension uncertainty at mid-exposure (arcsec)",
+            "category": "Target",
+            "datatype": "float",
+            "comment": "[arcsec] Target RA uncertainty",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "TARGUDEC": {
+            "description": "Target declination uncertainty at mid-exposure (arcsec)",
+            "category": "Target",
+            "datatype": "float",
+            "comment": "[arcsec] Target Dec uncertainty",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "PROP_RA": {
+            "description": "Proposed right ascension from APT (degrees)",
+            "category": "Target",
+            "datatype": "float",
+            "comment": "[deg] Proposer's target RA",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "JWST",
+                "HST"
+            ],
+            "mandatory": false
+        },
+        "PROP_DEC": {
+            "description": "Proposed declination from APT (degrees)",
+            "category": "Target",
+            "datatype": "float",
+            "comment": "[deg] Proposer's target Dec",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "JWST",
+                "HST"
+            ],
+            "mandatory": false
+        },
+        "MU_RA": {
+            "description": "Proper motion of the target in RA from APT (arcsec/year)",
+            "category": "Target",
+            "datatype": "float",
+            "comment": "[arcsec/yr] Target proper motion in RA",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "MU_DEC": {
+            "description": "Proper motion of the target in Dec from APT (arcsec/year)",
+            "category": "Target",
+            "datatype": "float",
+            "comment": "[arcsec/yr] Target proper motion in Dec",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "MU_EPOCH": {
+            "description": "Epoch of the proper motion values (UT date string)",
+            "category": "Target",
+            "datatype": "string",
+            "comment": "Target proper motion epoch in UT",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "SRCTYAPT": {
+            "description": "APT source type for spectroscopy: POINT, EXTENDED, or UNKNOWN",
+            "category": "Target",
+            "datatype": "string",
+            "comment": "APT source type",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "PA_APER": {
+            "description": "Position angle of the aperture used (degrees, east of north)",
+            "category": "Target",
+            "datatype": "float",
+            "comment": "Position angle of aperture used (deg)",
+            "hdu": [
+                "SCI"
+            ],
+            "missions": [
+                "JWST",
+                "HST"
+            ],
+            "mandatory": false
+        },
+        "PA_V3": {
+            "description": "Position angle of the V3 axis (degrees, east of north)",
+            "category": "Target",
+            "datatype": "float",
+            "comment": "[deg] position angle of V3-axis of JWST",
+            "hdu": [
+                "SCI"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "RA_V1": {
+            "description": "Right ascension of the telescope V1 axis (degrees)",
+            "category": "Target",
+            "datatype": "float",
+            "comment": "[deg] RA of telescope V1 axis",
+            "hdu": [
+                "SCI"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "DEC_V1": {
+            "description": "Declination of the telescope V1 axis (degrees)",
+            "category": "Target",
+            "datatype": "float",
+            "comment": "[deg] Dec of telescope V1 axis",
+            "hdu": [
+                "SCI"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "TITLE": {
+            "description": "Proposal title",
+            "category": "Program",
+            "datatype": "string",
+            "comment": "Proposal title",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "JWST",
+                "HST"
+            ],
+            "mandatory": false
+        },
+        "PI_NAME": {
+            "description": "Principal investigator name",
+            "category": "Program",
+            "datatype": "string",
+            "comment": "Principal investigator name",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "JWST",
+                "HST"
+            ],
+            "mandatory": false
+        },
+        "CATEGORY": {
+            "description": "Program category assigned by TAC or PI",
+            "category": "Program",
+            "datatype": "string",
+            "comment": "Program category",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "SUBCAT": {
+            "description": "Program sub-category (FGS, MIRI, NIRCAM, NIRISS, NIRSPEC, SC)",
+            "category": "Program",
+            "datatype": "string",
+            "comment": "Program sub-category",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "SCICAT": {
+            "description": "Science category assigned during TAC process",
+            "category": "Program",
+            "datatype": "string",
+            "comment": "Science category",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "CONT_ID": {
+            "description": "Continuation of previous program number",
+            "category": "Program",
+            "datatype": "integer",
+            "comment": "Continuation of previous program",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "AUTHOR": {
+            "description": "Author of the data or FITS file",
+            "category": "Program",
+            "datatype": "string",
+            "comment": "Author of the data",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "FITS Standard"
+            ],
+            "mandatory": false
+        },
+        "WCSAXES": {
+            "description": "Number of World Coordinate System axes",
+            "category": "WCS",
+            "datatype": "integer",
+            "comment": "number of World Coordinate System axes",
+            "hdu": [
+                "SCI"
+            ],
+            "missions": [
+                "FITS Standard",
+                "JWST",
+                "HST",
+                "TESS",
+                "Pan-STARRS"
+            ],
+            "mandatory": false
+        },
+        "CRPIX1": {
+            "description": "Reference pixel on axis 1 (1-indexed)",
+            "category": "WCS",
+            "datatype": "float",
+            "comment": "Axis 1 pixel coordinate of ref point, 1-indexed",
+            "hdu": [
+                "SCI"
+            ],
+            "missions": [
+                "FITS Standard",
+                "JWST",
+                "HST",
+                "TESS",
+                "Kepler",
+                "GALEX",
+                "Spitzer",
+                "Pan-STARRS"
+            ],
+            "mandatory": false
+        },
+        "CRPIX2": {
+            "description": "Reference pixel on axis 2 (1-indexed)",
+            "category": "WCS",
+            "datatype": "float",
+            "comment": "Axis 2 pixel coordinate of ref point, 1-indexed",
+            "hdu": [
+                "SCI"
+            ],
+            "missions": [
+                "FITS Standard",
+                "JWST",
+                "HST",
+                "TESS",
+                "Kepler",
+                "GALEX",
+                "Spitzer",
+                "Pan-STARRS"
+            ],
+            "mandatory": false
+        },
+        "CRVAL1": {
+            "description": "Coordinate value at reference pixel on axis 1 (usually RA in degrees)",
+            "category": "WCS",
+            "datatype": "float",
+            "comment": "Axis 1 coordinate value at reference point",
+            "hdu": [
+                "SCI"
+            ],
+            "missions": [
+                "FITS Standard",
+                "JWST",
+                "HST",
+                "TESS",
+                "Kepler",
+                "GALEX",
+                "Spitzer",
+                "Pan-STARRS"
+            ],
+            "mandatory": false
+        },
+        "CRVAL2": {
+            "description": "Coordinate value at reference pixel on axis 2 (usually Dec in degrees)",
+            "category": "WCS",
+            "datatype": "float",
+            "comment": "Axis 2 coordinate value at reference point",
+            "hdu": [
+                "SCI"
+            ],
+            "missions": [
+                "FITS Standard",
+                "JWST",
+                "HST",
+                "TESS",
+                "Kepler",
+                "GALEX",
+                "Spitzer",
+                "Pan-STARRS"
+            ],
+            "mandatory": false
+        },
+        "CTYPE1": {
+            "description": "Coordinate type for axis 1 (e.g., RA---TAN, GLON-AIT)",
+            "category": "WCS",
+            "datatype": "string",
+            "comment": "Axis 1 type",
+            "hdu": [
+                "SCI"
+            ],
+            "missions": [
+                "FITS Standard",
+                "JWST",
+                "HST",
+                "TESS",
+                "Kepler",
+                "GALEX",
+                "Spitzer",
+                "Pan-STARRS"
+            ],
+            "mandatory": false
+        },
+        "CTYPE2": {
+            "description": "Coordinate type for axis 2 (e.g., DEC--TAN, GLAT-AIT)",
+            "category": "WCS",
+            "datatype": "string",
+            "comment": "Axis 2 type",
+            "hdu": [
+                "SCI"
+            ],
+            "missions": [
+                "FITS Standard",
+                "JWST",
+                "HST",
+                "TESS",
+                "Kepler",
+                "GALEX",
+                "Spitzer",
+                "Pan-STARRS"
+            ],
+            "mandatory": false
+        },
+        "CUNIT1": {
+            "description": "Physical unit for axis 1 coordinate (e.g., deg)",
+            "category": "WCS",
+            "datatype": "string",
+            "comment": "Axis 1 units",
+            "hdu": [
+                "SCI"
+            ],
+            "missions": [
+                "FITS Standard",
+                "JWST",
+                "HST",
+                "Pan-STARRS"
+            ],
+            "mandatory": false
+        },
+        "CUNIT2": {
+            "description": "Physical unit for axis 2 coordinate (e.g., deg)",
+            "category": "WCS",
+            "datatype": "string",
+            "comment": "Axis 2 units",
+            "hdu": [
+                "SCI"
+            ],
+            "missions": [
+                "FITS Standard",
+                "JWST",
+                "HST",
+                "Pan-STARRS"
+            ],
+            "mandatory": false
+        },
+        "CDELT1": {
+            "description": "Coordinate increment along axis 1 (degrees/pixel)",
+            "category": "WCS",
+            "datatype": "float",
+            "comment": "Axis 1 coordinate increment at reference point",
+            "hdu": [
+                "SCI"
+            ],
+            "missions": [
+                "FITS Standard",
+                "JWST",
+                "HST",
+                "TESS",
+                "GALEX",
+                "Pan-STARRS"
+            ],
+            "mandatory": false
+        },
+        "CDELT2": {
+            "description": "Coordinate increment along axis 2 (degrees/pixel)",
+            "category": "WCS",
+            "datatype": "float",
+            "comment": "Axis 2 coordinate increment at reference point",
+            "hdu": [
+                "SCI"
+            ],
+            "missions": [
+                "FITS Standard",
+                "JWST",
+                "HST",
+                "TESS",
+                "GALEX",
+                "Pan-STARRS"
+            ],
+            "mandatory": false
+        },
+        "CD1_1": {
+            "description": "Coordinate transformation matrix element (1,1). Encodes rotation and scale.",
+            "category": "WCS",
+            "datatype": "float",
+            "comment": "Linear transformation matrix element",
+            "hdu": [
+                "SCI"
+            ],
+            "missions": [
+                "FITS Standard",
+                "JWST",
+                "HST",
+                "GALEX",
+                "Pan-STARRS"
+            ],
+            "mandatory": false
+        },
+        "CD1_2": {
+            "description": "Coordinate transformation matrix element (1,2)",
+            "category": "WCS",
+            "datatype": "float",
+            "comment": "Linear transformation matrix element",
+            "hdu": [
+                "SCI"
+            ],
+            "missions": [
+                "FITS Standard",
+                "JWST",
+                "HST",
+                "GALEX",
+                "Pan-STARRS"
+            ],
+            "mandatory": false
+        },
+        "CD2_1": {
+            "description": "Coordinate transformation matrix element (2,1)",
+            "category": "WCS",
+            "datatype": "float",
+            "comment": "Linear transformation matrix element",
+            "hdu": [
+                "SCI"
+            ],
+            "missions": [
+                "FITS Standard",
+                "JWST",
+                "HST",
+                "GALEX",
+                "Pan-STARRS"
+            ],
+            "mandatory": false
+        },
+        "CD2_2": {
+            "description": "Coordinate transformation matrix element (2,2)",
+            "category": "WCS",
+            "datatype": "float",
+            "comment": "Linear transformation matrix element",
+            "hdu": [
+                "SCI"
+            ],
+            "missions": [
+                "FITS Standard",
+                "JWST",
+                "HST",
+                "GALEX",
+                "Pan-STARRS"
+            ],
+            "mandatory": false
+        },
+        "PC1_1": {
+            "description": "Linear transformation matrix element (1,1) — alternative to CDi_j",
+            "category": "WCS",
+            "datatype": "float",
+            "comment": "Linear transformation matrix",
+            "hdu": [
+                "SCI"
+            ],
+            "missions": [
+                "FITS Standard",
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "PC1_2": {
+            "description": "Linear transformation matrix element (1,2)",
+            "category": "WCS",
+            "datatype": "float",
+            "comment": "Linear transformation matrix",
+            "hdu": [
+                "SCI"
+            ],
+            "missions": [
+                "FITS Standard",
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "PC2_1": {
+            "description": "Linear transformation matrix element (2,1)",
+            "category": "WCS",
+            "datatype": "float",
+            "comment": "Linear transformation matrix",
+            "hdu": [
+                "SCI"
+            ],
+            "missions": [
+                "FITS Standard",
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "PC2_2": {
+            "description": "Linear transformation matrix element (2,2)",
+            "category": "WCS",
+            "datatype": "float",
+            "comment": "Linear transformation matrix",
+            "hdu": [
+                "SCI"
+            ],
+            "missions": [
+                "FITS Standard",
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "RADESYS": {
+            "description": "Celestial coordinate reference frame (e.g., ICRS, FK5)",
+            "category": "WCS",
+            "datatype": "string",
+            "comment": "Name of the coordinate reference frame",
+            "hdu": [
+                "SCI"
+            ],
+            "missions": [
+                "FITS Standard",
+                "JWST",
+                "HST",
+                "TESS",
+                "Pan-STARRS"
+            ],
+            "mandatory": false
+        },
+        "EQUINOX": {
+            "description": "Equinox of celestial coordinate system (e.g., 2000.0 for J2000)",
+            "category": "WCS",
+            "datatype": "float",
+            "comment": "Equinox of celestial coordinate system",
+            "hdu": [
+                "SCI"
+            ],
+            "missions": [
+                "FITS Standard",
+                "JWST",
+                "HST",
+                "GALEX",
+                "Pan-STARRS"
+            ],
+            "mandatory": false
+        },
+        "LONPOLE": {
+            "description": "Native longitude of the celestial pole (degrees)",
+            "category": "WCS",
+            "datatype": "float",
+            "comment": "Native longitude of the celestial pole",
+            "hdu": [
+                "SCI"
+            ],
+            "missions": [
+                "FITS Standard",
+                "JWST",
+                "HST"
+            ],
+            "mandatory": false
+        },
+        "LATPOLE": {
+            "description": "Native latitude of the celestial pole (degrees)",
+            "category": "WCS",
+            "datatype": "float",
+            "comment": "Native latitude of the celestial pole",
+            "hdu": [
+                "SCI"
+            ],
+            "missions": [
+                "FITS Standard",
+                "JWST",
+                "HST"
+            ],
+            "mandatory": false
+        },
+        "S_REGION": {
+            "description": "Spatial footprint of the observation in STC-S (IVOA) format",
+            "category": "WCS",
+            "datatype": "string",
+            "comment": "spatial extent of the observation, footprint",
+            "hdu": [
+                "SCI"
+            ],
+            "missions": [
+                "JWST",
+                "TESS"
+            ],
+            "mandatory": false
+        },
+        "A_ORDER": {
+            "description": "Degree of forward SIP polynomial (axis 1)",
+            "category": "WCS",
+            "datatype": "integer",
+            "comment": "Degree of forward SIP polynomial",
+            "hdu": [
+                "SCI"
+            ],
+            "missions": [
+                "JWST",
+                "HST"
+            ],
+            "mandatory": false
+        },
+        "B_ORDER": {
+            "description": "Degree of forward SIP polynomial (axis 2)",
+            "category": "WCS",
+            "datatype": "integer",
+            "comment": "Degree of forward SIP polynomial",
+            "hdu": [
+                "SCI"
+            ],
+            "missions": [
+                "JWST",
+                "HST"
+            ],
+            "mandatory": false
+        },
+        "AP_ORDER": {
+            "description": "Degree of inverse SIP polynomial (axis 1)",
+            "category": "WCS",
+            "datatype": "integer",
+            "comment": "Degree of inverse SIP polynomial",
+            "hdu": [
+                "SCI"
+            ],
+            "missions": [
+                "JWST",
+                "HST"
+            ],
+            "mandatory": false
+        },
+        "BP_ORDER": {
+            "description": "Degree of inverse SIP polynomial (axis 2)",
+            "category": "WCS",
+            "datatype": "integer",
+            "comment": "Degree of inverse SIP polynomial",
+            "hdu": [
+                "SCI"
+            ],
+            "missions": [
+                "JWST",
+                "HST"
+            ],
+            "mandatory": false
+        },
+        "SUBARRAY": {
+            "description": "Subarray name (FULL if full frame, or named subarray up to 9 chars)",
+            "category": "Subarray",
+            "datatype": "string",
+            "comment": "Subarray used",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "JWST",
+                "TESS",
+                "Kepler"
+            ],
+            "mandatory": false
+        },
+        "SUBSTRT1": {
+            "description": "Starting pixel in the full science frame axis 1 direction",
+            "category": "Subarray",
+            "datatype": "integer",
+            "comment": "Starting pixel in axis 1 direction",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "SUBSTRT2": {
+            "description": "Starting pixel in the full science frame axis 2 direction",
+            "category": "Subarray",
+            "datatype": "integer",
+            "comment": "Starting pixel in axis 2 direction",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "SUBSIZE1": {
+            "description": "Number of pixels in the subarray axis 1 direction",
+            "category": "Subarray",
+            "datatype": "integer",
+            "comment": "Number of pixels in axis 1 direction",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "SUBSIZE2": {
+            "description": "Number of pixels in the subarray axis 2 direction",
+            "category": "Subarray",
+            "datatype": "integer",
+            "comment": "Number of pixels in axis 2 direction",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "FASTAXIS": {
+            "description": "Axis and direction of fast detector readout (±1 or ±2)",
+            "category": "Subarray",
+            "datatype": "integer",
+            "comment": "Fast readout axis direction",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "SLOWAXIS": {
+            "description": "Axis and direction of slow detector readout (±1 or ±2)",
+            "category": "Subarray",
+            "datatype": "integer",
+            "comment": "Slow readout axis direction",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "APERNAME": {
+            "description": "S&OC PRD aperture name used for telescope pointing",
+            "category": "Aperture",
+            "datatype": "string",
+            "comment": "S&OC PRD science aperture used",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "PPS_APER": {
+            "description": "Original aperture name as supplied by PPS",
+            "category": "Aperture",
+            "datatype": "string",
+            "comment": "original AperName supplied by PPS",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "NUMDTHPT": {
+            "description": "Total number of points in the entire dither pattern",
+            "category": "Dither",
+            "datatype": "integer",
+            "comment": "Total number of points in dither pattern",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "PATT_NUM": {
+            "description": "Position number within dither pattern",
+            "category": "Dither",
+            "datatype": "integer",
+            "comment": "Position number within dither pattern",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "XOFFSET": {
+            "description": "X offset from pattern starting position in SI ideal frame (arcsec)",
+            "category": "Dither",
+            "datatype": "float",
+            "comment": "[arcsec] X offset in SI ideal coordinate frame",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "YOFFSET": {
+            "description": "Y offset from pattern starting position in SI ideal frame (arcsec)",
+            "category": "Dither",
+            "datatype": "float",
+            "comment": "[arcsec] Y offset in SI ideal coordinate frame",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "PATTTYPE": {
+            "description": "Dither pattern type (e.g., FULL, INTRAMODULE, INTRASCA, NONE, CYCLING)",
+            "category": "Dither",
+            "datatype": "string",
+            "comment": "Primary dither pattern type",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "PATTSIZE": {
+            "description": "Primary dither pattern size (NONE, SMALL, MEDIUM, LARGE)",
+            "category": "Dither",
+            "datatype": "string",
+            "comment": "Primary dither pattern size",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "PATTSTRT": {
+            "description": "Starting point in the dither cycling pattern (1–311 for MIRI)",
+            "category": "Dither",
+            "datatype": "integer",
+            "comment": "Starting point in cycling pattern",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "PATTNPTS": {
+            "description": "Number of points in CYCLING dither pattern (≥3 for MIRI)",
+            "category": "Dither",
+            "datatype": "integer",
+            "comment": "Number of points in CYCLING pattern",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "NUMDSETS": {
+            "description": "Total number of 4-point dither sets (1–10)",
+            "category": "Dither",
+            "datatype": "integer",
+            "comment": "Number of 4-point sets in dither set list",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "DSETSTRT": {
+            "description": "Starting set number of the 4-point dither sets (1–10)",
+            "category": "Dither",
+            "datatype": "integer",
+            "comment": "Starting 4-point set in dither set list",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "DITHDIRC": {
+            "description": "Dither direction: POSITIVE or NEGATIVE",
+            "category": "Dither",
+            "datatype": "string",
+            "comment": "Direction of dither pattern offsets",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "DITHOPFR": {
+            "description": "Dither optimization type: POINT-SOURCE or EXTENDED-SOURCE",
+            "category": "Dither",
+            "datatype": "string",
+            "comment": "Dither pattern optimization",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "DITHPNTS": {
+            "description": "Sparse cycling dither positions list",
+            "category": "Dither",
+            "datatype": "string",
+            "comment": "Point indices for SPARSE-CYCLING",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "MRSPRCHN": {
+            "description": "MIRI MRS channel for which dither is optimized",
+            "category": "Dither",
+            "datatype": "string",
+            "comment": "Optimized MRS channel",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "NOD_TYPE": {
+            "description": "NIRSpec MSA nod pattern type (NONE, 2-, 3-, or 5-SHUTTER-SLITLET)",
+            "category": "Dither",
+            "datatype": "string",
+            "comment": "NIRSpec nod pattern type",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "PRIDTYPE": {
+            "description": "NIRCam primary dither specification with number of points",
+            "category": "Dither",
+            "datatype": "string",
+            "comment": "Primary dither points and packing",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "PRIDTPTS": {
+            "description": "Number of points in FGS primary dither pattern",
+            "category": "Dither",
+            "datatype": "integer",
+            "comment": "Number of points in primary dither pattern",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "SUBPXPAT": {
+            "description": "Subpixel dither pattern type (STANDARD, SMALL-GRID-DITHER, NONE)",
+            "category": "Dither",
+            "datatype": "string",
+            "comment": "Subpixel dither pattern type",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "SUBPXPTS": {
+            "description": "Number of points in subpixel dither pattern",
+            "category": "Dither",
+            "datatype": "integer",
+            "comment": "Number of points in subpixel dither pattern",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "SMGRDPAT": {
+            "description": "NIRCam small grid dither pattern name",
+            "category": "Dither",
+            "datatype": "string",
+            "comment": "Small grid dither pattern name",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "NRIMDTPT": {
+            "description": "NIRISS direct image dither number of points",
+            "category": "Dither",
+            "datatype": "integer",
+            "comment": "Number of points in direct image dither pattern",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "SPATNSTP": {
+            "description": "MIRI LRS number of steps in the spatial direction",
+            "category": "Dither",
+            "datatype": "integer",
+            "comment": "LRS spatial steps",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "SPATSTEP": {
+            "description": "MIRI LRS distance between steps in the spatial direction (arcsec)",
+            "category": "Dither",
+            "datatype": "float",
+            "comment": "LRS spatial step distance",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "SPAT_NUM": {
+            "description": "MIRI LRS position number within spatial steps",
+            "category": "Dither",
+            "datatype": "integer",
+            "comment": "LRS spatial position number",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "SPECNSTP": {
+            "description": "MIRI LRS number of steps in the spectral direction",
+            "category": "Dither",
+            "datatype": "integer",
+            "comment": "LRS spectral steps",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "SPECSTEP": {
+            "description": "MIRI LRS distance between steps in the spectral direction (arcsec)",
+            "category": "Dither",
+            "datatype": "float",
+            "comment": "LRS spectral step distance",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "SPEC_NUM": {
+            "description": "MIRI LRS position number within spectral steps",
+            "category": "Dither",
+            "datatype": "integer",
+            "comment": "LRS spectral position number",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "SPTOFFST": {
+            "description": "MIRI LRS spatial offset from pattern starting position (arcsec)",
+            "category": "Dither",
+            "datatype": "float",
+            "comment": "LRS spatial offset",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "SPCOFFST": {
+            "description": "MIRI LRS spectral offset from pattern starting position (arcsec)",
+            "category": "Dither",
+            "datatype": "float",
+            "comment": "LRS spectral offset",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "VISITYPE": {
+            "description": "Visit type (e.g., PRIME_TARGETED_FIXED)",
+            "category": "Visit",
+            "datatype": "string",
+            "comment": "Visit type",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "VSTSTART": {
+            "description": "Observatory UTC time when the visit started",
+            "category": "Visit",
+            "datatype": "string",
+            "comment": "UTC visit start time",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "VISITSTA": {
+            "description": "Status of the visit (e.g., SUCCESSFUL, DATALOSS)",
+            "category": "Visit",
+            "datatype": "string",
+            "comment": "Status of a visit",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "NEXPOSUR": {
+            "description": "Total number of planned exposures in the visit",
+            "category": "Visit",
+            "datatype": "integer",
+            "comment": "Total number of planned exposures in visit",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "INTARGET": {
+            "description": "At least one exposure in the visit is internally targeted",
+            "category": "Visit",
+            "datatype": "boolean",
+            "comment": "At least one exposure in visit is internal",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "TARGOOPP": {
+            "description": "Visit scheduled as a target of opportunity",
+            "category": "Visit",
+            "datatype": "boolean",
+            "comment": "Visit scheduled as target of opportunity",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "TSOVISIT": {
+            "description": "Visit uses Time Series Observation special requirement",
+            "category": "Visit",
+            "datatype": "boolean",
+            "comment": "Timer Series Observation visit indicator",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "EXP_ONLY": {
+            "description": "Exposure taken through special commanding without SI configuration",
+            "category": "Visit",
+            "datatype": "boolean",
+            "comment": "Special commanding without SI configuration",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "CROWDFLD": {
+            "description": "FGSes operating in a crowded star field",
+            "category": "Visit",
+            "datatype": "boolean",
+            "comment": "Are the FGSes in a crowded field?",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "GS_ORDER": {
+            "description": "Index of guide star within the list of selected guide stars",
+            "category": "Guide Star",
+            "datatype": "integer",
+            "comment": "guide star index within selected guide star list",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "GSSTRTTM": {
+            "description": "UTC time when guide star activity started",
+            "category": "Guide Star",
+            "datatype": "string",
+            "comment": "UTC time when guide star activity started",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "GSENDTIM": {
+            "description": "UTC time when guide star activity completed",
+            "category": "Guide Star",
+            "datatype": "string",
+            "comment": "UTC time when guide star activity completed",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "GDSTARID": {
+            "description": "Guide Star Catalog 2 identifier (10 character, base-36)",
+            "category": "Guide Star",
+            "datatype": "string",
+            "comment": "guide star identifier",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "GS_RA": {
+            "description": "ICRS right ascension of the guide star (degrees)",
+            "category": "Guide Star",
+            "datatype": "float",
+            "comment": "guide star right ascension",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "GS_DEC": {
+            "description": "ICRS declination of the guide star (degrees)",
+            "category": "Guide Star",
+            "datatype": "float",
+            "comment": "guide star declination",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "GS_URA": {
+            "description": "ICRS right ascension uncertainty of the guide star (arcsec)",
+            "category": "Guide Star",
+            "datatype": "float",
+            "comment": "guide star right ascension uncertainty",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "GS_UDEC": {
+            "description": "ICRS declination uncertainty of the guide star (arcsec)",
+            "category": "Guide Star",
+            "datatype": "float",
+            "comment": "guide star declination uncertainty",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "GS_MAG": {
+            "description": "Guide star magnitude in FGS detector",
+            "category": "Guide Star",
+            "datatype": "float",
+            "comment": "guide star magnitude",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "GS_UMAG": {
+            "description": "Guide star magnitude uncertainty",
+            "category": "Guide Star",
+            "datatype": "float",
+            "comment": "guide star magnitude uncertainty",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "GS_V3_PA": {
+            "description": "V3 position angle of the guide star at the guide star location (degrees)",
+            "category": "Guide Star",
+            "datatype": "float",
+            "comment": "[deg] guide star V3 Position Angle for science",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "PCS_MODE": {
+            "description": "Pointing Control System mode (FINEGUIDE, COARSE, TRACK, MOVING, NONE)",
+            "category": "Guide Star",
+            "datatype": "string",
+            "comment": "Pointing Control System mode",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "VISITEND": {
+            "description": "UTC time when the visit ended",
+            "category": "Guide Star",
+            "datatype": "string",
+            "comment": "UTC time when the visit ended",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "BARTDELT": {
+            "description": "Calculated barycentric time correction from UTC (seconds)",
+            "category": "Time",
+            "datatype": "float",
+            "comment": "[s] Barycentric correction at exposure start",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "BSTRTIME": {
+            "description": "Barycentric-corrected exposure start time (MJD)",
+            "category": "Time",
+            "datatype": "float",
+            "comment": "[d] Barycentric exposure start time in MJD",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "BENDTIME": {
+            "description": "Barycentric-corrected exposure end time (MJD)",
+            "category": "Time",
+            "datatype": "float",
+            "comment": "[d] Barycentric exposure end time in MJD",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "BMIDTIME": {
+            "description": "Barycentric-corrected exposure mid time (MJD)",
+            "category": "Time",
+            "datatype": "float",
+            "comment": "[d] Barycentric exposure mid time in MJD",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "HELIDELT": {
+            "description": "Calculated heliocentric time correction from UTC (seconds)",
+            "category": "Time",
+            "datatype": "float",
+            "comment": "[s] Heliocentric correction at exposure start",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "HSTRTIME": {
+            "description": "Heliocentric exposure start time (MJD)",
+            "category": "Time",
+            "datatype": "float",
+            "comment": "[d] Heliocentric exposure start time in MJD",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "HENDTIME": {
+            "description": "Heliocentric exposure end time (MJD)",
+            "category": "Time",
+            "datatype": "float",
+            "comment": "[d] Heliocentric exposure end time in MJD",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "HMIDTIME": {
+            "description": "Heliocentric exposure mid time (MJD)",
+            "category": "Time",
+            "datatype": "float",
+            "comment": "[d] Heliocentric exposure mid time in MJD",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "ASNPOOL": {
+            "description": "Name of the association pool file used as pipeline input",
+            "category": "Association",
+            "datatype": "string",
+            "comment": "Name of the Association Pool",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "JWST",
+                "HST"
+            ],
+            "mandatory": false
+        },
+        "ASNTABLE": {
+            "description": "Name of the association table from which this product was created",
+            "category": "Association",
+            "datatype": "string",
+            "comment": "Name of the Association Generator Table",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "JWST",
+                "HST"
+            ],
+            "mandatory": false
+        },
+        "BKGLEVEL": {
+            "description": "Overall background signal level computed by the skymatch pipeline step",
+            "category": "Background",
+            "datatype": "float",
+            "comment": "Computed constant background level",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "BKGSUB": {
+            "description": "Background signal from BKGLEVEL has been subtracted (T or F)",
+            "category": "Background",
+            "datatype": "boolean",
+            "comment": "Constant background subtracted from data?",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "MASTERBG": {
+            "description": "Name of the 1-D master background spectrum file used in pipeline",
+            "category": "Background",
+            "datatype": "string",
+            "comment": "Master background file used",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "FILENAME": {
+            "description": "Name of the file",
+            "category": "Calibration",
+            "datatype": "string",
+            "comment": "Name of the file",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "JWST",
+                "HST"
+            ],
+            "mandatory": false
+        },
+        "FILETYPE": {
+            "description": "Type of data in the file (e.g., SCIENCE, CALIBRATION)",
+            "category": "Calibration",
+            "datatype": "string",
+            "comment": "Type of data in the file",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "JWST",
+                "HST"
+            ],
+            "mandatory": false
+        },
+        "ROOTNAME": {
+            "description": "Root name of the observation set",
+            "category": "Calibration",
+            "datatype": "string",
+            "comment": "Root name of the observation set",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "HST"
+            ],
+            "mandatory": false
+        },
+        "IMAGETYP": {
+            "description": "Type of exposure identifier (e.g., BIAS, DARK, FLAT, OBJECT)",
+            "category": "Calibration",
+            "datatype": "string",
+            "comment": "Type of exposure identifier",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "FITS Standard",
+                "Pan-STARRS"
+            ],
+            "mandatory": false
+        },
+        "LINENUM": {
+            "description": "Proposal log-sheet line number",
+            "category": "Calibration",
+            "datatype": "string",
+            "comment": "Proposal log-sheet line number",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "HST"
+            ],
+            "mandatory": false
+        },
+        "POSTARG1": {
+            "description": "POSTARG in axis 1 direction (sub-aperture offset)",
+            "category": "Calibration",
+            "datatype": "float",
+            "comment": "POSTARG in axis 1 direction",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "HST"
+            ],
+            "mandatory": false
+        },
+        "POSTARG2": {
+            "description": "POSTARG in axis 2 direction (sub-aperture offset)",
+            "category": "Calibration",
+            "datatype": "float",
+            "comment": "POSTARG in axis 2 direction",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "HST"
+            ],
+            "mandatory": false
+        },
+        "CAL_VER": {
+            "description": "Calibration software version",
+            "category": "Calibration",
+            "datatype": "string",
+            "comment": "Calibration Software Version",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "JWST",
+                "HST"
+            ],
+            "mandatory": false
+        },
+        "CAL_VCS": {
+            "description": "Calibration software repository version (git hash or tag)",
+            "category": "Calibration",
+            "datatype": "string",
+            "comment": "Calibration Software Repository Version",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "CRDS_VER": {
+            "description": "Version of the CRDS client software used for reference file selection",
+            "category": "Calibration",
+            "datatype": "string",
+            "comment": "Version of CRDS file selection software used",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "CRDS_CTX": {
+            "description": "Version of the CRDS context (PMAP) controlling reference file selection",
+            "category": "Calibration",
+            "datatype": "string",
+            "comment": "CRDS context (.pmap) used to select ref files",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "SDP_VER": {
+            "description": "Data processing software version",
+            "category": "Calibration",
+            "datatype": "string",
+            "comment": "Data Processing (DP) Software Version",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "PRD_VER": {
+            "description": "Project Reference Database version",
+            "category": "Calibration",
+            "datatype": "string",
+            "comment": "S&OC Project Reference Database (PRD) Version",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "OSS_VER": {
+            "description": "Version number of the Observatory Scheduling Software",
+            "category": "Calibration",
+            "datatype": "string",
+            "comment": "Observatory Scheduling Software (OSS) Version",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "VA_SCALE": {
+            "description": "Velocity aberration scale factor",
+            "category": "Calibration",
+            "datatype": "float",
+            "comment": "Velocity aberration scale factor",
+            "hdu": [
+                "SCI"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "PHOTMJSR": {
+            "description": "Flux density (MJy/steradian) producing 1 count/sec",
+            "category": "Photometry",
+            "datatype": "float",
+            "comment": "Flux density (MJy/steradian) producing 1 cps",
+            "hdu": [
+                "SCI"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "PIXAR_SR": {
+            "description": "Nominal pixel area in steradians",
+            "category": "Photometry",
+            "datatype": "float",
+            "comment": "Nominal pixel area in steradians",
+            "hdu": [
+                "SCI"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "PIXAR_A2": {
+            "description": "Nominal pixel area in arcsec squared",
+            "category": "Photometry",
+            "datatype": "float",
+            "comment": "Nominal pixel area in arcsec^2",
+            "hdu": [
+                "SCI"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "HGA_MOVE": {
+            "description": "High Gain Antenna moved during data collection",
+            "category": "Engineering",
+            "datatype": "boolean",
+            "comment": "High Gain Antenna moved during data collection",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "PWFSEET": {
+            "description": "Exposure end time from the previous WFS exposure (MJD)",
+            "category": "Engineering",
+            "datatype": "float",
+            "comment": "[d] previous WFS exposure end time in MJD",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "NWFSEST": {
+            "description": "Exposure start time from the next WFS exposure (MJD)",
+            "category": "Engineering",
+            "datatype": "float",
+            "comment": "[d] next WFS exposure start time in MJD",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "ERRTYPE": {
+            "description": "Type of values in the error array (ERR, IERR, VAR, IVAR)",
+            "category": "Engineering",
+            "datatype": "string",
+            "comment": "Error array type",
+            "hdu": [
+                "ERR"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "FA1VALUE": {
+            "description": "Requested focus actuator 1 absolute position value",
+            "category": "Engineering",
+            "datatype": "float",
+            "comment": "Focus actuator 1 position",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "FA2VALUE": {
+            "description": "Requested focus actuator 2 absolute position value",
+            "category": "Engineering",
+            "datatype": "float",
+            "comment": "Focus actuator 2 position",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "FA3VALUE": {
+            "description": "Requested focus actuator 3 absolute position value",
+            "category": "Engineering",
+            "datatype": "float",
+            "comment": "Focus actuator 3 position",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "FCSRLPOS": {
+            "description": "NIRSpec RMA relative position in motor steps (−18400 to +18400)",
+            "category": "Engineering",
+            "datatype": "integer",
+            "comment": "NIRSpec RMA relative position",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "RMA_POS": {
+            "description": "NIRSpec Refocus Mechanism Assembly latest hall-position sensor value",
+            "category": "Engineering",
+            "datatype": "float",
+            "comment": "RMA hall-position sensor value",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "ROIS": {
+            "description": "Radius of the region of interest in spatial dimensions (arcsec)",
+            "category": "Engineering",
+            "datatype": "float",
+            "comment": "ROI spatial radius",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "ROIW": {
+            "description": "Radius of the region of interest in wavelength dimension (arcsec)",
+            "category": "Engineering",
+            "datatype": "float",
+            "comment": "ROI wavelength radius",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "WPOWER": {
+            "description": "Weighting power controlling distance weighting for IFU spaxels",
+            "category": "Engineering",
+            "datatype": "float",
+            "comment": "IFU weighting power",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "WTYPE": {
+            "description": "Type of weighting used when combining IFU point cloud fluxes",
+            "category": "Engineering",
+            "datatype": "string",
+            "comment": "IFU weighting type",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "SCATFILE": {
+            "description": "Source catalog filename generated by the source_catalog pipeline step",
+            "category": "Resampling",
+            "datatype": "string",
+            "comment": "Source catalog filename",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "TCATFILE": {
+            "description": "Tweakreg catalog filename used for image alignment",
+            "category": "Resampling",
+            "datatype": "string",
+            "comment": "Tweakreg catalog filename",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "COMMENT": {
+            "description": "Free-form comment text. Multiple COMMENT keywords can appear in a header.",
+            "category": "Comments",
+            "datatype": "string",
+            "comment": "Comment",
+            "hdu": [
+                "PRIMARY",
+                "SCI",
+                "ERR",
+                "DQ"
+            ],
+            "missions": [
+                "FITS Standard",
+                "JWST",
+                "HST",
+                "TESS",
+                "Kepler",
+                "GALEX",
+                "Pan-STARRS"
+            ],
+            "mandatory": false
+        },
+        "HISTORY": {
+            "description": "Processing history entry. Multiple HISTORY keywords can appear.",
+            "category": "Comments",
+            "datatype": "string",
+            "comment": "Processing history entry",
+            "hdu": [
+                "PRIMARY",
+                "SCI"
+            ],
+            "missions": [
+                "FITS Standard",
+                "JWST",
+                "HST",
+                "TESS",
+                "Kepler",
+                "GALEX",
+                "Pan-STARRS"
+            ],
+            "mandatory": false
+        },
+        "PHOTFLAM": {
+            "description": "Inverse sensitivity: flux density of a source with constant F_lambda that produces 1 count/s (erg/s/cm2/Angstrom). HST-specific.",
+            "category": "Photometry",
+            "datatype": "float",
+            "comment": "Inverse sensitivity (erg/s/cm2/A)",
+            "hdu": [
+                "SCI"
+            ],
+            "missions": [
+                "HST"
+            ],
+            "mandatory": false
+        },
+        "PHOTZPT": {
+            "description": "ST magnitude zero point",
+            "category": "Photometry",
+            "datatype": "float",
+            "comment": "ST magnitude zero point",
+            "hdu": [
+                "SCI"
+            ],
+            "missions": [
+                "HST"
+            ],
+            "mandatory": false
+        },
+        "PHOTPLAM": {
+            "description": "Pivot wavelength of the filter (Angstroms)",
+            "category": "Photometry",
+            "datatype": "float",
+            "comment": "Pivot wavelength (Angstroms)",
+            "hdu": [
+                "SCI"
+            ],
+            "missions": [
+                "HST"
+            ],
+            "mandatory": false
+        },
+        "PHOTBW": {
+            "description": "RMS bandwidth of the filter (Angstroms)",
+            "category": "Photometry",
+            "datatype": "float",
+            "comment": "RMS bandwidth of filter (Angstroms)",
+            "hdu": [
+                "SCI"
+            ],
+            "missions": [
+                "HST"
+            ],
+            "mandatory": false
+        },
+        "PHOTFNU": {
+            "description": "Inverse sensitivity: flux density per count rate (Jy*sec)",
+            "category": "Photometry",
+            "datatype": "float",
+            "comment": "Inverse sensitivity (Jy*sec)",
+            "hdu": [
+                "SCI"
+            ],
+            "missions": [
+                "HST"
+            ],
+            "mandatory": false
+        },
+        "ORIENTAT": {
+            "description": "Image orientation: position angle of Y axis (degrees, east of north). HST legacy.",
+            "category": "WCS",
+            "datatype": "float",
+            "comment": "Position angle of image Y axis (deg E of N)",
+            "hdu": [
+                "SCI"
+            ],
+            "missions": [
+                "HST"
+            ],
+            "mandatory": false
+        },
+        "PROPOSID": {
+            "description": "HST proposal ID number",
+            "category": "Program",
+            "datatype": "integer",
+            "comment": "Proposal ID",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "HST"
+            ],
+            "mandatory": false
+        },
+        "LINENUM_HST": {
+            "description": "HST proposal line number",
+            "category": "Program",
+            "datatype": "string",
+            "comment": "proposal line number",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "HST"
+            ],
+            "mandatory": false
+        },
+        "TSTART": {
+            "description": "Observation start time (BJD - 2457000 for TESS, BJD for Kepler)",
+            "category": "Time",
+            "datatype": "float",
+            "comment": "Observation start time",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "TESS",
+                "Kepler",
+                "K2"
+            ],
+            "mandatory": false
+        },
+        "TSTOP": {
+            "description": "Observation stop time",
+            "category": "Time",
+            "datatype": "float",
+            "comment": "Observation stop time",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "TESS",
+                "Kepler",
+                "K2"
+            ],
+            "mandatory": false
+        },
+        "BJDREFI": {
+            "description": "Integer part of Barycentric Julian Date reference",
+            "category": "Time",
+            "datatype": "integer",
+            "comment": "BJD reference integer part",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "TESS",
+                "Kepler",
+                "K2"
+            ],
+            "mandatory": false
+        },
+        "BJDREFF": {
+            "description": "Fractional part of Barycentric Julian Date reference",
+            "category": "Time",
+            "datatype": "float",
+            "comment": "BJD reference fractional part",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "TESS",
+                "Kepler",
+                "K2"
+            ],
+            "mandatory": false
+        },
+        "TIMEDEL": {
+            "description": "Time resolution / cadence of data (days)",
+            "category": "Time",
+            "datatype": "float",
+            "comment": "Time resolution of data",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "TESS",
+                "Kepler",
+                "K2"
+            ],
+            "mandatory": false
+        },
+        "LIVETIME": {
+            "description": "Accumulated on-source live time (seconds). Used in X-ray missions.",
+            "category": "Exposure",
+            "datatype": "float",
+            "comment": "Accumulated on-source live time",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "Chandra",
+                "XMM-OM",
+                "SwiftUVOT"
+            ],
+            "mandatory": false
+        },
+        "ONTIME": {
+            "description": "Sum of good time intervals (seconds)",
+            "category": "Exposure",
+            "datatype": "float",
+            "comment": "Sum of good time intervals",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "Chandra",
+                "SwiftUVOT"
+            ],
+            "mandatory": false
+        },
+        "SECTOR": {
+            "description": "TESS observing sector number",
+            "category": "Observation",
+            "datatype": "integer",
+            "comment": "TESS observing sector",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "TESS"
+            ],
+            "mandatory": false
+        },
+        "CAMERA": {
+            "description": "Camera number (1–4 for TESS)",
+            "category": "Instrument",
+            "datatype": "integer",
+            "comment": "Camera number",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "TESS"
+            ],
+            "mandatory": false
+        },
+        "CCD": {
+            "description": "CCD number",
+            "category": "Instrument",
+            "datatype": "integer",
+            "comment": "CCD number",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "TESS"
+            ],
+            "mandatory": false
+        },
+        "TICID": {
+            "description": "TESS Input Catalog identifier",
+            "category": "Target",
+            "datatype": "integer",
+            "comment": "TESS Input Catalog ID",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "TESS"
+            ],
+            "mandatory": false
+        },
+        "KEPLERID": {
+            "description": "Kepler Input Catalog identifier",
+            "category": "Target",
+            "datatype": "integer",
+            "comment": "Kepler Input Catalog ID",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "Kepler",
+                "K2"
+            ],
+            "mandatory": false
+        },
+        "QUARTER": {
+            "description": "Kepler observing quarter",
+            "category": "Observation",
+            "datatype": "integer",
+            "comment": "Kepler observing quarter",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "Kepler"
+            ],
+            "mandatory": false
+        },
+        "CAMPAIGN": {
+            "description": "K2 campaign number",
+            "category": "Observation",
+            "datatype": "integer",
+            "comment": "K2 campaign number",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "K2"
+            ],
+            "mandatory": false
+        },
+        "CROWDSAP": {
+            "description": "Crowding metric — ratio of target flux to total flux in aperture",
+            "category": "Photometry",
+            "datatype": "float",
+            "comment": "Crowding metric",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "TESS",
+                "Kepler",
+                "K2"
+            ],
+            "mandatory": false
+        },
+        "FLFRCSAP": {
+            "description": "Flux fraction in optimal aperture",
+            "category": "Photometry",
+            "datatype": "float",
+            "comment": "Flux fraction in optimal aperture",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "TESS",
+                "Kepler",
+                "K2"
+            ],
+            "mandatory": false
+        },
+        "TMAG": {
+            "description": "TESS magnitude of the target",
+            "category": "Photometry",
+            "datatype": "float",
+            "comment": "TESS magnitude",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "TESS"
+            ],
+            "mandatory": false
+        },
+        "KEPMAG": {
+            "description": "Kepler magnitude of the target",
+            "category": "Photometry",
+            "datatype": "float",
+            "comment": "Kepler magnitude",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "Kepler",
+                "K2"
+            ],
+            "mandatory": false
+        },
+        "NUVEXPTI": {
+            "description": "GALEX NUV exposure time (seconds)",
+            "category": "Exposure",
+            "datatype": "float",
+            "comment": "NUV exposure time",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "GALEX"
+            ],
+            "mandatory": false
+        },
+        "FUVEXPTI": {
+            "description": "GALEX FUV exposure time (seconds)",
+            "category": "Exposure",
+            "datatype": "float",
+            "comment": "FUV exposure time",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "GALEX"
+            ],
+            "mandatory": false
+        },
+        "MESSION": {
+            "description": "GALEX mission phase identifier",
+            "category": "Observation",
+            "datatype": "string",
+            "comment": "GALEX mission phase",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "GALEX"
+            ],
+            "mandatory": false
+        },
+        "ECLESSION": {
+            "description": "GALEX eclipse number (orbit)",
+            "category": "Observation",
+            "datatype": "integer",
+            "comment": "Eclipse (orbit) number",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "GALEX"
+            ],
+            "mandatory": false
+        },
+        "AODO_COR": {
+            "description": "GALEX aspect-corrected optical distortion",
+            "category": "Calibration",
+            "datatype": "boolean",
+            "comment": "Aspect-corrected optical distortion",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "GALEX"
+            ],
+            "mandatory": false
+        },
+        "CHNLNUM": {
+            "description": "Spitzer IRAC channel number (1–4)",
+            "category": "Instrument",
+            "datatype": "integer",
+            "comment": "IRAC channel number",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "Spitzer"
+            ],
+            "mandatory": false
+        },
+        "AESSION_ID": {
+            "description": "Spitzer Astronomical Observation Request ID",
+            "category": "Observation",
+            "datatype": "integer",
+            "comment": "AOR ID",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "Spitzer"
+            ],
+            "mandatory": false
+        },
+        "FOVID": {
+            "description": "Field of view identifier",
+            "category": "Observation",
+            "datatype": "integer",
+            "comment": "Field of view ID",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "Spitzer"
+            ],
+            "mandatory": false
+        },
+        "PROJID": {
+            "description": "Pan-STARRS project identifier",
+            "category": "Observation",
+            "datatype": "integer",
+            "comment": "Project ID",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "Pan-STARRS"
+            ],
+            "mandatory": false
+        },
+        "SKYCELL": {
+            "description": "Pan-STARRS sky cell identifier",
+            "category": "Observation",
+            "datatype": "string",
+            "comment": "Sky cell ID",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "Pan-STARRS"
+            ],
+            "mandatory": false
+        },
+        "HIERARCH": {
+            "description": "ESO HIERARCH convention — allows keywords longer than 8 characters",
+            "category": "Structural",
+            "datatype": "string",
+            "comment": "Extended keyword mechanism",
+            "hdu": [
+                "PRIMARY",
+                "SCI"
+            ],
+            "missions": [
+                "FITS Standard"
+            ],
+            "mandatory": false
+        },
+        "CHECKSUM": {
+            "description": "HDU checksum (ASCII encoded complement for verification)",
+            "category": "Structural",
+            "datatype": "string",
+            "comment": "HDU checksum",
+            "hdu": [
+                "PRIMARY",
+                "SCI",
+                "ERR",
+                "DQ"
+            ],
+            "missions": [
+                "FITS Standard",
+                "JWST",
+                "HST",
+                "TESS"
+            ],
+            "mandatory": false
+        },
+        "DATASUM": {
+            "description": "Data unit checksum (32-bit ones-complement sum)",
+            "category": "Structural",
+            "datatype": "string",
+            "comment": "Data unit checksum",
+            "hdu": [
+                "PRIMARY",
+                "SCI",
+                "ERR",
+                "DQ"
+            ],
+            "missions": [
+                "FITS Standard",
+                "JWST",
+                "HST",
+                "TESS"
+            ],
+            "mandatory": false
+        },
+        "COMPRESS": {
+            "description": "On-board data compression was used (T/F)",
+            "category": "Instrument",
+            "datatype": "boolean",
+            "comment": "On-board data compression was used (T/F)",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "FPE_SIDE": {
+            "description": "Active side for MIRI Focal Plane Electronics (A or B)",
+            "category": "Instrument",
+            "datatype": "string",
+            "comment": "Active side for FPE (A or B)",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "ICE_SIDE": {
+            "description": "Active side for MIRI Instrument Control Electronics (A or B)",
+            "category": "Instrument",
+            "datatype": "string",
+            "comment": "Active side for ICE (A or B)",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "TARGCAT": {
+            "description": "Target category from APT",
+            "category": "Target",
+            "datatype": "string",
+            "comment": "Target category from APT",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "TARGDESC": {
+            "description": "Target description from APT",
+            "category": "Target",
+            "datatype": "string",
+            "comment": "Target description from APT",
+            "hdu": [
+                "PRIMARY"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "V2_REF": {
+            "description": "Telescope V2 coordinate of the reference point (arcsec)",
+            "category": "WCS",
+            "datatype": "float",
+            "comment": "[arcsec] Telescope V2 coord of reference point",
+            "hdu": [
+                "SCI"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "V3_REF": {
+            "description": "Telescope V3 coordinate of the reference point (arcsec)",
+            "category": "WCS",
+            "datatype": "float",
+            "comment": "[arcsec] Telescope V3 coord of reference point",
+            "hdu": [
+                "SCI"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "VPARITY": {
+            "description": "Parity (sense) of aperture settings (1 or −1)",
+            "category": "WCS",
+            "datatype": "integer",
+            "comment": "Parity (sense) of aperture settings (1, -1)",
+            "hdu": [
+                "SCI"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "V3I_YANG": {
+            "description": "Direction angle of V3 axis in Y (degrees)",
+            "category": "WCS",
+            "datatype": "float",
+            "comment": "[deg] Direction angle in V3 (Y)",
+            "hdu": [
+                "SCI"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "RA_REF": {
+            "description": "Right Ascension of the WCS reference point (degrees)",
+            "category": "WCS",
+            "datatype": "float",
+            "comment": "[deg] Right Ascension of the reference point",
+            "hdu": [
+                "SCI"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "DEC_REF": {
+            "description": "Declination of the WCS reference point (degrees)",
+            "category": "WCS",
+            "datatype": "float",
+            "comment": "[deg] Declination of the reference point",
+            "hdu": [
+                "SCI"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "ROLL_REF": {
+            "description": "V3 roll angle at the reference point (degrees, N over E)",
+            "category": "WCS",
+            "datatype": "float",
+            "comment": "[deg] V3 roll angle at ref point, N over E",
+            "hdu": [
+                "SCI"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "DISPAXIS": {
+            "description": "Dispersion axis direction (1 = along rows, 2 = along columns)",
+            "category": "WCS",
+            "datatype": "integer",
+            "comment": "Dispersion direction",
+            "hdu": [
+                "SCI"
+            ],
+            "missions": [
+                "JWST",
+                "HST"
+            ],
+            "mandatory": false
+        },
+        "SPECSYS": {
+            "description": "Spectral reference frame (e.g., BARYCENT, HELIOCEN, TOPOCENT)",
+            "category": "WCS",
+            "datatype": "string",
+            "comment": "Spectral reference frame",
+            "hdu": [
+                "SCI"
+            ],
+            "missions": [
+                "FITS Standard",
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "VELOSYS": {
+            "description": "Barycentric correction to radial velocity (m/s)",
+            "category": "WCS",
+            "datatype": "float",
+            "comment": "[m/s] Barycentric correction to radial velocity",
+            "hdu": [
+                "SCI"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "REFFRAME": {
+            "description": "Ephemeris reference frame (EME2000)",
+            "category": "Ephemeris",
+            "datatype": "string",
+            "comment": "Ephemeris reference frame (EME2000)",
+            "hdu": [
+                "SCI"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "EPH_TYPE": {
+            "description": "Ephemeris type: Definitive or Predicted",
+            "category": "Ephemeris",
+            "datatype": "string",
+            "comment": "Definitive or Predicted",
+            "hdu": [
+                "SCI"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "EPH_TIME": {
+            "description": "MJD time of position and velocity vectors",
+            "category": "Ephemeris",
+            "datatype": "float",
+            "comment": "[d] MJD time of position and velocity vectors",
+            "hdu": [
+                "SCI"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "JWST_X": {
+            "description": "Barycentric JWST X coordinate at MJD-AVG (km)",
+            "category": "Ephemeris",
+            "datatype": "float",
+            "comment": "[km] barycentric JWST X coordinate at MJD-AVG",
+            "hdu": [
+                "SCI"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "JWST_Y": {
+            "description": "Barycentric JWST Y coordinate at MJD-AVG (km)",
+            "category": "Ephemeris",
+            "datatype": "float",
+            "comment": "[km] barycentric JWST Y coordinate at MJD-AVG",
+            "hdu": [
+                "SCI"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "JWST_Z": {
+            "description": "Barycentric JWST Z coordinate at MJD-AVG (km)",
+            "category": "Ephemeris",
+            "datatype": "float",
+            "comment": "[km] barycentric JWST Z coordinate at MJD-AVG",
+            "hdu": [
+                "SCI"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "JWST_DX": {
+            "description": "Barycentric JWST X velocity at MJD-AVG (km/s)",
+            "category": "Ephemeris",
+            "datatype": "float",
+            "comment": "[km/s] barycentric JWST X velocity at MJD-AVG",
+            "hdu": [
+                "SCI"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "JWST_DY": {
+            "description": "Barycentric JWST Y velocity at MJD-AVG (km/s)",
+            "category": "Ephemeris",
+            "datatype": "float",
+            "comment": "[km/s] barycentric JWST Y velocity at MJD-AVG",
+            "hdu": [
+                "SCI"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "JWST_DZ": {
+            "description": "Barycentric JWST Z velocity at MJD-AVG (km/s)",
+            "category": "Ephemeris",
+            "datatype": "float",
+            "comment": "[km/s] barycentric JWST Z velocity at MJD-AVG",
+            "hdu": [
+                "SCI"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "OBSGEO-X": {
+            "description": "Geocentric JWST X coordinate at MJD-AVG (m)",
+            "category": "Ephemeris",
+            "datatype": "float",
+            "comment": "[m] geocentric JWST X coordinate at MJD-AVG",
+            "hdu": [
+                "SCI"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "OBSGEO-Y": {
+            "description": "Geocentric JWST Y coordinate at MJD-AVG (m)",
+            "category": "Ephemeris",
+            "datatype": "float",
+            "comment": "[m] geocentric JWST Y coordinate at MJD-AVG",
+            "hdu": [
+                "SCI"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "OBSGEO-Z": {
+            "description": "Geocentric JWST Z coordinate at MJD-AVG (m)",
+            "category": "Ephemeris",
+            "datatype": "float",
+            "comment": "[m] geocentric JWST Z coordinate at MJD-AVG",
+            "hdu": [
+                "SCI"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "TDB-BEG": {
+            "description": "TDB time of exposure start in MJD",
+            "category": "Time",
+            "datatype": "float",
+            "comment": "[d] TDB time of exposure start in MJD",
+            "hdu": [
+                "SCI"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "TDB-MID": {
+            "description": "TDB time of exposure mid-point in MJD",
+            "category": "Time",
+            "datatype": "float",
+            "comment": "[d] TDB time of exposure mid-point in MJD",
+            "hdu": [
+                "SCI"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "TDB-END": {
+            "description": "TDB time of exposure end in MJD",
+            "category": "Time",
+            "datatype": "float",
+            "comment": "[d] TDB time of exposure end in MJD",
+            "hdu": [
+                "SCI"
+            ],
+            "missions": [
+                "JWST"
+            ],
+            "mandatory": false
+        },
+        "END": {
+            "description": "Marks the end of the header block (no value)",
+            "category": "Structural",
+            "datatype": "none",
+            "comment": "End of FITS header",
+            "hdu": [
+                "PRIMARY",
+                "SCI",
+                "ERR",
+                "DQ",
+                "GROUPDQ",
+                "REFOUT"
+            ],
+            "missions": [
+                "FITS Standard"
+            ],
+            "mandatory": true
+        }
+    }
+}
