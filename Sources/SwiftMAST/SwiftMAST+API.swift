@@ -135,14 +135,14 @@ extension SwiftMAST {
                     dataURLs = dataURLs.filter { $0.obs_collection != "TESS" }
                     print("getConeSearch: preview found \(dataURLs.count) dataURLs")
 
-                    result(dataURLs)
+                    self.enrichCoamResultsWithFileSizes(dataURLs, completion: result)
                     return
                 }
                 // Normal collection of images
                 let jpgUrls = results.filter { !$0.jpegURL.isEmpty }
                 print(
                     "getConeSearch: found \(jpgUrls.count) jpegURLs and \(dataURLs.count) dataURLs")
-                result(jpgUrls + dataURLs)
+                self.enrichCoamResultsWithFileSizes(jpgUrls + dataURLs, completion: result)
             })
     }
 
@@ -433,7 +433,7 @@ extension SwiftMAST {
                     message:
                         "getScienceImageQueryResults: \(allFilterProducts.count) unique filter products returned"
                 )
-                result(allFilterProducts)
+                self.enrichCoamResultsWithFileSizes(allFilterProducts, completion: result)
             })
     }
 
@@ -939,7 +939,7 @@ extension SwiftMAST {
                 print("getDiscDetection: search completed in \(end - start)")
                 let table = self.targets[target]!
                 let results = table.getCoamResults()
-                completion(results)
+                self.enrichCoamResultsWithFileSizes(results, completion: completion)
             })
     }
 
@@ -1135,13 +1135,18 @@ extension SwiftMAST {
                         "getJWSTFilteredProducts: Selected \(selected.count) products across filters"
                 )
 
-                // Store as target assets
-                let assets = Array(selected.values)
-                if self.targetAssets[targetName] != nil {
-                    self.targetAssets[targetName]!.setAssets(assets: assets)
-                }
+                self.enrichCoamResultsWithFileSizes(Array(selected.values)) { enrichedAssets in
+                    var enrichedSelected = [String: CoamResult]()
+                    for coam in enrichedAssets {
+                        enrichedSelected[coam.filters] = coam
+                    }
 
-                result(selected)
+                    if self.targetAssets[targetName] != nil {
+                        self.targetAssets[targetName]!.setAssets(assets: enrichedAssets)
+                    }
+
+                    result(enrichedSelected)
+                }
             })
     }
 
@@ -1486,15 +1491,17 @@ extension SwiftMAST {
                     return
                 }
 
-                let groups = self.buildObservationGroups(
-                    from: filteredResults, sortOrder: sortOrder)
+                self.enrichCoamResultsWithFileSizes(filteredResults) { enrichedResults in
+                    let groups = self.buildObservationGroups(
+                        from: enrichedResults, sortOrder: sortOrder)
 
-                self.log(
-                    .OK,
-                    message: "getObservationGroups: Built \(groups.count) observation groups"
-                )
+                    self.log(
+                        .OK,
+                        message: "getObservationGroups: Built \(groups.count) observation groups"
+                    )
 
-                result(groups)
+                    result(groups)
+                }
             })
     }
 

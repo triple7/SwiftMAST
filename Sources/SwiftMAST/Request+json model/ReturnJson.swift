@@ -5,6 +5,7 @@
 //  Created by Yuma decaux on 30/12/2022.
 //
 
+import Foundation
 import SwiftQValue
 
 // Mark: JsonPayload structure hierarchy for the MAST json returns
@@ -200,6 +201,24 @@ public struct CoamResult: Codable, Comparable, Hashable, CustomStringConvertible
     public let target_classification: String
     public let target_name: String
     public let wavelength_region: String
+    public var dataURLSizeBytes: Int64? = nil
+    public var jpegURLSizeBytes: Int64? = nil
+
+    public var preferredDownloadSizeBytes: Int64? {
+        dataURLSizeBytes ?? jpegURLSizeBytes
+    }
+
+    public var dataURLSizeDescription: String? {
+        Self.byteCountDescription(dataURLSizeBytes)
+    }
+
+    public var jpegURLSizeDescription: String? {
+        Self.byteCountDescription(jpegURLSizeBytes)
+    }
+
+    public var preferredDownloadSizeDescription: String? {
+        Self.byteCountDescription(preferredDownloadSizeBytes)
+    }
 
     public var description: String {
         return """
@@ -222,6 +241,14 @@ public struct CoamResult: Codable, Comparable, Hashable, CustomStringConvertible
 
     public static func < (lhs: CoamResult, rhs: CoamResult) -> Bool {
         return lhs.t_min < rhs.t_min
+    }
+
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(obs_id)
+        hasher.combine(filters)
+        hasher.combine(instrument_name)
+        hasher.combine(t_min)
+        hasher.combine(t_max)
     }
 
 }
@@ -324,6 +351,18 @@ extension CoamResult {
         self.target_classification = data[31].value as! String
         self.target_name = data[32].value as! String
         self.wavelength_region = data[33].value as! String
+    }
+
+    public func withFileSizes(dataURLSizeBytes: Int64?, jpegURLSizeBytes: Int64?) -> CoamResult {
+        var copy = self
+        copy.dataURLSizeBytes = dataURLSizeBytes
+        copy.jpegURLSizeBytes = jpegURLSizeBytes
+        return copy
+    }
+
+    private static func byteCountDescription(_ byteCount: Int64?) -> String? {
+        guard let byteCount else { return nil }
+        return ByteCountFormatter.string(fromByteCount: byteCount, countStyle: .file)
     }
 
 }
