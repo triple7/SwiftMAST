@@ -6,6 +6,8 @@
 import Foundation
 
 extension SwiftMAST {
+    private static let maxConcurrentHeaderSizeRequests = 20
+
     internal func enrichCoamResultsWithFileSizes(
         _ results: [CoamResult],
         completion: @escaping ([CoamResult]) -> Void
@@ -168,20 +170,58 @@ extension SwiftMAST {
             return
         }
 
+        fetchHeaderSizes(for: Array(missingURLs), completion: completion)
+    }
+
+    internal func fetchHeaderSizes(
+        for productURLs: [String],
+        maxConcurrentRequests: Int = SwiftMAST.maxConcurrentHeaderSizeRequests,
+        completion: @escaping ([String: Int64]) -> Void
+    ) {
+        let urls = Array(Set(productURLs.filter { !$0.isEmpty }))
+        guard !urls.isEmpty else {
+            completion([:])
+            return
+        }
+
+        let workerCount = min(max(maxConcurrentRequests, 1), urls.count)
         let group = DispatchGroup()
         let lock = NSLock()
         var sizes = [String: Int64]()
+        var nextIndex = 0
 
-        for productURL in missingURLs {
+        func nextURL() -> String? {
+            lock.lock()
+            defer { lock.unlock() }
+
+            guard nextIndex < urls.count else { return nil }
+            let url = urls[nextIndex]
+            nextIndex += 1
+            return url
+        }
+
+        func startWorker() {
             group.enter()
-            fetchContentLength(for: productURL) { size in
-                if let size {
-                    lock.lock()
-                    sizes[productURL] = size
-                    lock.unlock()
+            func fetchNext() {
+                guard let productURL = nextURL() else {
+                    group.leave()
+                    return
                 }
-                group.leave()
+
+                self.fetchContentLength(for: productURL) { size in
+                    if let size {
+                        lock.lock()
+                        sizes[productURL] = size
+                        lock.unlock()
+                    }
+                    fetchNext()
+                }
             }
+            fetchNext()
+        }
+
+        for _ in 0..<workerCount {
+            startWorker()
         }
 
         group.notify(queue: .main) {
