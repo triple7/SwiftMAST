@@ -347,7 +347,9 @@ extension SwiftMAST {
 
     private func convertFitsToJpeg(url: URL, writeToUrl: URL) -> FitsData {
 
-        let fits = FitsFile.read(try! Data(contentsOf: url))!
+        guard let fits = readFITSFileSafely(at: url, context: "convertFitsToJpeg") else {
+            return FitsData(metadata: [:], url: nil)
+        }
         let metadata = getFitsMetaData(fits: fits)
         let structuredMetadata = FITSMetadata(
             fileIdentifier: url.lastPathComponent, metadata: metadata)
@@ -610,6 +612,179 @@ extension SwiftMAST {
         return naxis >= 2 && naxis1 > 0 && naxis2 > 0 && dataSize > 0
     }
 
+    private func readFITSFileSafely(at url: URL, context: String) -> FitsFile? {
+        guard let data = try? Data(contentsOf: url) else {
+            log(.RequestError, message: "\(context): Unable to read \(url.lastPathComponent)")
+            return nil
+        }
+
+        guard validateFITSBuffer(data) else {
+            log(
+                .RequestError,
+                message: "\(context): \(url.lastPathComponent) is not a complete uncompressed FITS file"
+            )
+            return nil
+        }
+
+        guard let fits = FitsFile.read(data) else {
+            log(.RequestError, message: "\(context): FITSCore could not parse \(url.lastPathComponent)")
+            return nil
+        }
+
+        return fits
+    }
+
+    private func validateFITSBuffer(_ data: Data) -> Bool {
+        let cardLength = 80
+        let blockLength = 2880
+        guard data.count >= blockLength else { return false }
+
+        return data.withUnsafeBytes { rawBuffer in
+            guard rawBuffer.count >= cardLength else { return false }
+
+            var offset = 0
+            var hduIndex = 0
+            while offset < rawBuffer.count {
+                var headers: [String: String] = [:]
+                var cardIndex = 0
+                var foundEnd = false
+
+                while offset < rawBuffer.count {
+                    guard offset + cardLength <= rawBuffer.count else { return false }
+                    guard
+                        let card = String(
+                            bytes: rawBuffer[offset..<offset + cardLength],
+                            encoding: .ascii
+                        )
+                    else {
+                        return false
+                    }
+
+                    let keyword = card.prefix(8).trimmingCharacters(in: .whitespaces)
+                    if cardIndex == 0 {
+                        if hduIndex == 0 {
+                            guard keyword == "SIMPLE" else { return false }
+                        } else {
+                            guard keyword == "XTENSION" else { return false }
+                        }
+                    }
+
+                    if keyword == "END" {
+                        offset += cardLength
+                        foundEnd = true
+                        break
+                    }
+
+                    if let equals = card.firstIndex(of: "=") {
+                        let rawValue = card[card.index(after: equals)...]
+                            .split(separator: "/", maxSplits: 1, omittingEmptySubsequences: false)
+                            .first
+                            .map(String.init)?
+                            .trimmingCharacters(in: .whitespacesAndNewlines)
+                        headers[keyword] = rawValue
+                    }
+
+                    offset += cardLength
+                    cardIndex += 1
+                }
+
+                guard foundEnd else { return false }
+                offset = paddedOffset(offset, blockLength: blockLength)
+                guard offset <= rawBuffer.count else { return false }
+
+                let dataSize = fitsDataSize(from: headers)
+                guard dataSize >= 0 else { return false }
+                guard offset + dataSize <= rawBuffer.count else { return false }
+
+                let nextOffset = paddedOffset(offset + dataSize, blockLength: blockLength)
+                if nextOffset >= rawBuffer.count { return true }
+                offset = nextOffset
+                hduIndex += 1
+            }
+
+            return true
+        }
+    }
+
+    private func fitsDataSize(from headers: [String: String]) -> Int {
+        let axis = fitsHeaderInt("NAXIS", in: headers) ?? 0
+        let bitpix = fitsHeaderInt("BITPIX", in: headers) ?? 0
+        let bytesPerPixel: Int
+        switch bitpix {
+        case 8: bytesPerPixel = 1
+        case 16: bytesPerPixel = 2
+        case 32, -32: bytesPerPixel = 4
+        case 64, -64: bytesPerPixel = 8
+        default: return -1
+        }
+        let pcount = fitsHeaderInt("PCOUNT", in: headers) ?? 0
+        let gcount = fitsHeaderInt("GCOUNT", in: headers) ?? 1
+        let groups = fitsHeaderBool("GROUPS", in: headers) ?? false
+
+        guard axis >= 0, pcount >= 0, gcount >= 0 else {
+            return -1
+        }
+
+        var elementCount = 0
+        if axis > 0 {
+            elementCount = 1
+            let startAxis = groups ? 2 : 1
+            if startAxis <= axis {
+                for index in startAxis...axis {
+                    guard let dimension = fitsHeaderInt("NAXIS\(index)", in: headers),
+                          dimension >= 0
+                    else {
+                        return -1
+                    }
+                    guard let nextElementCount = safeMultiply(elementCount, dimension) else {
+                        return -1
+                    }
+                    elementCount = nextElementCount
+                }
+            }
+        }
+
+        guard
+            let payloadElements = safeAdd(elementCount, pcount),
+            let groupedElements = safeMultiply(payloadElements, gcount),
+            let byteCount = safeMultiply(groupedElements, bytesPerPixel)
+        else {
+            return -1
+        }
+
+        return byteCount
+    }
+
+    private func fitsHeaderInt(_ keyword: String, in headers: [String: String]) -> Int? {
+        guard let raw = headers[keyword] else { return nil }
+        return Int(raw.trimmingCharacters(in: CharacterSet(charactersIn: "' ")))
+    }
+
+    private func fitsHeaderBool(_ keyword: String, in headers: [String: String]) -> Bool? {
+        guard let raw = headers[keyword]?.trimmingCharacters(in: .whitespacesAndNewlines) else {
+            return nil
+        }
+        if raw == "T" { return true }
+        if raw == "F" { return false }
+        return nil
+    }
+
+    private func paddedOffset(_ offset: Int, blockLength: Int) -> Int {
+        guard offset > 0 else { return 0 }
+        let remainder = offset % blockLength
+        return remainder == 0 ? offset : offset + (blockLength - remainder)
+    }
+
+    private func safeAdd(_ lhs: Int, _ rhs: Int) -> Int? {
+        let result = lhs.addingReportingOverflow(rhs)
+        return result.overflow ? nil : result.partialValue
+    }
+
+    private func safeMultiply(_ lhs: Int, _ rhs: Int) -> Int? {
+        let result = lhs.multipliedReportingOverflow(by: rhs)
+        return result.overflow ? nil : result.partialValue
+    }
+
     /// Extract raw image HDU planes from a local FITS file without rendering them to JPEG.
     ///
     /// This is the FITS-aware entry point used by astronomy image pipelines. It preserves
@@ -618,13 +793,11 @@ extension SwiftMAST {
     public func extractFITSObservationProduct(
         fitsUrl: URL, coamResult: CoamResult
     ) -> FITSObservationProduct? {
-        guard let data = try? Data(contentsOf: fitsUrl),
-            let fits = FitsFile.read(data)
+        guard let fits = readFITSFileSafely(
+            at: fitsUrl,
+            context: "extractFITSObservationProduct"
+        )
         else {
-            log(
-                .RequestError,
-                message: "extractFITSObservationProduct: Unable to read \(fitsUrl.lastPathComponent)"
-            )
             return nil
         }
 
@@ -865,13 +1038,11 @@ extension SwiftMAST {
     internal func extractScienceProductsFromFits(
         fitsUrl: URL, outputDirectory: URL, coamResult: CoamResult
     ) -> [ScienceProduct] {
-        guard let data = try? Data(contentsOf: fitsUrl),
-            let fits = FitsFile.read(data)
+        guard let fits = readFITSFileSafely(
+            at: fitsUrl,
+            context: "extractScienceProductsFromFits"
+        )
         else {
-            log(
-                .RequestError,
-                message:
-                    "extractScienceProductsFromFits: Unable to read \(fitsUrl.lastPathComponent)")
             return []
         }
 

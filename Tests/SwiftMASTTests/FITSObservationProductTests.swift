@@ -120,6 +120,38 @@ final class FITSObservationProductTests: XCTestCase {
         XCTAssertEqual(product.weightPlane(matching: science)?.extIndex, 2)
     }
 
+    func testExtractFITSObservationProductRejectsTruncatedInput() throws {
+        let fitsURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString)
+            .appendingPathExtension("fits")
+        defer { try? FileManager.default.removeItem(at: fitsURL) }
+
+        try Data("SIMPLE  =                    T".utf8).write(to: fitsURL)
+
+        let product = SwiftMAST().extractFITSObservationProduct(
+            fitsUrl: fitsURL,
+            coamResult: makeCoamResult()
+        )
+
+        XCTAssertNil(product)
+    }
+
+    func testExtractFITSObservationProductRejectsNonFITSInput() throws {
+        let fitsURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString)
+            .appendingPathExtension("fits")
+        defer { try? FileManager.default.removeItem(at: fitsURL) }
+
+        try Data("<html>not a fits file</html>".utf8).write(to: fitsURL)
+
+        let product = SwiftMAST().extractFITSObservationProduct(
+            fitsUrl: fitsURL,
+            coamResult: makeCoamResult()
+        )
+
+        XCTAssertNil(product)
+    }
+
     private func makeSyntheticFitsFile() -> FitsFile {
         let primary = PrimaryHDU(width: 1, height: 1, vectors: [FITSByte_16](arrayLiteral: 0))
         primary.hasExtensions = true
