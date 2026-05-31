@@ -749,13 +749,17 @@ extension SwiftMAST {
         bzero: Float
     ) -> ([Float], Int) {
         dataUnit.withUnsafeBytes { rawBuffer in
-            let typedBuffer = rawBuffer.bindMemory(to: Integer.self)
-            let count = min(expectedCount, typedBuffer.count)
+            let byteCount = MemoryLayout<Integer>.size
+            let count = min(expectedCount, rawBuffer.count / byteCount)
             var values = [Float]()
             values.reserveCapacity(count)
 
             for index in 0..<count {
-                let rawValue = Integer(bigEndian: typedBuffer[index])
+                let rawValue = readBigEndianInteger(
+                    Integer.self,
+                    from: rawBuffer,
+                    byteOffset: index * byteCount
+                )
                 values.append(Float(rawValue) * bscale + bzero)
             }
 
@@ -770,14 +774,19 @@ extension SwiftMAST {
         bzero: Float
     ) -> ([Float], Int) {
         dataUnit.withUnsafeBytes { rawBuffer in
-            let typedBuffer = rawBuffer.bindMemory(to: Float.self)
-            let count = min(expectedCount, typedBuffer.count)
+            let byteCount = MemoryLayout<UInt32>.size
+            let count = min(expectedCount, rawBuffer.count / byteCount)
             var values = [Float]()
             values.reserveCapacity(count)
             var invalidCount = max(expectedCount - count, 0)
 
             for index in 0..<count {
-                let rawValue = Float(bitPattern: typedBuffer[index].bitPattern.bigEndian)
+                let bits = readBigEndianUnsignedInteger(
+                    UInt32.self,
+                    from: rawBuffer,
+                    byteOffset: index * byteCount
+                )
+                let rawValue = Float(bitPattern: bits)
                 let value = rawValue * bscale + bzero
                 if !value.isFinite { invalidCount += 1 }
                 values.append(value)
@@ -794,14 +803,19 @@ extension SwiftMAST {
         bzero: Float
     ) -> ([Float], Int) {
         dataUnit.withUnsafeBytes { rawBuffer in
-            let typedBuffer = rawBuffer.bindMemory(to: Double.self)
-            let count = min(expectedCount, typedBuffer.count)
+            let byteCount = MemoryLayout<UInt64>.size
+            let count = min(expectedCount, rawBuffer.count / byteCount)
             var values = [Float]()
             values.reserveCapacity(count)
             var invalidCount = max(expectedCount - count, 0)
 
             for index in 0..<count {
-                let rawValue = Double(bitPattern: typedBuffer[index].bitPattern.bigEndian)
+                let bits = readBigEndianUnsignedInteger(
+                    UInt64.self,
+                    from: rawBuffer,
+                    byteOffset: index * byteCount
+                )
+                let rawValue = Double(bitPattern: bits)
                 let scaledValue = rawValue * Double(bscale) + Double(bzero)
                 let value = Float(scaledValue)
                 if !scaledValue.isFinite || !value.isFinite { invalidCount += 1 }
@@ -810,6 +824,34 @@ extension SwiftMAST {
 
             return (values, invalidCount)
         }
+    }
+
+    private func readBigEndianInteger<Integer: FixedWidthInteger>(
+        _ type: Integer.Type,
+        from rawBuffer: UnsafeRawBufferPointer,
+        byteOffset: Int
+    ) -> Integer {
+        let unsigned = readBigEndianUnsignedInteger(
+            UInt64.self,
+            from: rawBuffer,
+            byteOffset: byteOffset,
+            byteCount: MemoryLayout<Integer>.size
+        )
+        return Integer(truncatingIfNeeded: unsigned)
+    }
+
+    private func readBigEndianUnsignedInteger<Integer: FixedWidthInteger & UnsignedInteger>(
+        _ type: Integer.Type,
+        from rawBuffer: UnsafeRawBufferPointer,
+        byteOffset: Int,
+        byteCount: Int = MemoryLayout<Integer>.size
+    ) -> Integer {
+        var value: Integer = 0
+        for offset in 0..<byteCount {
+            value <<= 8
+            value |= Integer(rawBuffer[byteOffset + offset])
+        }
+        return value
     }
 
     /// Extract science products from a local FITS file.
