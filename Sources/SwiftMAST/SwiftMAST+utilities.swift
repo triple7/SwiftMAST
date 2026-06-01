@@ -648,10 +648,35 @@ extension SwiftMAST {
     ) {
         let initial = max(initialByteCount, 2_880)
         let maximum = max(maxByteCount, initial)
+        let maxHeaderCount = 64
+        var bytesFetched = 0
+        var remoteFileSize: Int64?
+        var primaryHeaders = [FITSHeaderUnit]()
+        var imageHDUs = [FITSHeaderHDUSummary]()
+        var parsedHeaderCount = 0
 
-        func fetch(byteCount: Int) {
+        func finish(reachedEnd: Bool) {
+            guard !primaryHeaders.isEmpty else {
+                completion(nil)
+                return
+            }
+
+            completion(
+                FITSHeaderSummary(
+                    sourceURL: url,
+                    bytesFetched: bytesFetched,
+                    remoteFileSizeBytes: remoteFileSize,
+                    primaryHeaders: primaryHeaders,
+                    imageHDUs: imageHDUs,
+                    parsedHeaderCount: parsedHeaderCount,
+                    reachedEndOfAvailableHeaders: reachedEnd
+                ))
+        }
+
+        func fetchHeader(at headerOffset: Int, hduIndex: Int, byteCount: Int) {
             var request = URLRequest(url: url)
-            request.setValue("bytes=0-\(byteCount - 1)", forHTTPHeaderField: "Range")
+            let rangeEnd = headerOffset + byteCount - 1
+            request.setValue("bytes=\(headerOffset)-\(rangeEnd)", forHTTPHeaderField: "Range")
             request.timeoutInterval = 30
 
             session.dataTask(with: request) { data, response, error in
@@ -665,36 +690,80 @@ extension SwiftMAST {
                     return
                 }
 
-                let remoteSize = self.remoteFileSize(from: httpResponse)
-                guard
-                    let summary = self.parseFITSHeaderSummary(
-                        data: data,
-                        sourceURL: url,
-                        remoteFileSizeBytes: remoteSize
-                    )
+                bytesFetched += data.count
+                remoteFileSize = remoteFileSize ?? self.remoteFileSize(from: httpResponse)
+
+                guard let header = self.parseFITSHeaderBlock(data: data, offset: 0, hduIndex: hduIndex)
                 else {
                     let nextByteCount = min(byteCount * 2, maximum)
                     if nextByteCount > byteCount {
-                        fetch(byteCount: nextByteCount)
+                        fetchHeader(at: headerOffset, hduIndex: hduIndex, byteCount: nextByteCount)
                     } else {
-                        completion(nil)
+                        finish(reachedEnd: false)
                     }
                     return
                 }
 
-                if summary.imageHDUs.isEmpty,
-                    !summary.reachedEndOfAvailableHeaders,
-                    byteCount < maximum
-                {
-                    fetch(byteCount: min(byteCount * 2, maximum))
+                parsedHeaderCount += 1
+                if hduIndex == 0 {
+                    primaryHeaders = header.units
+                }
+
+                let dataOffset = headerOffset + self.paddedOffset(header.endOffset, blockLength: 2_880)
+                let dataSize = self.fitsDataSize(from: header.rawValues)
+                guard dataSize >= 0, let nextDataOffset = self.safeAdd(dataOffset, dataSize) else {
+                    completion(nil)
                     return
                 }
 
-                completion(summary)
+                let axisCount = self.headerUnitInt("NAXIS", in: header.units)
+                let width = self.headerUnitInt("NAXIS1", in: header.units)
+                let height = self.headerUnitInt("NAXIS2", in: header.units)
+                let bitpix = self.headerUnitInt("BITPIX", in: header.units)
+                let isImageHDU = axisCount >= 2 && width > 0 && height > 0 && dataSize > 0
+
+                if isImageHDU {
+                    let mergedHeaders =
+                        hduIndex == 0
+                        ? header.units
+                        : self.mergeHeaderUnits(primary: primaryHeaders, hdu: header.units)
+                    let extName = self.headerUnitString("EXTNAME", in: header.units)
+                    imageHDUs.append(
+                        FITSHeaderHDUSummary(
+                            extIndex: hduIndex,
+                            extName: extName,
+                            role: FITSHDURoleClassifier.classify(headers: mergedHeaders),
+                            width: width,
+                            height: height,
+                            axisCount: axisCount,
+                            bitpix: bitpix,
+                            dataSizeBytes: dataSize,
+                            headerOffset: headerOffset,
+                            dataOffset: dataOffset,
+                            headers: mergedHeaders,
+                            wcs: FITSWCS(headers: mergedHeaders)
+                        ))
+                }
+
+                let nextHeaderOffset = self.paddedOffset(nextDataOffset, blockLength: 2_880)
+                if parsedHeaderCount >= maxHeaderCount {
+                    finish(reachedEnd: false)
+                    return
+                }
+                if let remoteFileSize, Int64(nextHeaderOffset) >= remoteFileSize {
+                    finish(reachedEnd: true)
+                    return
+                }
+                guard nextHeaderOffset > headerOffset else {
+                    finish(reachedEnd: false)
+                    return
+                }
+
+                fetchHeader(at: nextHeaderOffset, hduIndex: hduIndex + 1, byteCount: initial)
             }.resume()
         }
 
-        fetch(byteCount: initial)
+        fetchHeader(at: 0, hduIndex: 0, byteCount: initial)
     }
 
     internal func parseFITSHeaderSummary(

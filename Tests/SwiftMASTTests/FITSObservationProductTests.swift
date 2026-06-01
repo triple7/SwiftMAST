@@ -187,21 +187,31 @@ final class FITSObservationProductTests: XCTestCase {
         let data = makePartialFITSHeaderData()
         let expectedURL = URL(string: "https://example.com/test.fits")!
         let expectation = expectation(description: "Fetch FITS header summary")
+        let remoteFileSize = 86_535_360
+        var requestedRanges = [String]()
 
         FITSHeaderSummaryMockURLProtocol.requestHandler = { request in
             XCTAssertEqual(request.url, expectedURL)
-            XCTAssertEqual(request.value(forHTTPHeaderField: "Range"), "bytes=0-5759")
+            let range = try XCTUnwrap(request.value(forHTTPHeaderField: "Range"))
+            requestedRanges.append(range)
+
+            let start = range
+                .replacingOccurrences(of: "bytes=", with: "")
+                .split(separator: "-")
+                .first
+                .flatMap { Int($0) } ?? 0
+            let responseData = start < data.count ? data[start..<data.count] : Data()
 
             let response = HTTPURLResponse(
                 url: expectedURL,
                 statusCode: 206,
                 httpVersion: nil,
                 headerFields: [
-                    "Content-Range": "bytes 0-5759/123456789",
-                    "Content-Length": "\(data.count)",
+                    "Content-Range": "\(range)/\(remoteFileSize)",
+                    "Content-Length": "\(responseData.count)",
                 ]
             )!
-            return (response, data)
+            return (response, responseData)
         }
 
         let configuration = URLSessionConfiguration.ephemeral
@@ -214,13 +224,67 @@ final class FITSObservationProductTests: XCTestCase {
             maxByteCount: data.count,
             session: session
         ) { summary in
-            XCTAssertEqual(summary?.remoteFileSizeBytes, 123_456_789)
+            XCTAssertEqual(summary?.remoteFileSizeBytes, Int64(remoteFileSize))
             XCTAssertEqual(summary?.preferredImageHDU?.width, 4654)
             XCTAssertEqual(summary?.preferredImageHDU?.height, 4648)
             expectation.fulfill()
         }
 
         wait(for: [expectation], timeout: 2)
+        XCTAssertEqual(requestedRanges, ["bytes=0-5759", "bytes=2880-8639"])
+        FITSHeaderSummaryMockURLProtocol.requestHandler = nil
+    }
+
+    func testFetchFITSHeaderSummaryWalksExtensionHeaderOffsets() throws {
+        let data = makeMultiExtensionHeaderData()
+        let expectedURL = URL(string: "https://example.com/multi.fits")!
+        let expectation = expectation(description: "Fetch multiple FITS header summaries")
+        let remoteFileSize = data.count
+        var requestedRanges = [String]()
+
+        FITSHeaderSummaryMockURLProtocol.requestHandler = { request in
+            let range = try XCTUnwrap(request.value(forHTTPHeaderField: "Range"))
+            requestedRanges.append(range)
+
+            let bounds = range
+                .replacingOccurrences(of: "bytes=", with: "")
+                .split(separator: "-")
+                .compactMap { Int($0) }
+            let start = bounds[0]
+            let end = min(bounds[1], data.count - 1)
+            let responseData = start <= end ? data[start...end] : Data()
+
+            let response = HTTPURLResponse(
+                url: expectedURL,
+                statusCode: 206,
+                httpVersion: nil,
+                headerFields: [
+                    "Content-Range": "bytes \(start)-\(end)/\(remoteFileSize)",
+                    "Content-Length": "\(responseData.count)",
+                ]
+            )!
+            return (response, responseData)
+        }
+
+        SwiftMAST().fetchFITSHeaderSummary(
+            from: expectedURL,
+            initialByteCount: 2_880,
+            maxByteCount: 2_880,
+            session: URLSession.mockFITSHeaderSummary
+        ) { summary in
+            XCTAssertEqual(summary?.imageHDUs.map(\.extName), ["SCI", "WHT"])
+            XCTAssertEqual(summary?.imageHDUs.map(\.role), [.science, .weight])
+            XCTAssertEqual(summary?.parsedHeaderCount, 3)
+            XCTAssertTrue(summary?.reachedEndOfAvailableHeaders == true)
+            expectation.fulfill()
+        }
+
+        wait(for: [expectation], timeout: 2)
+        XCTAssertEqual(requestedRanges, [
+            "bytes=0-2879",
+            "bytes=2880-5759",
+            "bytes=8640-11519",
+        ])
         FITSHeaderSummaryMockURLProtocol.requestHandler = nil
     }
 
@@ -268,6 +332,48 @@ final class FITSObservationProductTests: XCTestCase {
                 fitsCard("CD2_1", "0.0", nil),
                 fitsCard("CD2_2", "0.0000277777778", nil),
             ]))
+        return data
+    }
+
+    private func makeMultiExtensionHeaderData() -> Data {
+        var data = Data()
+        data.append(
+            makeFITSHeaderBlock([
+                fitsCard("SIMPLE", "T", "conforms to FITS standard"),
+                fitsCard("BITPIX", "8", nil),
+                fitsCard("NAXIS", "0", nil),
+                fitsCard("EXTEND", "T", nil),
+            ]))
+        data.append(
+            makeFITSHeaderBlock([
+                fitsCard("XTENSION", "'IMAGE'", nil),
+                fitsCard("BITPIX", "16", nil),
+                fitsCard("NAXIS", "2", nil),
+                fitsCard("NAXIS1", "2", nil),
+                fitsCard("NAXIS2", "2", nil),
+                fitsCard("EXTNAME", "'SCI'", nil),
+                fitsCard("CRPIX1", "1.0", nil),
+                fitsCard("CRPIX2", "1.0", nil),
+                fitsCard("CRVAL1", "150.0", nil),
+                fitsCard("CRVAL2", "2.0", nil),
+                fitsCard("CTYPE1", "'RA---TAN'", nil),
+                fitsCard("CTYPE2", "'DEC--TAN'", nil),
+                fitsCard("CD1_1", "-0.0001", nil),
+                fitsCard("CD1_2", "0.0", nil),
+                fitsCard("CD2_1", "0.0", nil),
+                fitsCard("CD2_2", "0.0001", nil),
+            ]))
+        data.append(Data(repeating: 0, count: 2_880))
+        data.append(
+            makeFITSHeaderBlock([
+                fitsCard("XTENSION", "'IMAGE'", nil),
+                fitsCard("BITPIX", "16", nil),
+                fitsCard("NAXIS", "2", nil),
+                fitsCard("NAXIS1", "2", nil),
+                fitsCard("NAXIS2", "2", nil),
+                fitsCard("EXTNAME", "'WHT'", nil),
+            ]))
+        data.append(Data(repeating: 0, count: 2_880))
         return data
     }
 
@@ -378,4 +484,12 @@ private final class FITSHeaderSummaryMockURLProtocol: URLProtocol {
     }
 
     override func stopLoading() {}
+}
+
+private extension URLSession {
+    static var mockFITSHeaderSummary: URLSession {
+        let configuration = URLSessionConfiguration.ephemeral
+        configuration.protocolClasses = [FITSHeaderSummaryMockURLProtocol.self]
+        return URLSession(configuration: configuration)
+    }
 }
