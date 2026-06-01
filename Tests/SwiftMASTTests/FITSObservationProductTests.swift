@@ -152,6 +152,78 @@ final class FITSObservationProductTests: XCTestCase {
         XCTAssertNil(product)
     }
 
+    func testParseFITSHeaderSummaryReadsImageExtensionWithoutImageBytes() throws {
+        let data = makePartialFITSHeaderData()
+        let summary = try XCTUnwrap(
+            SwiftMAST().parseFITSHeaderSummary(
+                data: data,
+                sourceURL: URL(string: "https://example.com/test.fits")!,
+                remoteFileSizeBytes: 123_456_789
+            )
+        )
+
+        XCTAssertEqual(summary.bytesFetched, data.count)
+        XCTAssertEqual(summary.remoteFileSizeBytes, 123_456_789)
+        XCTAssertEqual(summary.parsedHeaderCount, 2)
+        XCTAssertFalse(summary.reachedEndOfAvailableHeaders)
+        XCTAssertEqual(summary.primaryHeaders.first?.keyword, "SIMPLE")
+
+        let image = try XCTUnwrap(summary.preferredImageHDU)
+        XCTAssertEqual(image.extIndex, 1)
+        XCTAssertEqual(image.extName, "SCI")
+        XCTAssertEqual(image.role, .science)
+        XCTAssertEqual(image.width, 4654)
+        XCTAssertEqual(image.height, 4648)
+        XCTAssertEqual(image.axisCount, 2)
+        XCTAssertEqual(image.bitpix, -32)
+        XCTAssertEqual(image.dataOffset, 5760)
+        XCTAssertEqual(image.dataSizeBytes, 86_527_168)
+        XCTAssertNotNil(image.wcs)
+        XCTAssertEqual(image.wcs?.crval1 ?? 0, 254.2253014526158, accuracy: 1e-12)
+        XCTAssertEqual(image.wcs?.crval2 ?? 0, -4.022223357292208, accuracy: 1e-12)
+    }
+
+    func testFetchFITSHeaderSummaryUsesRangeRequest() throws {
+        let data = makePartialFITSHeaderData()
+        let expectedURL = URL(string: "https://example.com/test.fits")!
+        let expectation = expectation(description: "Fetch FITS header summary")
+
+        FITSHeaderSummaryMockURLProtocol.requestHandler = { request in
+            XCTAssertEqual(request.url, expectedURL)
+            XCTAssertEqual(request.value(forHTTPHeaderField: "Range"), "bytes=0-5759")
+
+            let response = HTTPURLResponse(
+                url: expectedURL,
+                statusCode: 206,
+                httpVersion: nil,
+                headerFields: [
+                    "Content-Range": "bytes 0-5759/123456789",
+                    "Content-Length": "\(data.count)",
+                ]
+            )!
+            return (response, data)
+        }
+
+        let configuration = URLSessionConfiguration.ephemeral
+        configuration.protocolClasses = [FITSHeaderSummaryMockURLProtocol.self]
+        let session = URLSession(configuration: configuration)
+
+        SwiftMAST().fetchFITSHeaderSummary(
+            from: expectedURL,
+            initialByteCount: data.count,
+            maxByteCount: data.count,
+            session: session
+        ) { summary in
+            XCTAssertEqual(summary?.remoteFileSizeBytes, 123_456_789)
+            XCTAssertEqual(summary?.preferredImageHDU?.width, 4654)
+            XCTAssertEqual(summary?.preferredImageHDU?.height, 4648)
+            expectation.fulfill()
+        }
+
+        wait(for: [expectation], timeout: 2)
+        FITSHeaderSummaryMockURLProtocol.requestHandler = nil
+    }
+
     private func makeSyntheticFitsFile() -> FitsFile {
         let primary = PrimaryHDU(width: 1, height: 1, vectors: [FITSByte_16](arrayLiteral: 0))
         primary.hasExtensions = true
@@ -166,6 +238,58 @@ final class FITSObservationProductTests: XCTestCase {
         file.HDUs.append(science)
         file.HDUs.append(weight)
         return file
+    }
+
+    private func makePartialFITSHeaderData() -> Data {
+        var data = Data()
+        data.append(
+            makeFITSHeaderBlock([
+                fitsCard("SIMPLE", "T", "conforms to FITS standard"),
+                fitsCard("BITPIX", "8", "array data type"),
+                fitsCard("NAXIS", "0", "number of data array dimensions"),
+                fitsCard("EXTEND", "T", "extensions may be present"),
+            ]))
+        data.append(
+            makeFITSHeaderBlock([
+                fitsCard("XTENSION", "'IMAGE'", "image extension"),
+                fitsCard("BITPIX", "-32", "array data type"),
+                fitsCard("NAXIS", "2", "number of axes"),
+                fitsCard("NAXIS1", "4654", "axis 1 length"),
+                fitsCard("NAXIS2", "4648", "axis 2 length"),
+                fitsCard("EXTNAME", "'SCI'", "extension name"),
+                fitsCard("CRPIX1", "2327.0", nil),
+                fitsCard("CRPIX2", "2324.0", nil),
+                fitsCard("CRVAL1", "254.2253014526158", nil),
+                fitsCard("CRVAL2", "-4.022223357292208", nil),
+                fitsCard("CTYPE1", "'RA---TAN'", nil),
+                fitsCard("CTYPE2", "'DEC--TAN'", nil),
+                fitsCard("CD1_1", "-0.0000277777778", nil),
+                fitsCard("CD1_2", "0.0", nil),
+                fitsCard("CD2_1", "0.0", nil),
+                fitsCard("CD2_2", "0.0000277777778", nil),
+            ]))
+        return data
+    }
+
+    private func makeFITSHeaderBlock(_ cards: [String]) -> Data {
+        var text = cards.joined()
+        text += paddedFITSCard("END")
+        let paddingLength = (2880 - (text.utf8.count % 2880)) % 2880
+        text += String(repeating: " ", count: paddingLength)
+        return Data(text.utf8)
+    }
+
+    private func fitsCard(_ keyword: String, _ value: String, _ comment: String?) -> String {
+        var card = keyword.padding(toLength: 8, withPad: " ", startingAt: 0) + "= "
+        card += value.padding(toLength: 20, withPad: " ", startingAt: 0)
+        if let comment {
+            card += " / \(comment)"
+        }
+        return paddedFITSCard(card)
+    }
+
+    private func paddedFITSCard(_ value: String) -> String {
+        String(value.prefix(80)).padding(toLength: 80, withPad: " ", startingAt: 0)
     }
 
     private func addImageHeaders(to image: ImageHDU, extName: String) {
@@ -224,4 +348,34 @@ final class FITSObservationProductTests: XCTestCase {
     private func header(_ keyword: String, _ value: FITSHeaderValue) -> FITSHeaderUnit {
         FITSHeaderUnit(keyword: keyword, value: value, comment: "")
     }
+}
+
+private final class FITSHeaderSummaryMockURLProtocol: URLProtocol {
+    static var requestHandler: ((URLRequest) throws -> (HTTPURLResponse, Data))?
+
+    override class func canInit(with request: URLRequest) -> Bool {
+        true
+    }
+
+    override class func canonicalRequest(for request: URLRequest) -> URLRequest {
+        request
+    }
+
+    override func startLoading() {
+        guard let handler = Self.requestHandler else {
+            client?.urlProtocol(self, didFailWithError: URLError(.badServerResponse))
+            return
+        }
+
+        do {
+            let (response, data) = try handler(request)
+            client?.urlProtocol(self, didReceive: response, cacheStoragePolicy: .notAllowed)
+            client?.urlProtocol(self, didLoad: data)
+            client?.urlProtocolDidFinishLoading(self)
+        } catch {
+            client?.urlProtocol(self, didFailWithError: error)
+        }
+    }
+
+    override func stopLoading() {}
 }

@@ -288,6 +288,37 @@ public struct FITSObservationProduct: Codable, Equatable {
     }
 }
 
+/// Header-only metadata fetched from a remote FITS product without downloading image data.
+public struct FITSHeaderSummary: Codable, Equatable {
+    public let sourceURL: URL
+    public let bytesFetched: Int
+    public let remoteFileSizeBytes: Int64?
+    public let primaryHeaders: [FITSHeaderUnit]
+    public let imageHDUs: [FITSHeaderHDUSummary]
+    public let parsedHeaderCount: Int
+    public let reachedEndOfAvailableHeaders: Bool
+
+    public var preferredImageHDU: FITSHeaderHDUSummary? {
+        imageHDUs.first { $0.role == .science } ?? imageHDUs.first
+    }
+}
+
+/// Header-only metadata for one image HDU inside a FITS product.
+public struct FITSHeaderHDUSummary: Codable, Equatable {
+    public let extIndex: Int
+    public let extName: String?
+    public let role: FITSHDURole
+    public let width: Int
+    public let height: Int
+    public let axisCount: Int
+    public let bitpix: Int
+    public let dataSizeBytes: Int
+    public let headerOffset: Int
+    public let dataOffset: Int
+    public let headers: [FITSHeaderUnit]
+    public let wcs: FITSWCS?
+}
+
 private extension FITSImagePlane {
     func matchesDimensions(of other: FITSImagePlane) -> Bool {
         width == other.width && height == other.height
@@ -388,4 +419,3 @@ private extension String {
         return components(separatedBy: separators).contains(token)
     }
 }
-

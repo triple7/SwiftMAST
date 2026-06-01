@@ -612,6 +612,292 @@ extension SwiftMAST {
         return naxis >= 2 && naxis1 > 0 && naxis2 > 0 && dataSize > 0
     }
 
+    /// Fetch and parse remote FITS headers using HTTP byte-range requests.
+    ///
+    /// This avoids downloading large FITS payloads. The parser reads FITS 80-byte
+    /// header cards and computes HDU data offsets from structural keywords, so it
+    /// can return image dimensions and WCS metadata even when image bytes are absent.
+    public func fetchFITSHeaderSummary(
+        from productURL: String,
+        initialByteCount: Int = 262_144,
+        maxByteCount: Int = 2_097_152,
+        session: URLSession = .shared,
+        completion: @escaping (FITSHeaderSummary?) -> Void
+    ) {
+        guard let url = fitsHeaderDownloadURL(for: productURL) else {
+            completion(nil)
+            return
+        }
+
+        fetchFITSHeaderSummary(
+            from: url,
+            initialByteCount: initialByteCount,
+            maxByteCount: maxByteCount,
+            session: session,
+            completion: completion
+        )
+    }
+
+    /// Fetch and parse remote FITS headers using HTTP byte-range requests.
+    public func fetchFITSHeaderSummary(
+        from url: URL,
+        initialByteCount: Int = 262_144,
+        maxByteCount: Int = 2_097_152,
+        session: URLSession = .shared,
+        completion: @escaping (FITSHeaderSummary?) -> Void
+    ) {
+        let initial = max(initialByteCount, 2_880)
+        let maximum = max(maxByteCount, initial)
+
+        func fetch(byteCount: Int) {
+            var request = URLRequest(url: url)
+            request.setValue("bytes=0-\(byteCount - 1)", forHTTPHeaderField: "Range")
+            request.timeoutInterval = 30
+
+            session.dataTask(with: request) { data, response, error in
+                guard
+                    error == nil,
+                    let data,
+                    let httpResponse = response as? HTTPURLResponse,
+                    (200..<300).contains(httpResponse.statusCode)
+                else {
+                    completion(nil)
+                    return
+                }
+
+                let remoteSize = self.remoteFileSize(from: httpResponse)
+                guard
+                    let summary = self.parseFITSHeaderSummary(
+                        data: data,
+                        sourceURL: url,
+                        remoteFileSizeBytes: remoteSize
+                    )
+                else {
+                    let nextByteCount = min(byteCount * 2, maximum)
+                    if nextByteCount > byteCount {
+                        fetch(byteCount: nextByteCount)
+                    } else {
+                        completion(nil)
+                    }
+                    return
+                }
+
+                if summary.imageHDUs.isEmpty,
+                    !summary.reachedEndOfAvailableHeaders,
+                    byteCount < maximum
+                {
+                    fetch(byteCount: min(byteCount * 2, maximum))
+                    return
+                }
+
+                completion(summary)
+            }.resume()
+        }
+
+        fetch(byteCount: initial)
+    }
+
+    internal func parseFITSHeaderSummary(
+        data: Data,
+        sourceURL: URL,
+        remoteFileSizeBytes: Int64? = nil
+    ) -> FITSHeaderSummary? {
+        let blockLength = 2_880
+        guard data.count >= blockLength else { return nil }
+
+        var offset = 0
+        var hduIndex = 0
+        var primaryHeaders = [FITSHeaderUnit]()
+        var imageHDUs = [FITSHeaderHDUSummary]()
+        var parsedHeaderCount = 0
+        var reachedEndOfAvailableHeaders = true
+
+        while offset < data.count {
+            guard let header = parseFITSHeaderBlock(data: data, offset: offset, hduIndex: hduIndex)
+            else {
+                reachedEndOfAvailableHeaders = false
+                break
+            }
+
+            parsedHeaderCount += 1
+            if hduIndex == 0 {
+                primaryHeaders = header.units
+            }
+
+            let dataOffset = paddedOffset(header.endOffset, blockLength: blockLength)
+            let dataSize = fitsDataSize(from: header.rawValues)
+            guard dataSize >= 0 else { return nil }
+
+            let axisCount = headerUnitInt("NAXIS", in: header.units)
+            let width = headerUnitInt("NAXIS1", in: header.units)
+            let height = headerUnitInt("NAXIS2", in: header.units)
+            let bitpix = headerUnitInt("BITPIX", in: header.units)
+            let isImageHDU = axisCount >= 2 && width > 0 && height > 0 && dataSize > 0
+
+            if isImageHDU {
+                let mergedHeaders =
+                    hduIndex == 0
+                    ? header.units
+                    : mergeHeaderUnits(primary: primaryHeaders, hdu: header.units)
+                let extName = headerUnitString("EXTNAME", in: header.units)
+                imageHDUs.append(
+                    FITSHeaderHDUSummary(
+                        extIndex: hduIndex,
+                        extName: extName,
+                        role: FITSHDURoleClassifier.classify(headers: mergedHeaders),
+                        width: width,
+                        height: height,
+                        axisCount: axisCount,
+                        bitpix: bitpix,
+                        dataSizeBytes: dataSize,
+                        headerOffset: offset,
+                        dataOffset: dataOffset,
+                        headers: mergedHeaders,
+                        wcs: FITSWCS(headers: mergedHeaders)
+                    ))
+            }
+
+            guard let nextOffset = safeAdd(dataOffset, dataSize) else { return nil }
+            let paddedNextOffset = paddedOffset(nextOffset, blockLength: blockLength)
+            if paddedNextOffset >= data.count {
+                reachedEndOfAvailableHeaders = paddedNextOffset == data.count
+                break
+            }
+
+            offset = paddedNextOffset
+            hduIndex += 1
+        }
+
+        guard !primaryHeaders.isEmpty else { return nil }
+        return FITSHeaderSummary(
+            sourceURL: sourceURL,
+            bytesFetched: data.count,
+            remoteFileSizeBytes: remoteFileSizeBytes,
+            primaryHeaders: primaryHeaders,
+            imageHDUs: imageHDUs,
+            parsedHeaderCount: parsedHeaderCount,
+            reachedEndOfAvailableHeaders: reachedEndOfAvailableHeaders
+        )
+    }
+
+    private func parseFITSHeaderBlock(
+        data: Data,
+        offset startOffset: Int,
+        hduIndex: Int
+    ) -> (units: [FITSHeaderUnit], rawValues: [String: String], endOffset: Int)? {
+        let cardLength = 80
+        var offset = startOffset
+        var cardIndex = 0
+        var units = [FITSHeaderUnit]()
+        var rawValues = [String: String]()
+
+        while offset + cardLength <= data.count {
+            guard
+                let card = String(data: data[offset..<offset + cardLength], encoding: .ascii)
+            else {
+                return nil
+            }
+
+            let keyword = card.prefix(8).trimmingCharacters(in: .whitespaces)
+            if cardIndex == 0 {
+                if hduIndex == 0 {
+                    guard keyword == "SIMPLE" else { return nil }
+                } else {
+                    guard keyword == "XTENSION" else { return nil }
+                }
+            }
+
+            if keyword == "END" {
+                return (units, rawValues, offset + cardLength)
+            }
+
+            if !keyword.isEmpty, let parsed = parseFITSHeaderCard(card) {
+                units.append(
+                    FITSHeaderUnit(
+                        keyword: keyword,
+                        value: Self.parseFITSValue(parsed.value),
+                        comment: parsed.comment
+                    ))
+                rawValues[keyword] = parsed.value
+            }
+
+            offset += cardLength
+            cardIndex += 1
+        }
+
+        return nil
+    }
+
+    private func parseFITSHeaderCard(_ card: String) -> (value: String, comment: String)? {
+        guard let equals = card.firstIndex(of: "=") else { return nil }
+
+        let valueAndComment = card[card.index(after: equals)...]
+        var inString = false
+        var commentIndex: String.Index?
+        var index = valueAndComment.startIndex
+
+        while index < valueAndComment.endIndex {
+            let character = valueAndComment[index]
+            if character == "'" {
+                inString.toggle()
+            } else if character == "/", !inString {
+                commentIndex = index
+                break
+            }
+            index = valueAndComment.index(after: index)
+        }
+
+        let valuePart: Substring
+        let commentPart: Substring
+        if let commentIndex {
+            valuePart = valueAndComment[..<commentIndex]
+            commentPart = valueAndComment[valueAndComment.index(after: commentIndex)...]
+        } else {
+            valuePart = valueAndComment[...]
+            commentPart = ""
+        }
+
+        return (
+            value: String(valuePart).trimmingCharacters(in: .whitespacesAndNewlines),
+            comment: String(commentPart).trimmingCharacters(in: .whitespacesAndNewlines)
+        )
+    }
+
+    private func fitsHeaderDownloadURL(for productURL: String) -> URL? {
+        if productURL.lowercased().hasPrefix("http") {
+            let unescaped = productURL.replacingOccurrences(of: "&amp;", with: "&")
+            let secureURL = unescaped.replacingOccurrences(of: "http://", with: "https://")
+            return URL(string: secureURL)
+        }
+
+        return MASTRequest(searchType: .image).getFileDownloadUrl(
+            service: .Download_file,
+            parameters: ["uri": productURL]
+        )
+    }
+
+    private func remoteFileSize(from response: HTTPURLResponse) -> Int64? {
+        if let contentRange = response.value(forHTTPHeaderField: "Content-Range"),
+            let total = contentRange.split(separator: "/").last,
+            let size = Int64(total)
+        {
+            return size
+        }
+        if let contentLength = response.value(forHTTPHeaderField: "Content-Length") {
+            return Int64(contentLength)
+        }
+        let expected = response.expectedContentLength
+        return expected > 0 ? expected : nil
+    }
+
+    private func headerUnitInt(_ keyword: String, in headers: [FITSHeaderUnit]) -> Int {
+        headers.first { $0.keyword == keyword }?.value.intValue ?? 0
+    }
+
+    private func headerUnitString(_ keyword: String, in headers: [FITSHeaderUnit]) -> String? {
+        headers.first { $0.keyword == keyword }?.value.rawString
+    }
+
     private func readFITSFileSafely(at url: URL, context: String) -> FitsFile? {
         guard let data = try? Data(contentsOf: url) else {
             log(.RequestError, message: "\(context): Unable to read \(url.lastPathComponent)")
