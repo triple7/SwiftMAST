@@ -246,6 +246,26 @@ private func isFilterToken(_ value: String) -> Bool {
 }
 
 extension CoamResult {
+    /// Returns true when this product contains any of the requested filter bands.
+    ///
+    /// COAM `filters` values can be compound strings such as `"F444W;F405N"`.
+    /// Matching is case-insensitive and token based, so `"F150W"` matches
+    /// `"F150W;CLEAR"` but not `"F150W2"`.
+    public func matchesObservationFilterBands(_ filterBands: [String]) -> Bool {
+        let requested = Set(
+            filterBands
+                .map { $0.trimmingCharacters(in: .whitespacesAndNewlines).uppercased() }
+                .filter { !$0.isEmpty }
+        )
+        guard !requested.isEmpty else { return true }
+
+        let productFilters = filters
+            .split { $0 == ";" || $0 == "," }
+            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines).uppercased() }
+
+        return productFilters.contains { requested.contains($0) }
+    }
+
     /// The broad observation mission represented by this result.
     public var observationMission: ObservationMission? {
         let collection = obs_collection.uppercased()

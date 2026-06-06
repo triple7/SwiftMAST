@@ -332,6 +332,19 @@ mast.getJWSTObservationGroups(targetName: "NGC 628") { groups in
 }
 ```
 
+To narrow the query to one or more filters, pass `filterBands`:
+
+```swift
+mast.getJWSTObservationGroups(
+    targetName: "NGC 628",
+    filterBands: ["F150W"]
+) { groups in
+    for group in groups {
+        print("\(group.observationKey): \(group.filterNames.joined(separator: ", "))")
+    }
+}
+```
+
 ### Example Output
 
 ```
@@ -355,6 +368,7 @@ Filters are sorted by the numeric wavelength extracted from the filter name:
 |-----------|------|---------|-------------|
 | `targetName` | `String` | — | Human-readable target identifier |
 | `instruments` | `[String]?` | `nil` | Restrict to specific instruments (e.g. `["MIRI/IMAGE"]`) |
+| `filterBands` | `[String]?` | `nil` | Restrict to specific filters (e.g. `["F150W"]`) |
 | `calibLevels` | `[String]` | `["3", "4"]` | CAOM calibration levels |
 | `pageSize` | `Int` | `400` | Maximum products per MAST page |
 | `result` | `([JWSTObservationGroup]) -> Void` | — | Callback receiving sorted observation groups |

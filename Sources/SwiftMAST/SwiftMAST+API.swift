@@ -1368,6 +1368,7 @@ extension SwiftMAST {
         targetName: String,
         missions: [ObservationMission] = ObservationMission.jwstAndHST,
         instruments: [String]? = nil,
+        filterBands: [String]? = nil,
         calibLevels: [String] = ["3", "4"],
         pageSize: Int = 400,
         sortOrder: ObservationProductSortOrder = .filter,
@@ -1390,6 +1391,7 @@ extension SwiftMAST {
                 radius: coordinates.radius,
                 missions: missions,
                 instruments: instruments,
+                filterBands: filterBands,
                 calibLevels: calibLevels,
                 pageSize: pageSize,
                 sortOrder: sortOrder,
@@ -1407,6 +1409,7 @@ extension SwiftMAST {
      * radius: Float - Search radius in degrees
      * missions: [ObservationMission] - `.jwst`, `.hst`, or both
      * instruments: [String]? - optional instrument filter
+     * filterBands: [String]? - optional filter band filter (e.g. ["F150W"])
      * calibLevels: [String] - calibration levels (default: ["3", "4"])
      * pageSize: Int - number of results per page (default: 400)
      * result: Closure returning an array of ``ObservationGroup``
@@ -1418,6 +1421,7 @@ extension SwiftMAST {
         radius: Float,
         missions: [ObservationMission] = ObservationMission.jwstAndHST,
         instruments: [String]? = nil,
+        filterBands: [String]? = nil,
         calibLevels: [String] = ["3", "4"],
         pageSize: Int = 400,
         sortOrder: ObservationProductSortOrder = .filter,
@@ -1433,6 +1437,7 @@ extension SwiftMAST {
         let filterOptions = ImageryFilterOptions(
             collections: collections,
             instruments: instruments,
+            filterBands: filterBands,
             calibLevels: calibLevels
         )
 
@@ -1485,6 +1490,12 @@ extension SwiftMAST {
                     }
                 }
 
+                if let filterBands = filterBands, !filterBands.isEmpty {
+                    filteredResults = filteredResults.filter {
+                        $0.matchesObservationFilterBands(filterBands)
+                    }
+                }
+
                 guard !filteredResults.isEmpty else {
                     self.log(.OK, message: "getObservationGroups: No products after filtering")
                     result([])
@@ -1519,6 +1530,7 @@ extension SwiftMAST {
      Parameters:
      * targetName: String - the target identifier (e.g. "NGC 628", "NGC 253")
      * instruments: [String]? - optional instrument filter (e.g. ["MIRI/IMAGE"])
+     * filterBands: [String]? - optional filter band filter (e.g. ["F150W"])
      * calibLevels: [String] - calibration levels (default: ["3", "4"])
      * pageSize: Int - number of results per page (default: 400)
      * result: Closure returning an array of ``JWSTObservationGroup``, sorted by observation key
@@ -1540,6 +1552,7 @@ extension SwiftMAST {
     public func getJWSTObservationGroups(
         targetName: String,
         instruments: [String]? = nil,
+        filterBands: [String]? = nil,
         calibLevels: [String] = ["3", "4"],
         pageSize: Int = 400,
         sortOrder: JWSTProductSortOrder = .filter,
@@ -1549,6 +1562,7 @@ extension SwiftMAST {
             targetName: targetName,
             missions: ObservationMission.jwstOnly,
             instruments: instruments,
+            filterBands: filterBands,
             calibLevels: calibLevels,
             pageSize: pageSize,
             sortOrder: sortOrder,
@@ -1564,6 +1578,7 @@ extension SwiftMAST {
      * dec: Float - Declination (degrees, J2000)
      * radius: Float - Search radius in degrees
      * instruments: [String]? - optional instrument filter (e.g. ["MIRI/IMAGE"])
+     * filterBands: [String]? - optional filter band filter (e.g. ["F150W"])
      * calibLevels: [String] - calibration levels (default: ["3", "4"])
      * pageSize: Int - number of results per page (default: 400)
      * result: Closure returning an array of ``JWSTObservationGroup``
@@ -1574,6 +1589,7 @@ extension SwiftMAST {
         dec: Float,
         radius: Float,
         instruments: [String]? = nil,
+        filterBands: [String]? = nil,
         calibLevels: [String] = ["3", "4"],
         pageSize: Int = 400,
         sortOrder: JWSTProductSortOrder = .filter,
@@ -1586,6 +1602,7 @@ extension SwiftMAST {
             radius: radius,
             missions: ObservationMission.jwstOnly,
             instruments: instruments,
+            filterBands: filterBands,
             calibLevels: calibLevels,
             pageSize: pageSize,
             sortOrder: sortOrder,

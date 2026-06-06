@@ -178,6 +178,18 @@ final class SwiftMASTTests: XCTestCase {
         XCTAssertTrue(paramNames.contains("filters"))
     }
 
+    func testToMASTFiltersWithFilterBands() {
+        let options = ImageryFilterOptions(
+            collections: ["JWST"],
+            filterBands: ["F150W"]
+        )
+        let filters = options.toMASTFilters()
+
+        let filterParam = filters.first { $0.paramName == "filters" }
+        XCTAssertNotNil(filterParam)
+        XCTAssertEqual(filterParam?.separator, ";")
+    }
+
     func testGetScienceImageProductUrlReturnsNilForMissingUrl() {
         let expectation = XCTestExpectation(description: "Missing product url returns nil")
         let mast = SwiftMAST()
@@ -2226,6 +2238,17 @@ final class SwiftMASTTests: XCTestCase {
             compareJWSTProducts(earlierF1000w, laterF200w, by: .time), "earlier time wins")
         XCTAssertFalse(
             compareJWSTProducts(laterF200w, earlierF1000w, by: .time), "later time loses")
+    }
+
+    func testCoamResultMatchesObservationFilterBands() {
+        let product = makeCoamResult(filters: "F150W;CLEAR", obs_collection: "JWST")
+
+        XCTAssertTrue(product.matchesObservationFilterBands(["F150W"]))
+        XCTAssertTrue(product.matchesObservationFilterBands(["f150w"]))
+        XCTAssertTrue(product.matchesObservationFilterBands(["F200W", "F150W"]))
+        XCTAssertFalse(product.matchesObservationFilterBands(["F150W2"]))
+        XCTAssertFalse(product.matchesObservationFilterBands(["F200W"]))
+        XCTAssertTrue(product.matchesObservationFilterBands([]))
     }
 
     func testBuildObservationGroupsByTime() {
