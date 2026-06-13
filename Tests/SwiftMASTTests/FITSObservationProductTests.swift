@@ -181,6 +181,41 @@ final class FITSObservationProductTests: XCTestCase {
         XCTAssertNotNil(image.wcs)
         XCTAssertEqual(image.wcs?.crval1 ?? 0, 254.2253014526158, accuracy: 1e-12)
         XCTAssertEqual(image.wcs?.crval2 ?? 0, -4.022223357292208, accuracy: 1e-12)
+
+        let metadata = try XCTUnwrap(summary.preferredImageMetadata)
+        XCTAssertEqual(metadata.width, 4654)
+        XCTAssertEqual(metadata.height, 4648)
+        XCTAssertEqual(metadata.axisLengths, [4654, 4648])
+        XCTAssertEqual(metadata.pixelScaleArcsecondsX ?? 0, 0.10000000008, accuracy: 1e-10)
+        XCTAssertEqual(metadata.pixelScaleArcsecondsY ?? 0, 0.10000000008, accuracy: 1e-10)
+        XCTAssertEqual(metadata.referenceCoordinate?.ra ?? 0, 254.2253014526158, accuracy: 1e-12)
+        XCTAssertEqual(metadata.cornerWorldCoordinates.count, 4)
+    }
+
+    func testParseFITSHeaderSummaryReadsPrimaryImageMetadata() throws {
+        let data = makePrimaryImageHeaderData()
+        let summary = try XCTUnwrap(
+            SwiftMAST().parseFITSHeaderSummary(
+                data: data,
+                sourceURL: URL(string: "https://example.com/primary.fits")!
+            )
+        )
+
+        XCTAssertEqual(summary.parsedHeaderCount, 1)
+        XCTAssertEqual(summary.imageHDUs.count, 1)
+
+        let metadata = try XCTUnwrap(summary.preferredImageMetadata)
+        XCTAssertEqual(metadata.extIndex, 0)
+        XCTAssertNil(metadata.extName)
+        XCTAssertEqual(metadata.role, .unknown)
+        XCTAssertEqual(metadata.width, 1024)
+        XCTAssertEqual(metadata.height, 512)
+        XCTAssertEqual(metadata.axisLengths, [1024, 512])
+        XCTAssertEqual(metadata.bitpix, 16)
+        XCTAssertEqual(metadata.dataOffset, 2880)
+        XCTAssertEqual(metadata.dataSizeBytes, 1_048_576)
+        XCTAssertEqual(metadata.pixelScaleArcsecondsX ?? 0, 0.4, accuracy: 1e-12)
+        XCTAssertEqual(metadata.pixelScaleArcsecondsY ?? 0, 0.4, accuracy: 1e-12)
     }
 
     func testFetchFITSHeaderSummaryUsesRangeRequest() throws {
@@ -227,6 +262,91 @@ final class FITSObservationProductTests: XCTestCase {
             XCTAssertEqual(summary?.remoteFileSizeBytes, Int64(remoteFileSize))
             XCTAssertEqual(summary?.preferredImageHDU?.width, 4654)
             XCTAssertEqual(summary?.preferredImageHDU?.height, 4648)
+            expectation.fulfill()
+        }
+
+        wait(for: [expectation], timeout: 2)
+        XCTAssertEqual(requestedRanges, ["bytes=0-5759", "bytes=2880-8639"])
+        FITSHeaderSummaryMockURLProtocol.requestHandler = nil
+    }
+
+    func testFetchPreferredFITSImageHeaderMetadataFromCoamDataURLUsesRangeRequest() throws {
+        let data = makePartialFITSHeaderData()
+        let expectedURL = URL(string: "https://example.com/science.fits")!
+        let expectation = expectation(description: "Fetch preferred FITS image metadata")
+        var requestedRanges = [String]()
+
+        FITSHeaderSummaryMockURLProtocol.requestHandler = { request in
+            XCTAssertEqual(request.url, expectedURL)
+            let range = try XCTUnwrap(request.value(forHTTPHeaderField: "Range"))
+            requestedRanges.append(range)
+
+            let start = range
+                .replacingOccurrences(of: "bytes=", with: "")
+                .split(separator: "-")
+                .first
+                .flatMap { Int($0) } ?? 0
+            let responseData = start < data.count ? data[start..<data.count] : Data()
+            let response = HTTPURLResponse(
+                url: expectedURL,
+                statusCode: 206,
+                httpVersion: nil,
+                headerFields: [
+                    "Content-Range": "bytes \(start)-\(start + responseData.count - 1)/123456789",
+                    "Content-Length": "\(responseData.count)",
+                ]
+            )!
+            return (response, responseData)
+        }
+
+        var coam = makeCoamResult()
+        coam = CoamResult(
+            calib_level: coam.calib_level,
+            dataRights: coam.dataRights,
+            dataURL: "http://example.com/science.fits",
+            dataproduct_type: coam.dataproduct_type,
+            distance: coam.distance,
+            em_max: coam.em_max,
+            em_min: coam.em_min,
+            filters: coam.filters,
+            instrument_name: coam.instrument_name,
+            intentType: coam.intentType,
+            jpegURL: coam.jpegURL,
+            mtFlag: coam.mtFlag,
+            objID: coam.objID,
+            obs_collection: coam.obs_collection,
+            obs_id: coam.obs_id,
+            obs_title: coam.obs_title,
+            obsid: coam.obsid,
+            project: coam.project,
+            proposal_id: coam.proposal_id,
+            proposal_pi: coam.proposal_pi,
+            proposal_type: coam.proposal_type,
+            provenance_name: coam.provenance_name,
+            s_dec: coam.s_dec,
+            s_ra: coam.s_ra,
+            s_region: coam.s_region,
+            sequence_number: coam.sequence_number,
+            srcDen: coam.srcDen,
+            t_exptime: coam.t_exptime,
+            t_max: coam.t_max,
+            t_min: coam.t_min,
+            t_obs_release: coam.t_obs_release,
+            target_classification: coam.target_classification,
+            target_name: coam.target_name,
+            wavelength_region: coam.wavelength_region
+        )
+
+        SwiftMAST().fetchPreferredFITSImageHeaderMetadata(
+            for: coam,
+            initialByteCount: data.count,
+            maxByteCount: data.count,
+            session: URLSession.mockFITSHeaderSummary
+        ) { metadata in
+            XCTAssertEqual(metadata?.width, 4654)
+            XCTAssertEqual(metadata?.height, 4648)
+            XCTAssertEqual(metadata?.role, .science)
+            XCTAssertEqual(metadata?.pixelScaleArcsecondsX ?? 0, 0.10000000008, accuracy: 1e-10)
             expectation.fulfill()
         }
 
@@ -331,6 +451,27 @@ final class FITSObservationProductTests: XCTestCase {
                 fitsCard("CD1_2", "0.0", nil),
                 fitsCard("CD2_1", "0.0", nil),
                 fitsCard("CD2_2", "0.0000277777778", nil),
+            ]))
+        return data
+    }
+
+    private func makePrimaryImageHeaderData() -> Data {
+        var data = Data()
+        data.append(
+            makeFITSHeaderBlock([
+                fitsCard("SIMPLE", "T", "conforms to FITS standard"),
+                fitsCard("BITPIX", "16", "array data type"),
+                fitsCard("NAXIS", "2", "number of axes"),
+                fitsCard("NAXIS1", "1024", "axis 1 length"),
+                fitsCard("NAXIS2", "512", "axis 2 length"),
+                fitsCard("CRPIX1", "512.0", nil),
+                fitsCard("CRPIX2", "256.0", nil),
+                fitsCard("CRVAL1", "150.0", nil),
+                fitsCard("CRVAL2", "2.0", nil),
+                fitsCard("CTYPE1", "'RA---TAN'", nil),
+                fitsCard("CTYPE2", "'DEC--TAN'", nil),
+                fitsCard("CDELT1", "-0.000111111111111", nil),
+                fitsCard("CDELT2", "0.000111111111111", nil),
             ]))
         return data
     }

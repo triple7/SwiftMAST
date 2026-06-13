@@ -217,6 +217,18 @@ public struct FITSWCS: Codable, Equatable, Hashable {
         ]
     }
 
+    public var pixelScaleDegrees: (x: Double, y: Double) {
+        (
+            x: sqrt(cd1_1 * cd1_1 + cd2_1 * cd2_1),
+            y: sqrt(cd1_2 * cd1_2 + cd2_2 * cd2_2)
+        )
+    }
+
+    public var pixelScaleArcseconds: (x: Double, y: Double) {
+        let degrees = pixelScaleDegrees
+        return (x: degrees.x * 3_600, y: degrees.y * 3_600)
+    }
+
     public func isApproximatelyEqual(to other: FITSWCS, tolerance: Double = 1e-9) -> Bool {
         abs(crpix1 - other.crpix1) <= tolerance
             && abs(crpix2 - other.crpix2) <= tolerance
@@ -301,6 +313,17 @@ public struct FITSHeaderSummary: Codable, Equatable {
     public var preferredImageHDU: FITSHeaderHDUSummary? {
         imageHDUs.first { $0.role == .science } ?? imageHDUs.first
     }
+
+    public var preferredImageMetadata: FITSImageHeaderMetadata? {
+        preferredImageHDU.map {
+            FITSImageHeaderMetadata(
+                sourceURL: sourceURL,
+                bytesFetched: bytesFetched,
+                remoteFileSizeBytes: remoteFileSizeBytes,
+                hdu: $0
+            )
+        }
+    }
 }
 
 /// Header-only metadata for one image HDU inside a FITS product.
@@ -317,6 +340,98 @@ public struct FITSHeaderHDUSummary: Codable, Equatable {
     public let dataOffset: Int
     public let headers: [FITSHeaderUnit]
     public let wcs: FITSWCS?
+
+    public var axisLengths: [Int] {
+        guard axisCount > 0 else { return [] }
+        return (1...axisCount).map { axis in
+            headers.first { $0.keyword == "NAXIS\(axis)" }?.value.intValue ?? 0
+        }
+    }
+
+    public var pixelScaleDegrees: (x: Double, y: Double)? {
+        wcs?.pixelScaleDegrees
+    }
+
+    public var pixelScaleArcseconds: (x: Double, y: Double)? {
+        wcs?.pixelScaleArcseconds
+    }
+}
+
+/// Fast, header-only metadata for the preferred FITS image HDU.
+///
+/// This is intended for quick previews, layout, and WCS-aware product selection.
+/// It is built from FITS header cards fetched via byte-range requests, without
+/// downloading or decoding image pixels.
+public struct FITSImageHeaderMetadata: Codable, Equatable {
+    public let sourceURL: URL
+    public let bytesFetched: Int
+    public let remoteFileSizeBytes: Int64?
+    public let extIndex: Int
+    public let extName: String?
+    public let role: FITSHDURole
+    public let width: Int
+    public let height: Int
+    public let axisCount: Int
+    public let axisLengths: [Int]
+    public let bitpix: Int
+    public let dataSizeBytes: Int
+    public let headerOffset: Int
+    public let dataOffset: Int
+    public let pixelScaleDegreesX: Double?
+    public let pixelScaleDegreesY: Double?
+    public let pixelScaleArcsecondsX: Double?
+    public let pixelScaleArcsecondsY: Double?
+    public let referenceCoordinate: FITSWorldCoordinate?
+    public let cornerWorldCoordinates: [FITSWorldCoordinate]
+    public let headers: [FITSHeaderUnit]
+    public let wcs: FITSWCS?
+
+    public init(
+        sourceURL: URL,
+        bytesFetched: Int,
+        remoteFileSizeBytes: Int64?,
+        hdu: FITSHeaderHDUSummary
+    ) {
+        self.sourceURL = sourceURL
+        self.bytesFetched = bytesFetched
+        self.remoteFileSizeBytes = remoteFileSizeBytes
+        self.extIndex = hdu.extIndex
+        self.extName = hdu.extName
+        self.role = hdu.role
+        self.width = hdu.width
+        self.height = hdu.height
+        self.axisCount = hdu.axisCount
+        self.axisLengths = hdu.axisLengths
+        self.bitpix = hdu.bitpix
+        self.dataSizeBytes = hdu.dataSizeBytes
+        self.headerOffset = hdu.headerOffset
+        self.dataOffset = hdu.dataOffset
+        self.headers = hdu.headers
+        self.wcs = hdu.wcs
+
+        if let pixelScale = hdu.pixelScaleDegrees {
+            self.pixelScaleDegreesX = pixelScale.x
+            self.pixelScaleDegreesY = pixelScale.y
+            self.pixelScaleArcsecondsX = pixelScale.x * 3_600
+            self.pixelScaleArcsecondsY = pixelScale.y * 3_600
+        } else {
+            self.pixelScaleDegreesX = nil
+            self.pixelScaleDegreesY = nil
+            self.pixelScaleArcsecondsX = nil
+            self.pixelScaleArcsecondsY = nil
+        }
+
+        if let wcs = hdu.wcs {
+            self.referenceCoordinate = FITSWorldCoordinate(ra: wcs.crval1, dec: wcs.crval2)
+            self.cornerWorldCoordinates = wcs.cornerWorldCoordinates(
+                width: hdu.width,
+                height: hdu.height
+            )
+        } else {
+            self.referenceCoordinate = nil
+            self.cornerWorldCoordinates = []
+        }
+    }
 }
 
 private extension FITSImagePlane {

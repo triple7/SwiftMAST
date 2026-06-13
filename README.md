@@ -161,6 +161,23 @@ if let bitpix = product.header(forKeyword: "BITPIX") {
 }
 ```
 
+### Fast FITS Image Header Metadata
+
+Use `fetchPreferredFITSImageHeaderMetadata` when you only need the main image headers from a FITS `dataURL` and do not want to download or decode the image pixels. It uses HTTP byte-range requests, walks FITS HDU headers, and stops after the first usable image HDU: the primary image if present, otherwise the first image/science extension it reaches.
+
+```swift
+mast.fetchPreferredFITSImageHeaderMetadata(for: coamResult) { metadata in
+    guard let metadata else { return }
+
+    print("Size: \(metadata.width) x \(metadata.height)")
+    print("Axes: \(metadata.axisLengths)")
+    print("Pixel scale: \(metadata.pixelScaleArcsecondsX ?? 0) arcsec/pixel")
+    print("Reference sky coordinate: \(metadata.referenceCoordinate?.ra ?? 0), \(metadata.referenceCoordinate?.dec ?? 0)")
+}
+```
+
+For all parsed image HDUs instead of the quick preferred image, use `fetchFITSHeaderSummary(from:)`.
+
 `FITSHeaderValue` is a typed enum (`.string`, `.integer`, `.double`, `.bool`) with convenience accessors `rawString`, `intValue`, and `doubleValue`. All header types are `Codable`.
 
 ### Categorical Enums

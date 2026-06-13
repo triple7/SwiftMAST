@@ -638,12 +638,102 @@ extension SwiftMAST {
         )
     }
 
+    /// Fetch only enough remote FITS bytes to identify the preferred image HDU and
+    /// return its key image metadata.
+    ///
+    /// The request uses HTTP byte ranges and skips image payloads by computing HDU
+    /// data sizes from FITS structural keywords. The returned metadata describes
+    /// the primary image if the primary HDU contains image data, otherwise the
+    /// preferred science image extension when available.
+    public func fetchPreferredFITSImageHeaderMetadata(
+        from productURL: String,
+        initialByteCount: Int = 2_880,
+        maxByteCount: Int = 262_144,
+        session: URLSession = .shared,
+        completion: @escaping (FITSImageHeaderMetadata?) -> Void
+    ) {
+        guard let url = fitsHeaderDownloadURL(for: productURL) else {
+            completion(nil)
+            return
+        }
+
+        fetchPreferredFITSImageHeaderMetadata(
+            from: url,
+            initialByteCount: initialByteCount,
+            maxByteCount: maxByteCount,
+            session: session
+        ) { metadata in
+            completion(metadata)
+        }
+    }
+
+    /// Fetch only enough remote FITS bytes to identify the preferred image HDU and
+    /// return its key image metadata.
+    public func fetchPreferredFITSImageHeaderMetadata(
+        from url: URL,
+        initialByteCount: Int = 2_880,
+        maxByteCount: Int = 262_144,
+        session: URLSession = .shared,
+        completion: @escaping (FITSImageHeaderMetadata?) -> Void
+    ) {
+        fetchFITSHeaderSummary(
+            from: url,
+            initialByteCount: initialByteCount,
+            maxByteCount: maxByteCount,
+            session: session,
+            stopAfterFirstImageHDU: true
+        ) { summary in
+            completion(summary?.preferredImageMetadata)
+        }
+    }
+
+    /// Fetch key image metadata from a ``CoamResult`` data URL without downloading
+    /// the FITS image payload.
+    public func fetchPreferredFITSImageHeaderMetadata(
+        for coamResult: CoamResult,
+        initialByteCount: Int = 2_880,
+        maxByteCount: Int = 262_144,
+        session: URLSession = .shared,
+        completion: @escaping (FITSImageHeaderMetadata?) -> Void
+    ) {
+        guard !coamResult.dataURL.isEmpty else {
+            completion(nil)
+            return
+        }
+
+        fetchPreferredFITSImageHeaderMetadata(
+            from: coamResult.dataURL,
+            initialByteCount: initialByteCount,
+            maxByteCount: maxByteCount,
+            session: session,
+            completion: completion
+        )
+    }
+
     /// Fetch and parse remote FITS headers using HTTP byte-range requests.
     public func fetchFITSHeaderSummary(
         from url: URL,
         initialByteCount: Int = 262_144,
         maxByteCount: Int = 2_097_152,
         session: URLSession = .shared,
+        completion: @escaping (FITSHeaderSummary?) -> Void
+    ) {
+        fetchFITSHeaderSummary(
+            from: url,
+            initialByteCount: initialByteCount,
+            maxByteCount: maxByteCount,
+            session: session,
+            stopAfterFirstImageHDU: false,
+            completion: completion
+        )
+    }
+
+    private func fetchFITSHeaderSummary(
+        from url: URL,
+        initialByteCount: Int,
+        maxByteCount: Int,
+        session: URLSession,
+        stopAfterFirstImageHDU: Bool,
         completion: @escaping (FITSHeaderSummary?) -> Void
     ) {
         let initial = max(initialByteCount, 2_880)
@@ -743,6 +833,11 @@ extension SwiftMAST {
                             headers: mergedHeaders,
                             wcs: FITSWCS(headers: mergedHeaders)
                         ))
+                }
+
+                if stopAfterFirstImageHDU, !imageHDUs.isEmpty {
+                    finish(reachedEnd: false)
+                    return
                 }
 
                 let nextHeaderOffset = self.paddedOffset(nextDataOffset, blockLength: 2_880)
