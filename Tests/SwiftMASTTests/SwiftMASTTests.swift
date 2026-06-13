@@ -15,7 +15,8 @@ final class SwiftMASTTests: XCTestCase {
         obs_collection: String = "HST",
         t_min: Float = 0.0,
         t_max: Float = 0.0,
-        t_obs_release: Float = 0.0
+        t_obs_release: Float = 0.0,
+        s_region: String = ""
     ) -> CoamResult {
         return CoamResult(
             calib_level: 3,
@@ -42,7 +43,7 @@ final class SwiftMASTTests: XCTestCase {
             provenance_name: "MAST",
             s_dec: QValue(value: "0.0"),
             s_ra: QValue(value: "0.0"),
-            s_region: "",
+            s_region: s_region,
             sequence_number: 0,
             srcDen: 0,
             t_exptime: 0.0,
@@ -53,6 +54,72 @@ final class SwiftMASTTests: XCTestCase {
             target_name: "M31",
             wavelength_region: "OPTICAL"
         )
+    }
+
+    // MARK: - s_region Area Tests
+
+    func testCoamResultComputesCircleRegionAreaInSquareDegrees() {
+        let coam = makeCoamResult(
+            s_region: "CIRCLE ICRS 254.28210020 -4.10146178 0.625"
+        )
+
+        let radiusRadians = 0.625 * Double.pi / 180.0
+        let expectedArea =
+            2.0 * Double.pi * (1.0 - cos(radiusRadians))
+            * pow(180.0 / Double.pi, 2.0)
+
+        XCTAssertEqual(coam.s_region_area_unit, "deg^2")
+        XCTAssertEqual(coam.s_region_area!, expectedArea, accuracy: 0.000001)
+    }
+
+    func testCoamResultComputesPolygonRegionAreaInSquareDegrees() {
+        let coam = makeCoamResult(
+            s_region: "POLYGON J2000 0 0 1 0 1 1 0 1 0 0"
+        )
+
+        XCTAssertEqual(coam.s_region_area_unit, "deg^2")
+        XCTAssertEqual(coam.s_region_area!, 1.0, accuracy: 0.001)
+    }
+
+    func testCoamResultComputesUnframedSampleCaomPolygonRegion() {
+        let coam = makeCoamResult(
+            obs_id: "00084152002",
+            filters: "UVM2",
+            instrument_name: "UVOT",
+            obs_collection: "SWIFT",
+            s_region: """
+                POLYGON -105.621215 -4.236551 -105.58015599999999 -3.962677
+                -105.70511799999997 -3.942888 -105.851879 -3.927819
+                -105.88995299999999 -4.204189 -105.76943 -4.222054
+                -105.621215 -4.236551 -105.621215 -4.236551
+                """
+        )
+
+        XCTAssertEqual(coam.s_region_area_unit, "deg^2")
+        XCTAssertEqual(coam.s_region_area!, 0.076442643, accuracy: 0.000000001)
+    }
+
+    func testCoamResultComputesUnframedCircleRegionArea() {
+        let coam = makeCoamResult(s_region: "CIRCLE 254.28210020 -4.10146178 0.625")
+
+        XCTAssertEqual(coam.s_region_area!, 1.227172462, accuracy: 0.000000001)
+    }
+
+    func testCoamResultComputesMultiplePolygonRegionArea() {
+        let coam = makeCoamResult(
+            s_region: """
+                POLYGON J2000 0 0 1 0 1 1 0 1
+                POLYGON J2000 2 0 3 0 3 1 2 1
+                """
+        )
+
+        XCTAssertEqual(coam.s_region_area!, 2.0, accuracy: 0.002)
+    }
+
+    func testCoamResultLeavesUnsupportedOrMissingRegionAreaNil() {
+        XCTAssertNil(makeCoamResult(s_region: "").s_region_area)
+        XCTAssertNil(makeCoamResult(s_region: "POSITION ICRS 10 20").s_region_area)
+        XCTAssertNil(makeCoamResult(s_region: "POLYGON J2000 0 0 1").s_region_area)
     }
 
     // MARK: - ImageryFilterOptions Tests

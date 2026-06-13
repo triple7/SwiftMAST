@@ -192,6 +192,7 @@ public struct CoamResult: Codable, Comparable, Hashable, CustomStringConvertible
     public let s_dec: QValue
     public let s_ra: QValue
     public let s_region: String
+    public let s_region_area: Double?
     public let sequence_number: Int
     public let srcDen: Int
     public let t_exptime: Float
@@ -206,6 +207,10 @@ public struct CoamResult: Codable, Comparable, Hashable, CustomStringConvertible
 
     public var preferredDownloadSizeBytes: Int64? {
         dataURLSizeBytes ?? jpegURLSizeBytes
+    }
+
+    public var s_region_area_unit: String {
+        SpaceRegionArea.unit
     }
 
     public var dataURLSizeDescription: String? {
@@ -254,6 +259,83 @@ public struct CoamResult: Codable, Comparable, Hashable, CustomStringConvertible
 }
 
 extension CoamResult {
+    public init(
+        calib_level: Int,
+        dataRights: String,
+        dataURL: String,
+        dataproduct_type: String,
+        distance: Int,
+        em_max: Int,
+        em_min: Int,
+        filters: String,
+        instrument_name: String,
+        intentType: String,
+        jpegURL: String,
+        mtFlag: Bool,
+        objID: Int,
+        obs_collection: String,
+        obs_id: String,
+        obs_title: String,
+        obsid: Int,
+        project: String,
+        proposal_id: String,
+        proposal_pi: String,
+        proposal_type: String,
+        provenance_name: String,
+        s_dec: QValue,
+        s_ra: QValue,
+        s_region: String,
+        sequence_number: Int,
+        srcDen: Int,
+        t_exptime: Float,
+        t_max: Float,
+        t_min: Float,
+        t_obs_release: Float,
+        target_classification: String,
+        target_name: String,
+        wavelength_region: String,
+        dataURLSizeBytes: Int64? = nil,
+        jpegURLSizeBytes: Int64? = nil
+    ) {
+        self.calib_level = calib_level
+        self.dataRights = dataRights
+        self.dataURL = dataURL
+        self.dataproduct_type = dataproduct_type
+        self.distance = distance
+        self.em_max = em_max
+        self.em_min = em_min
+        self.filters = filters
+        self.instrument_name = instrument_name
+        self.intentType = intentType
+        self.jpegURL = jpegURL
+        self.mtFlag = mtFlag
+        self.objID = objID
+        self.obs_collection = obs_collection
+        self.obs_id = obs_id
+        self.obs_title = obs_title
+        self.obsid = obsid
+        self.project = project
+        self.proposal_id = proposal_id
+        self.proposal_pi = proposal_pi
+        self.proposal_type = proposal_type
+        self.provenance_name = provenance_name
+        self.s_dec = s_dec
+        self.s_ra = s_ra
+        self.s_region = s_region
+        self.s_region_area = SpaceRegionArea.squareDegrees(from: s_region)
+        self.sequence_number = sequence_number
+        self.srcDen = srcDen
+        self.t_exptime = t_exptime
+        self.t_max = t_max
+        self.t_min = t_min
+        self.t_obs_release = t_obs_release
+        self.target_classification = target_classification
+        self.target_name = target_name
+        self.wavelength_region = wavelength_region
+        self.dataURLSizeBytes = dataURLSizeBytes
+        self.jpegURLSizeBytes = jpegURLSizeBytes
+    }
+
     public init(data: [QValue]) {
         self.calib_level = data[0].value as! Int
         self.dataRights = data[1].value as! String
@@ -310,6 +392,7 @@ extension CoamResult {
         self.s_dec = data[22]
         self.s_ra = data[23]
         self.s_region = data[24].value as! String
+        self.s_region_area = SpaceRegionArea.squareDegrees(from: self.s_region)
         if let sequence_number = data[25].value as? Int {
             self.sequence_number = sequence_number
         } else {
