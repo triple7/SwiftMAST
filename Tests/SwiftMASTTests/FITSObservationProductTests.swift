@@ -341,6 +341,7 @@ final class FITSObservationProductTests: XCTestCase {
             for: coam,
             initialByteCount: data.count,
             maxByteCount: data.count,
+            fetchMode: .range,
             session: URLSession.mockFITSHeaderSummary
         ) { metadata in
             XCTAssertEqual(metadata?.width, 4654)
@@ -352,6 +353,49 @@ final class FITSObservationProductTests: XCTestCase {
 
         wait(for: [expectation], timeout: 2)
         XCTAssertEqual(requestedRanges, ["bytes=0-5759", "bytes=2880-8639"])
+        FITSHeaderSummaryMockURLProtocol.requestHandler = nil
+    }
+
+    func testStreamPreferredFITSImageHeaderMetadataDoesNotUseRangeRequest() throws {
+        let data = makePartialFITSHeaderData()
+        let expectedURL = URL(string: "https://example.com/science.fits")!
+        let expectation = expectation(description: "Stream preferred FITS image metadata")
+        var sawRequest = false
+
+        FITSHeaderSummaryMockURLProtocol.requestHandler = { request in
+            XCTAssertEqual(request.url, expectedURL)
+            XCTAssertNil(request.value(forHTTPHeaderField: "Range"))
+            sawRequest = true
+
+            let response = HTTPURLResponse(
+                url: expectedURL,
+                statusCode: 200,
+                httpVersion: nil,
+                headerFields: [
+                    "Content-Length": "\(data.count)"
+                ]
+            )!
+            return (response, data)
+        }
+
+        let configuration = URLSessionConfiguration.ephemeral
+        configuration.protocolClasses = [FITSHeaderSummaryMockURLProtocol.self]
+
+        SwiftMAST().streamPreferredFITSImageHeaderMetadata(
+            from: expectedURL,
+            maxByteCount: data.count,
+            configuration: configuration
+        ) { metadata in
+            XCTAssertEqual(metadata?.extIndex, 1)
+            XCTAssertEqual(metadata?.role, .science)
+            XCTAssertEqual(metadata?.width, 4654)
+            XCTAssertEqual(metadata?.height, 4648)
+            XCTAssertEqual(metadata?.remoteFileSizeBytes, Int64(data.count))
+            expectation.fulfill()
+        }
+
+        wait(for: [expectation], timeout: 2)
+        XCTAssertTrue(sawRequest)
         FITSHeaderSummaryMockURLProtocol.requestHandler = nil
     }
 
@@ -389,6 +433,7 @@ final class FITSObservationProductTests: XCTestCase {
 
         SwiftMAST().enrichCoamResultsWithFITSImageMetadata(
             [fitsCoam, jpegCoam],
+            fetchMode: .range,
             session: URLSession.mockFITSHeaderSummary
         ) { enriched in
             XCTAssertEqual(enriched.count, 2)

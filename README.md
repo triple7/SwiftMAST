@@ -163,7 +163,7 @@ if let bitpix = product.header(forKeyword: "BITPIX") {
 
 ### Fast FITS Image Header Metadata
 
-Use `fetchPreferredFITSImageHeaderMetadata` when you only need the main image headers from a FITS `dataURL` and do not want to download or decode the image pixels. It uses HTTP byte-range requests, walks FITS HDU headers, and stops after the first usable image HDU: the primary image if present, otherwise the first image/science extension it reaches.
+Use `fetchPreferredFITSImageHeaderMetadata` when you only need the main image headers from a FITS `dataURL` and do not want to download or decode the image pixels. It streams the FITS response by default, walks FITS HDU headers as bytes arrive, and closes the transfer after the first usable image HDU: the primary image if present, otherwise the first image/science extension it reaches. HTTP byte-range mode is still available with `fetchMode: .range`.
 
 ```swift
 mast.fetchPreferredFITSImageHeaderMetadata(for: coamResult) { metadata in
@@ -175,6 +175,10 @@ mast.fetchPreferredFITSImageHeaderMetadata(for: coamResult) { metadata in
     print("Remote FITS file bytes: \(metadata.remoteFileSizeBytes ?? 0)")
     print("Pixel scale: \(metadata.pixelScaleArcsecondsX ?? 0) arcsec/pixel")
     print("Reference sky coordinate: \(metadata.referenceCoordinate?.ra ?? 0), \(metadata.referenceCoordinate?.dec ?? 0)")
+}
+
+mast.fetchPreferredFITSImageHeaderMetadata(for: coamResult, fetchMode: .range) { metadata in
+    print(metadata?.width ?? 0, metadata?.height ?? 0)
 }
 ```
 

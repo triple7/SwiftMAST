@@ -649,6 +649,7 @@ extension SwiftMAST {
         from productURL: String,
         initialByteCount: Int = 2_880,
         maxByteCount: Int = 262_144,
+        fetchMode: FITSImageMetadataFetchMode = .stream,
         session: URLSession = .shared,
         completion: @escaping (FITSImageHeaderMetadata?) -> Void
     ) {
@@ -661,6 +662,7 @@ extension SwiftMAST {
             from: url,
             initialByteCount: initialByteCount,
             maxByteCount: maxByteCount,
+            fetchMode: fetchMode,
             session: session
         ) { metadata in
             completion(metadata)
@@ -673,9 +675,19 @@ extension SwiftMAST {
         from url: URL,
         initialByteCount: Int = 2_880,
         maxByteCount: Int = 262_144,
+        fetchMode: FITSImageMetadataFetchMode = .stream,
         session: URLSession = .shared,
         completion: @escaping (FITSImageHeaderMetadata?) -> Void
     ) {
+        if fetchMode == .stream {
+            streamPreferredFITSImageHeaderMetadata(
+                from: url,
+                maxByteCount: maxByteCount,
+                completion: completion
+            )
+            return
+        }
+
         fetchFITSHeaderSummary(
             from: url,
             initialByteCount: initialByteCount,
@@ -693,6 +705,7 @@ extension SwiftMAST {
         for coamResult: CoamResult,
         initialByteCount: Int = 2_880,
         maxByteCount: Int = 262_144,
+        fetchMode: FITSImageMetadataFetchMode = .stream,
         session: URLSession = .shared,
         completion: @escaping (FITSImageHeaderMetadata?) -> Void
     ) {
@@ -705,13 +718,37 @@ extension SwiftMAST {
             from: coamResult.dataURL,
             initialByteCount: initialByteCount,
             maxByteCount: maxByteCount,
+            fetchMode: fetchMode,
             session: session,
             completion: completion
         )
     }
 
+    internal func streamPreferredFITSImageHeaderMetadata(
+        from url: URL,
+        maxByteCount: Int = 262_144,
+        configuration: URLSessionConfiguration = .ephemeral,
+        completion: @escaping (FITSImageHeaderMetadata?) -> Void
+    ) {
+        let fetcher = FITSImageHeaderMetadataStreamFetcher(
+            url: url,
+            maxByteCount: max(maxByteCount, 2_880),
+            configuration: configuration
+        ) { data, remoteFileSize in
+            self.parseFITSHeaderSummary(
+                data: data,
+                sourceURL: url,
+                remoteFileSizeBytes: remoteFileSize
+            )?.preferredImageMetadata
+        } completion: { metadata in
+            completion(metadata)
+        }
+        fetcher.start()
+    }
+
     internal func enrichCoamResultsWithFITSImageMetadata(
         _ results: [CoamResult],
+        fetchMode: FITSImageMetadataFetchMode = .stream,
         session: URLSession = .shared,
         completion: @escaping ([CoamResult]) -> Void
     ) {
@@ -728,7 +765,11 @@ extension SwiftMAST {
             guard shouldFetchFITSImageMetadata(for: coam.dataURL) else { continue }
 
             group.enter()
-            fetchPreferredFITSImageHeaderMetadata(for: coam, session: session) { metadata in
+            fetchPreferredFITSImageHeaderMetadata(
+                for: coam,
+                fetchMode: fetchMode,
+                session: session
+            ) { metadata in
                 if let metadata {
                     lock.lock()
                     enriched[index] = coam.withFITSImageHeaderMetadata(metadata)
@@ -1630,4 +1671,100 @@ extension SwiftMAST {
         return products
     }
 
+}
+
+private final class FITSImageHeaderMetadataStreamFetcher: NSObject, URLSessionDataDelegate {
+    private let url: URL
+    private let maxByteCount: Int
+    private let configuration: URLSessionConfiguration
+    private let parse: (Data, Int64?) -> FITSImageHeaderMetadata?
+    private let completion: (FITSImageHeaderMetadata?) -> Void
+
+    private var session: URLSession?
+    private var task: URLSessionDataTask?
+    private var data = Data()
+    private var remoteFileSize: Int64?
+    private var didComplete = false
+
+    init(
+        url: URL,
+        maxByteCount: Int,
+        configuration: URLSessionConfiguration,
+        parse: @escaping (Data, Int64?) -> FITSImageHeaderMetadata?,
+        completion: @escaping (FITSImageHeaderMetadata?) -> Void
+    ) {
+        self.url = url
+        self.maxByteCount = maxByteCount
+        self.configuration = configuration
+        self.parse = parse
+        self.completion = completion
+    }
+
+    func start() {
+        let queue = OperationQueue()
+        queue.maxConcurrentOperationCount = 1
+        let session = URLSession(configuration: configuration, delegate: self, delegateQueue: queue)
+        self.session = session
+
+        var request = URLRequest(url: url)
+        request.timeoutInterval = 30
+        task = session.dataTask(with: request)
+        task?.resume()
+    }
+
+    func urlSession(
+        _ session: URLSession,
+        dataTask: URLSessionDataTask,
+        didReceive response: URLResponse,
+        completionHandler: @escaping (URLSession.ResponseDisposition) -> Void
+    ) {
+        if let httpResponse = response as? HTTPURLResponse {
+            remoteFileSize = remoteFileSize(from: httpResponse)
+        } else {
+            let expected = response.expectedContentLength
+            remoteFileSize = expected > 0 ? expected : nil
+        }
+        completionHandler(.allow)
+    }
+
+    func urlSession(_ session: URLSession, dataTask: URLSessionDataTask, didReceive chunk: Data) {
+        guard !didComplete else { return }
+        data.append(chunk)
+
+        if let metadata = parse(data, remoteFileSize) {
+            finish(metadata)
+            return
+        }
+
+        if data.count >= maxByteCount {
+            finish(nil)
+        }
+    }
+
+    func urlSession(_ session: URLSession, task: URLSessionTask, didCompleteWithError error: Error?) {
+        guard !didComplete else { return }
+        finish(parse(data, remoteFileSize))
+    }
+
+    private func finish(_ metadata: FITSImageHeaderMetadata?) {
+        guard !didComplete else { return }
+        didComplete = true
+        task?.cancel()
+        session?.invalidateAndCancel()
+        completion(metadata)
+    }
+
+    private func remoteFileSize(from response: HTTPURLResponse) -> Int64? {
+        if let contentRange = response.value(forHTTPHeaderField: "Content-Range"),
+            let total = contentRange.split(separator: "/").last,
+            let size = Int64(total)
+        {
+            return size
+        }
+        if let contentLength = response.value(forHTTPHeaderField: "Content-Length") {
+            return Int64(contentLength)
+        }
+        let expected = response.expectedContentLength
+        return expected > 0 ? expected : nil
+    }
 }

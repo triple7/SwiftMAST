@@ -326,6 +326,15 @@ public struct FITSHeaderSummary: Codable, Equatable {
     }
 }
 
+/// Transport strategy for quick FITS image metadata reads.
+public enum FITSImageMetadataFetchMode: String, Codable, Equatable {
+    /// Read the response incrementally and close it after the preferred image HDU is found.
+    case stream
+
+    /// Use HTTP byte-range requests to jump between FITS HDU headers.
+    case range
+}
+
 /// Header-only metadata for one image HDU inside a FITS product.
 public struct FITSHeaderHDUSummary: Codable, Equatable {
     public let extIndex: Int
