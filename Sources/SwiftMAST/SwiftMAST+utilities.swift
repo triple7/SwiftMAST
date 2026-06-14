@@ -710,6 +710,46 @@ extension SwiftMAST {
         )
     }
 
+    internal func enrichCoamResultsWithFITSImageMetadata(
+        _ results: [CoamResult],
+        session: URLSession = .shared,
+        completion: @escaping ([CoamResult]) -> Void
+    ) {
+        guard !results.isEmpty else {
+            completion([])
+            return
+        }
+
+        let group = DispatchGroup()
+        let lock = NSLock()
+        var enriched = results
+
+        for (index, coam) in results.enumerated() {
+            guard shouldFetchFITSImageMetadata(for: coam.dataURL) else { continue }
+
+            group.enter()
+            fetchPreferredFITSImageHeaderMetadata(for: coam, session: session) { metadata in
+                if let metadata {
+                    lock.lock()
+                    enriched[index] = coam.withFITSImageHeaderMetadata(metadata)
+                    lock.unlock()
+                }
+                group.leave()
+            }
+        }
+
+        group.notify(queue: .main) {
+            completion(enriched)
+        }
+    }
+
+    private func shouldFetchFITSImageMetadata(for dataURL: String) -> Bool {
+        let lowercased = dataURL.lowercased()
+        guard !lowercased.isEmpty else { return false }
+        if lowercased.hasPrefix("mast:") { return true }
+        return lowercased.contains(".fits") || lowercased.contains(".fit")
+    }
+
     /// Fetch and parse remote FITS headers using HTTP byte-range requests.
     public func fetchFITSHeaderSummary(
         from url: URL,

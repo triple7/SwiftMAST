@@ -204,6 +204,7 @@ public struct CoamResult: Codable, Comparable, Hashable, CustomStringConvertible
     public let wavelength_region: String
     public var dataURLSizeBytes: Int64? = nil
     public var jpegURLSizeBytes: Int64? = nil
+    public var fitsImageHeaderMetadata: FITSImageHeaderMetadata? = nil
 
     public var preferredDownloadSizeBytes: Int64? {
         dataURLSizeBytes ?? jpegURLSizeBytes
@@ -295,7 +296,8 @@ extension CoamResult {
         target_name: String,
         wavelength_region: String,
         dataURLSizeBytes: Int64? = nil,
-        jpegURLSizeBytes: Int64? = nil
+        jpegURLSizeBytes: Int64? = nil,
+        fitsImageHeaderMetadata: FITSImageHeaderMetadata? = nil
     ) {
         self.calib_level = calib_level
         self.dataRights = dataRights
@@ -334,6 +336,7 @@ extension CoamResult {
         self.wavelength_region = wavelength_region
         self.dataURLSizeBytes = dataURLSizeBytes
         self.jpegURLSizeBytes = jpegURLSizeBytes
+        self.fitsImageHeaderMetadata = fitsImageHeaderMetadata
     }
 
     public init(data: [QValue]) {
@@ -434,12 +437,19 @@ extension CoamResult {
         self.target_classification = data[31].value as! String
         self.target_name = data[32].value as! String
         self.wavelength_region = data[33].value as! String
+        self.fitsImageHeaderMetadata = nil
     }
 
     public func withFileSizes(dataURLSizeBytes: Int64?, jpegURLSizeBytes: Int64?) -> CoamResult {
         var copy = self
         copy.dataURLSizeBytes = dataURLSizeBytes
         copy.jpegURLSizeBytes = jpegURLSizeBytes
+        return copy
+    }
+
+    public func withFITSImageHeaderMetadata(_ metadata: FITSImageHeaderMetadata?) -> CoamResult {
+        var copy = self
+        copy.fitsImageHeaderMetadata = metadata
         return copy
     }
 

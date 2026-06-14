@@ -1503,15 +1503,18 @@ extension SwiftMAST {
                 }
 
                 self.enrichCoamResultsWithFileSizes(filteredResults) { enrichedResults in
-                    let groups = self.buildObservationGroups(
-                        from: enrichedResults, sortOrder: sortOrder)
+                    self.enrichCoamResultsWithFITSImageMetadata(enrichedResults) {
+                        enrichedImageResults in
+                        let groups = self.buildObservationGroups(
+                            from: enrichedImageResults, sortOrder: sortOrder)
 
-                    self.log(
-                        .OK,
-                        message: "getObservationGroups: Built \(groups.count) observation groups"
-                    )
+                        self.log(
+                            .OK,
+                            message: "getObservationGroups: Built \(groups.count) observation groups"
+                        )
 
-                    result(groups)
+                        result(groups)
+                    }
                 }
             })
     }

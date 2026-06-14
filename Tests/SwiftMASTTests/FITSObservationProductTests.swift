@@ -355,6 +355,60 @@ final class FITSObservationProductTests: XCTestCase {
         FITSHeaderSummaryMockURLProtocol.requestHandler = nil
     }
 
+    func testEnrichCoamResultsWithFITSImageMetadataAttachesHeaderProperties() throws {
+        let data = makePartialFITSHeaderData()
+        let expectedURL = URL(string: "https://example.com/science.fits")!
+        let expectation = expectation(description: "Enrich CoamResult with FITS image metadata")
+        var requestedRanges = [String]()
+
+        FITSHeaderSummaryMockURLProtocol.requestHandler = { request in
+            XCTAssertEqual(request.url, expectedURL)
+            let range = try XCTUnwrap(request.value(forHTTPHeaderField: "Range"))
+            requestedRanges.append(range)
+
+            let start = range
+                .replacingOccurrences(of: "bytes=", with: "")
+                .split(separator: "-")
+                .first
+                .flatMap { Int($0) } ?? 0
+            let responseData = start < data.count ? data[start..<data.count] : Data()
+            let response = HTTPURLResponse(
+                url: expectedURL,
+                statusCode: 206,
+                httpVersion: nil,
+                headerFields: [
+                    "Content-Range": "bytes \(start)-\(start + responseData.count - 1)/123456789",
+                    "Content-Length": "\(responseData.count)",
+                ]
+            )!
+            return (response, responseData)
+        }
+
+        let fitsCoam = makeCoamResult(dataURL: "http://example.com/science.fits")
+        let jpegCoam = makeCoamResult(dataURL: "https://example.com/preview.jpg")
+
+        SwiftMAST().enrichCoamResultsWithFITSImageMetadata(
+            [fitsCoam, jpegCoam],
+            session: URLSession.mockFITSHeaderSummary
+        ) { enriched in
+            XCTAssertEqual(enriched.count, 2)
+
+            let metadata = enriched[0].fitsImageHeaderMetadata
+            XCTAssertEqual(metadata?.width, 4654)
+            XCTAssertEqual(metadata?.height, 4648)
+            XCTAssertEqual(metadata?.axisLengths, [4654, 4648])
+            XCTAssertEqual(metadata?.role, .science)
+            XCTAssertEqual(metadata?.pixelScaleArcsecondsX ?? 0, 0.10000000008, accuracy: 1e-10)
+
+            XCTAssertNil(enriched[1].fitsImageHeaderMetadata)
+            expectation.fulfill()
+        }
+
+        wait(for: [expectation], timeout: 2)
+        XCTAssertEqual(requestedRanges, ["bytes=0-2879", "bytes=2880-5759"])
+        FITSHeaderSummaryMockURLProtocol.requestHandler = nil
+    }
+
     func testFetchFITSHeaderSummaryWalksExtensionHeaderOffsets() throws {
         let data = makeMultiExtensionHeaderData()
         let expectedURL = URL(string: "https://example.com/multi.fits")!
@@ -553,11 +607,11 @@ final class FITSObservationProductTests: XCTestCase {
         image.header("CD2_2", value: Float(0.0001), comment: nil)
     }
 
-    private func makeCoamResult() -> CoamResult {
+    private func makeCoamResult(dataURL: String = "") -> CoamResult {
         CoamResult(
             calib_level: 3,
             dataRights: "PUBLIC",
-            dataURL: "",
+            dataURL: dataURL,
             dataproduct_type: "IMAGE",
             distance: 0,
             em_max: 0,
