@@ -171,10 +171,14 @@ mast.fetchPreferredFITSImageHeaderMetadata(for: coamResult) { metadata in
 
     print("Size: \(metadata.width) x \(metadata.height)")
     print("Axes: \(metadata.axisLengths)")
+    print("Image bytes: \(metadata.dataSizeBytes)")
+    print("Remote FITS file bytes: \(metadata.remoteFileSizeBytes ?? 0)")
     print("Pixel scale: \(metadata.pixelScaleArcsecondsX ?? 0) arcsec/pixel")
     print("Reference sky coordinate: \(metadata.referenceCoordinate?.ra ?? 0), \(metadata.referenceCoordinate?.dec ?? 0)")
 }
 ```
+
+`dataSizeBytes` is the size of the selected FITS image HDU payload in bytes. It is computed from FITS header keywords such as `BITPIX`, `NAXIS`, `NAXIS1`, `NAXIS2`, `PCOUNT`, and `GCOUNT`; the image pixels do not need to be downloaded to calculate it. `remoteFileSizeBytes` is the size of the whole remote FITS file when the server reports it through HTTP headers such as `Content-Range` or `Content-Length`.
 
 For all parsed image HDUs instead of the quick preferred image, use `fetchFITSHeaderSummary(from:)`.
 
