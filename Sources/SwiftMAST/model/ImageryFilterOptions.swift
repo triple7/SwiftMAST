@@ -172,7 +172,18 @@ public struct ImageryFilterOptions {
 
     /// Swift UVOT
     public static var swiftOnly: ImageryFilterOptions {
-        ImageryFilterOptions(collections: ["SWIFT"])
+        ImageryFilterOptions(
+            collections: ["SWIFT"], calibLevels: ["2"], dataProductTypes: ["IMAGE", "CUBE"])
+    }
+
+    /// Pan-STARRS1 optical survey
+    public static var ps1Only: ImageryFilterOptions {
+        ImageryFilterOptions(collections: ["PS1"], calibLevels: ["3"])
+    }
+
+    /// Transiting Exoplanet Survey Satellite imagery
+    public static var tessOnly: ImageryFilterOptions {
+        ImageryFilterOptions(collections: ["TESS"], calibLevels: ["2"])
     }
 
     /// JWST MIRI instrument only

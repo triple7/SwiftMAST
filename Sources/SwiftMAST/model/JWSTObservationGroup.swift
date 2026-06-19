@@ -11,6 +11,10 @@ import Foundation
 public enum ObservationMission: String, Codable, CaseIterable, Identifiable {
     case jwst = "JWST"
     case hst = "HST"
+    case ps1 = "PS1"
+    case galex = "GALEX"
+    case swift = "SWIFT"
+    case tess = "TESS"
 
     public var id: String { rawValue }
 
@@ -20,12 +24,50 @@ public enum ObservationMission: String, Codable, CaseIterable, Identifiable {
             return ["JWST"]
         case .hst:
             return ["HST", "HLA"]
+        case .ps1:
+            return ["PS1"]
+        case .galex:
+            return ["GALEX"]
+        case .swift:
+            return ["SWIFT"]
+        case .tess:
+            return ["TESS"]
+        }
+    }
+
+    /// Calibration levels normally used by this collection in MAST CAOM.
+    public var defaultCalibrationLevels: [String] {
+        switch self {
+        case .jwst, .hst:
+            return ["3", "4"]
+        case .ps1:
+            return ["3"]
+        case .galex, .swift, .tess:
+            return ["2"]
+        }
+    }
+
+    /// CAOM product types that can represent imagery for this collection.
+    public var imageryDataProductTypes: [String] {
+        switch self {
+        case .swift:
+            return ["IMAGE", "CUBE"]
+        default:
+            return ["IMAGE"]
         }
     }
 
     public static var jwstOnly: [ObservationMission] { [.jwst] }
     public static var hstOnly: [ObservationMission] { [.hst] }
+    public static var ps1Only: [ObservationMission] { [.ps1] }
+    public static var galexOnly: [ObservationMission] { [.galex] }
+    public static var swiftOnly: [ObservationMission] { [.swift] }
+    public static var tessOnly: [ObservationMission] { [.tess] }
     public static var jwstAndHST: [ObservationMission] { [.jwst, .hst] }
+    /// Popular MAST imaging collections supported by observation grouping.
+    public static var majorImaging: [ObservationMission] {
+        [.jwst, .hst, .ps1, .galex, .swift, .tess]
+    }
 }
 
 /// How products within an ``ObservationGroup`` are sorted.
@@ -59,7 +101,7 @@ public struct ObservationGroup: CustomStringConvertible {
     /// Products sorted according to the sort order used when building this group.
     public let products: [CoamResult]
 
-    /// Unique filter names in wavelength order
+    /// Filter names in product sort order.
     public var filterNames: [String] {
         products.map { $0.filters }
     }
@@ -116,6 +158,19 @@ public func jwstFilterWavelength(_ filterName: String) -> Int {
 public func observationFilterWavelength(_ filterName: String) -> Int {
     // For compound filters like "F444W;F405N", use the first component
     let primary = filterName.split(separator: ";").first.map(String.init) ?? filterName
+    // Common named survey filters, expressed as approximate nanometres. This
+    // preserves useful wavelength ordering for GALEX, Swift UVOT, and PS1.
+    let namedWavelengths = [
+        "FUV": 153, "NUV": 231,
+        "UVW2": 193, "UVM2": 225, "UVW1": 260,
+        "U": 346, "B": 439, "V": 547,
+        "G": 481, "R": 617, "I": 752, "Z": 866, "Y": 962,
+        "TESS": 786,
+    ]
+    if let wavelength = namedWavelengths[primary.uppercased()] {
+        return wavelength
+    }
+
     // Match the leading F followed by digits
     guard let regex = try? NSRegularExpression(pattern: "^[Ff](\\d+)", options: []),
         let match = regex.firstMatch(
@@ -269,9 +324,8 @@ extension CoamResult {
     /// The broad observation mission represented by this result.
     public var observationMission: ObservationMission? {
         let collection = obs_collection.uppercased()
-        if collection == "JWST" { return .jwst }
-        if collection == "HST" || collection == "HLA" { return .hst }
-        return nil
+        if collection == "HLA" { return .hst }
+        return ObservationMission.allCases.first { $0.rawValue == collection }
     }
 
     /// Filter display colors derived from recognized HST or JWST filter metadata.

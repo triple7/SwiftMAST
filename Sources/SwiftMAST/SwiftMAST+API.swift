@@ -1359,7 +1359,36 @@ extension SwiftMAST {
 
     // MARK: - Observation Groups
 
-    /** Query science products and group them by observation session for JWST, HST, or both.
+    /** Query observation groups for one mission/collection.
+
+     This convenience overload avoids wrapping a single selection in an array.
+     Use the `missions:` overload to query any combination of collections.
+     */
+    public func getObservationGroups(
+        targetName: String,
+        mission: ObservationMission,
+        instruments: [String]? = nil,
+        filterBands: [String]? = nil,
+        calibLevels: [String]? = nil,
+        dataProductTypes: [String]? = nil,
+        pageSize: Int = 400,
+        sortOrder: ObservationProductSortOrder = .filter,
+        result: @escaping ([ObservationGroup]) -> Void
+    ) {
+        getObservationGroups(
+            targetName: targetName,
+            missions: [mission],
+            instruments: instruments,
+            filterBands: filterBands,
+            calibLevels: calibLevels,
+            dataProductTypes: dataProductTypes,
+            pageSize: pageSize,
+            sortOrder: sortOrder,
+            result: result
+        )
+    }
+
+    /** Query science products and group them by observation session for supported MAST collections.
 
      This is the mission-generic version of `getJWSTObservationGroups`. Existing JWST-specific
      functions remain available and call through the same grouping model.
@@ -1369,7 +1398,8 @@ extension SwiftMAST {
         missions: [ObservationMission] = ObservationMission.jwstAndHST,
         instruments: [String]? = nil,
         filterBands: [String]? = nil,
-        calibLevels: [String] = ["3", "4"],
+        calibLevels: [String]? = nil,
+        dataProductTypes: [String]? = nil,
         pageSize: Int = 400,
         sortOrder: ObservationProductSortOrder = .filter,
         result: @escaping ([ObservationGroup]) -> Void
@@ -1393,11 +1423,46 @@ extension SwiftMAST {
                 instruments: instruments,
                 filterBands: filterBands,
                 calibLevels: calibLevels,
+                dataProductTypes: dataProductTypes,
                 pageSize: pageSize,
                 sortOrder: sortOrder,
                 result: result
             )
         }
+    }
+
+    /** Query observation groups at coordinates for one mission/collection.
+
+     Use the `missions:` overload to query any combination of collections.
+     */
+    public func getObservationGroups(
+        targetName: String,
+        ra: Float,
+        dec: Float,
+        radius: Float,
+        mission: ObservationMission,
+        instruments: [String]? = nil,
+        filterBands: [String]? = nil,
+        calibLevels: [String]? = nil,
+        dataProductTypes: [String]? = nil,
+        pageSize: Int = 400,
+        sortOrder: ObservationProductSortOrder = .filter,
+        result: @escaping ([ObservationGroup]) -> Void
+    ) {
+        getObservationGroups(
+            targetName: targetName,
+            ra: ra,
+            dec: dec,
+            radius: radius,
+            missions: [mission],
+            instruments: instruments,
+            filterBands: filterBands,
+            calibLevels: calibLevels,
+            dataProductTypes: dataProductTypes,
+            pageSize: pageSize,
+            sortOrder: sortOrder,
+            result: result
+        )
     }
 
     /** Query science products at given coordinates and group them by observation session.
@@ -1407,10 +1472,11 @@ extension SwiftMAST {
      * ra: Float - Right Ascension (degrees, J2000)
      * dec: Float - Declination (degrees, J2000)
      * radius: Float - Search radius in degrees
-     * missions: [ObservationMission] - `.jwst`, `.hst`, or both
+     * missions: [ObservationMission] - supported MAST mission/collection families
      * instruments: [String]? - optional instrument filter
      * filterBands: [String]? - optional filter band filter (e.g. ["F150W"])
-     * calibLevels: [String] - calibration levels (default: ["3", "4"])
+     * calibLevels: [String]? - calibration levels; nil chooses collection-aware defaults
+     * dataProductTypes: [String]? - CAOM product types; nil chooses collection-aware imagery defaults
      * pageSize: Int - number of results per page (default: 400)
      * result: Closure returning an array of ``ObservationGroup``
      */
@@ -1422,12 +1488,17 @@ extension SwiftMAST {
         missions: [ObservationMission] = ObservationMission.jwstAndHST,
         instruments: [String]? = nil,
         filterBands: [String]? = nil,
-        calibLevels: [String] = ["3", "4"],
+        calibLevels: [String]? = nil,
+        dataProductTypes: [String]? = nil,
         pageSize: Int = 400,
         sortOrder: ObservationProductSortOrder = .filter,
         result: @escaping ([ObservationGroup]) -> Void
     ) {
         let collections = Array(Set(missions.flatMap(\.collectionNames))).sorted()
+        let resolvedCalibLevels = calibLevels
+            ?? Array(Set(missions.flatMap(\.defaultCalibrationLevels))).sorted()
+        let resolvedDataProductTypes = dataProductTypes
+            ?? Array(Set(missions.flatMap(\.imageryDataProductTypes))).sorted()
         self.log(
             .OK,
             message:
@@ -1438,7 +1509,8 @@ extension SwiftMAST {
             collections: collections,
             instruments: instruments,
             filterBands: filterBands,
-            calibLevels: calibLevels
+            calibLevels: resolvedCalibLevels,
+            dataProductTypes: resolvedDataProductTypes
         )
 
         self.setTargetId(targetId: targetName)
@@ -1620,34 +1692,44 @@ extension SwiftMAST {
         from results: [CoamResult],
         sortOrder: ObservationProductSortOrder = .filter
     ) -> [ObservationGroup] {
-        // Group by observation key
-        var grouped = [String: [CoamResult]]()
+        struct GroupIdentity: Hashable {
+            let mission: String
+            let observationKey: String
+            let instrument: String
+        }
+
+        // Mission and instrument are part of the identity so unrelated
+        // collections cannot be merged when they happen to reuse an obs_id.
+        var grouped = [GroupIdentity: [CoamResult]]()
         for coam in results {
-            let key = observationGroupKey(coam)
-            if grouped[key] == nil {
-                grouped[key] = [coam]
-            } else {
-                grouped[key]!.append(coam)
-            }
+            let identity = GroupIdentity(
+                mission: coam.observationMission?.rawValue ?? coam.obs_collection.uppercased(),
+                observationKey: observationGroupKey(coam),
+                instrument: coam.instrument_name
+            )
+            grouped[identity, default: []].append(coam)
         }
 
         // Build sorted groups
         var groups = [ObservationGroup]()
-        for (key, products) in grouped {
+        for (identity, products) in grouped {
             let sorted = products.sorted { compareObservationProducts($0, $1, by: sortOrder) }
-            let instrument = sorted.first?.instrument_name ?? ""
-            let mission = sorted.first?.observationMission?.rawValue ?? sorted.first?.obs_collection ?? ""
             groups.append(
                 ObservationGroup(
-                    mission: mission,
-                    observationKey: key,
-                    instrument: instrument,
+                    mission: identity.mission,
+                    observationKey: identity.observationKey,
+                    instrument: identity.instrument,
                     products: sorted
                 ))
         }
 
-        // Sort groups by key
-        groups.sort { $0.observationKey < $1.observationKey }
+        groups.sort {
+            if $0.mission != $1.mission { return $0.mission < $1.mission }
+            if $0.observationKey != $1.observationKey {
+                return $0.observationKey < $1.observationKey
+            }
+            return $0.instrument < $1.instrument
+        }
         return groups
     }
 

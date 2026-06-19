@@ -1836,6 +1836,33 @@ final class SwiftMASTTests: XCTestCase {
         XCTAssertEqual(sorted, expected)
     }
 
+    func testCommonSurveyFiltersSortByWavelength() {
+        XCTAssertEqual(
+            ["y", "i", "g", "z", "r"].sorted(by: compareObservationFilters),
+            ["g", "r", "i", "z", "y"]
+        )
+        XCTAssertEqual(
+            ["NUV", "FUV"].sorted(by: compareObservationFilters),
+            ["FUV", "NUV"]
+        )
+        XCTAssertEqual(
+            ["V", "UVW1", "UVM2", "UVW2"].sorted(by: compareObservationFilters),
+            ["UVW2", "UVM2", "UVW1", "V"]
+        )
+    }
+
+    func testMajorObservationMissionCollectionsAndDefaults() {
+        XCTAssertEqual(ObservationMission.hst.collectionNames, ["HST", "HLA"])
+        XCTAssertEqual(ObservationMission.ps1.collectionNames, ["PS1"])
+        XCTAssertEqual(ObservationMission.galex.defaultCalibrationLevels, ["2"])
+        XCTAssertEqual(ObservationMission.swift.imageryDataProductTypes, ["IMAGE", "CUBE"])
+        XCTAssertEqual(ObservationMission.tess.collectionNames, ["TESS"])
+        XCTAssertEqual(
+            Set(ObservationMission.majorImaging),
+            Set([.jwst, .hst, .ps1, .galex, .swift, .tess])
+        )
+    }
+
     func testJWSTObservationGroupKey() {
         // Standard obs_id with 4+ parts
         XCTAssertEqual(
@@ -1961,6 +1988,43 @@ final class SwiftMASTTests: XCTestCase {
         XCTAssertEqual(groups[1].mission, "JWST")
         XCTAssertEqual(groups[1].observationKey, "jw01783-o004_t008_nircam")
         XCTAssertEqual(groups[1].filterNames, ["F200W"])
+    }
+
+    func testBuildObservationGroupsForMajorImagingCollections() {
+        let mast = SwiftMAST()
+        let ps1G = makeCoamResult(
+            obs_id: "stack-123", filters: "g", instrument_name: "GPC1", obs_collection: "PS1")
+        let ps1R = makeCoamResult(
+            obs_id: "stack-123", filters: "r", instrument_name: "GPC1", obs_collection: "PS1")
+        let galexFUV = makeCoamResult(
+            obs_id: "visit-123", filters: "FUV", instrument_name: "GALEX",
+            obs_collection: "GALEX")
+        let galexNUV = makeCoamResult(
+            obs_id: "visit-123", filters: "NUV", instrument_name: "GALEX",
+            obs_collection: "GALEX")
+        let swift = makeCoamResult(
+            obs_id: "visit-123", filters: "UVW2", instrument_name: "UVOT",
+            obs_collection: "SWIFT")
+
+        let groups = mast.buildObservationGroups(
+            from: [ps1R, galexNUV, swift, ps1G, galexFUV])
+
+        XCTAssertEqual(groups.count, 3)
+        XCTAssertEqual(groups.first { $0.mission == "PS1" }?.filterNames, ["g", "r"])
+        XCTAssertEqual(groups.first { $0.mission == "GALEX" }?.filterNames, ["FUV", "NUV"])
+        XCTAssertEqual(groups.first { $0.mission == "SWIFT" }?.filterNames, ["UVW2"])
+    }
+
+    func testObservationGroupIdentityIncludesInstrument() {
+        let mast = SwiftMAST()
+        let uvot = makeCoamResult(
+            obs_id: "0001", filters: "UVW2", instrument_name: "UVOT",
+            obs_collection: "SWIFT")
+        let xrt = makeCoamResult(
+            obs_id: "0001", filters: "XRT", instrument_name: "XRT",
+            obs_collection: "SWIFT")
+
+        XCTAssertEqual(mast.buildObservationGroups(from: [uvot, xrt]).count, 2)
     }
 
     func testCoamResultFilterColorMap() {
