@@ -182,6 +182,14 @@ mast.fetchPreferredFITSImageHeaderMetadata(for: coamResult, fetchMode: .range) {
 }
 ```
 
+Batch file-size and FITS metadata enrichment uses at most 20 concurrent requests by default.
+Configure the ceiling on the `SwiftMAST` instance before starting a query:
+
+```swift
+let mast = SwiftMAST()
+mast.maxConcurrentRequests = 8
+```
+
 `dataSizeBytes` is the size of the selected FITS image HDU payload in bytes. It is computed from FITS header keywords such as `BITPIX`, `NAXIS`, `NAXIS1`, `NAXIS2`, `PCOUNT`, and `GCOUNT`; the image pixels do not need to be downloaded to calculate it. `remoteFileSizeBytes` is the size of the whole remote FITS file when the server reports it through HTTP headers such as `Content-Range` or `Content-Length`.
 
 For all parsed image HDUs instead of the quick preferred image, use `fetchFITSHeaderSummary(from:)`.

@@ -454,6 +454,68 @@ final class FITSObservationProductTests: XCTestCase {
         FITSHeaderSummaryMockURLProtocol.requestHandler = nil
     }
 
+    func testFITSMetadataEnrichmentHonorsConfiguredConcurrencyLimit() {
+        let data = makePartialFITSHeaderData()
+        let expectation = expectation(description: "Limited FITS metadata enrichment")
+        let stateLock = NSLock()
+        var activeRequests = 0
+        var maximumActiveRequests = 0
+
+        FITSHeaderSummaryMockURLProtocol.requestHandler = { request in
+            stateLock.lock()
+            activeRequests += 1
+            maximumActiveRequests = max(maximumActiveRequests, activeRequests)
+            stateLock.unlock()
+
+            Thread.sleep(forTimeInterval: 0.02)
+
+            let range = request.value(forHTTPHeaderField: "Range") ?? "bytes=0-2879"
+            let bounds = range
+                .replacingOccurrences(of: "bytes=", with: "")
+                .split(separator: "-")
+                .compactMap { Int($0) }
+            let start = bounds.first ?? 0
+            let end = min(bounds.last ?? start, data.count - 1)
+            let responseData = start <= end ? data[start...end] : Data()
+            let response = HTTPURLResponse(
+                url: request.url!,
+                statusCode: 206,
+                httpVersion: nil,
+                headerFields: [
+                    "Content-Range": "bytes \(start)-\(end)/123456789",
+                    "Content-Length": "\(responseData.count)",
+                ]
+            )!
+
+            stateLock.lock()
+            activeRequests -= 1
+            stateLock.unlock()
+            return (response, responseData)
+        }
+
+        let mast = SwiftMAST()
+        XCTAssertEqual(mast.maxConcurrentRequests, 20)
+        mast.maxConcurrentRequests = 2
+        let results = (0..<8).map {
+            makeCoamResult(dataURL: "https://example.com/science-\($0).fits")
+        }
+
+        mast.enrichCoamResultsWithFITSImageMetadata(
+            results,
+            fetchMode: .range,
+            session: URLSession.mockFITSHeaderSummary
+        ) { enriched in
+            XCTAssertEqual(enriched.count, results.count)
+            XCTAssertTrue(enriched.allSatisfy { $0.fitsImageHeaderMetadata != nil })
+            expectation.fulfill()
+        }
+
+        wait(for: [expectation], timeout: 5)
+        XCTAssertGreaterThan(maximumActiveRequests, 0)
+        XCTAssertLessThanOrEqual(maximumActiveRequests, 2)
+        FITSHeaderSummaryMockURLProtocol.requestHandler = nil
+    }
+
     func testFetchFITSHeaderSummaryWalksExtensionHeaderOffsets() throws {
         let data = makeMultiExtensionHeaderData()
         let expectedURL = URL(string: "https://example.com/multi.fits")!

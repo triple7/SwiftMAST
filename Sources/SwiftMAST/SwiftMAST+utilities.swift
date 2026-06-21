@@ -750,6 +750,7 @@ extension SwiftMAST {
         _ results: [CoamResult],
         fetchMode: FITSImageMetadataFetchMode = .stream,
         session: URLSession = .shared,
+        maxConcurrentRequests: Int? = nil,
         completion: @escaping ([CoamResult]) -> Void
     ) {
         guard !results.isEmpty else {
@@ -760,23 +761,52 @@ extension SwiftMAST {
         let group = DispatchGroup()
         let lock = NSLock()
         var enriched = results
+        let candidates = results.enumerated().filter {
+            shouldFetchFITSImageMetadata(for: $0.element.dataURL)
+        }
+        var nextIndex = 0
 
-        for (index, coam) in results.enumerated() {
-            guard shouldFetchFITSImageMetadata(for: coam.dataURL) else { continue }
+        guard !candidates.isEmpty else {
+            completion(results)
+            return
+        }
 
+        func nextCandidate() -> (offset: Int, element: CoamResult)? {
+            lock.lock()
+            defer { lock.unlock() }
+            guard nextIndex < candidates.count else { return nil }
+            let candidate = candidates[nextIndex]
+            nextIndex += 1
+            return candidate
+        }
+
+        func startWorker() {
             group.enter()
-            fetchPreferredFITSImageHeaderMetadata(
-                for: coam,
-                fetchMode: fetchMode,
-                session: session
-            ) { metadata in
-                if let metadata {
-                    lock.lock()
-                    enriched[index] = coam.withFITSImageHeaderMetadata(metadata)
-                    lock.unlock()
+            func fetchNext() {
+                guard let (index, coam) = nextCandidate() else {
+                    group.leave()
+                    return
                 }
-                group.leave()
+                fetchPreferredFITSImageHeaderMetadata(
+                    for: coam,
+                    fetchMode: fetchMode,
+                    session: session
+                ) { metadata in
+                    if let metadata {
+                        lock.lock()
+                        enriched[index] = coam.withFITSImageHeaderMetadata(metadata)
+                        lock.unlock()
+                    }
+                    fetchNext()
+                }
             }
+            fetchNext()
+        }
+
+        let requestLimit = max(maxConcurrentRequests ?? self.maxConcurrentRequests, 1)
+        let workerCount = min(requestLimit, candidates.count)
+        for _ in 0..<workerCount {
+            startWorker()
         }
 
         group.notify(queue: .main) {

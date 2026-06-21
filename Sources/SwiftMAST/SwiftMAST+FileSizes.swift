@@ -6,8 +6,6 @@
 import Foundation
 
 extension SwiftMAST {
-    private static let maxConcurrentHeaderSizeRequests = 20
-
     internal func enrichCoamResultsWithFileSizes(
         _ results: [CoamResult],
         completion: @escaping ([CoamResult]) -> Void
@@ -17,7 +15,8 @@ extension SwiftMAST {
             return
         }
 
-        fetchProductFileSizes(for: results) { productSizes in
+        let requestLimit = max(maxConcurrentRequests, 1)
+        fetchProductFileSizes(for: results, maxConcurrentRequests: requestLimit) { productSizes in
             var enriched = results.map { coam -> CoamResult in
                 coam.withFileSizes(
                     dataURLSizeBytes: self.productSize(for: coam.dataURL, in: productSizes),
@@ -25,7 +24,9 @@ extension SwiftMAST {
                 )
             }
 
-            self.fetchMissingHeaderSizes(for: enriched) { headerSizes in
+            self.fetchMissingHeaderSizes(
+                for: enriched, maxConcurrentRequests: requestLimit
+            ) { headerSizes in
                 for index in enriched.indices {
                     let coam = enriched[index]
                     enriched[index] = coam.withFileSizes(
@@ -46,6 +47,7 @@ extension SwiftMAST {
 
     private func fetchProductFileSizes(
         for results: [CoamResult],
+        maxConcurrentRequests: Int,
         completion: @escaping ([ProductFileSize]) -> Void
     ) {
         let obsids = Array(Set(results.map(\.obsid).filter { $0 > 0 })).sorted()
@@ -61,15 +63,37 @@ extension SwiftMAST {
         let group = DispatchGroup()
         let lock = NSLock()
         var output = [ProductFileSize]()
+        var nextIndex = 0
 
-        for chunk in chunks {
+        func nextChunk() -> [Int]? {
+            lock.lock()
+            defer { lock.unlock() }
+            guard nextIndex < chunks.count else { return nil }
+            let chunk = chunks[nextIndex]
+            nextIndex += 1
+            return chunk
+        }
+
+        func startWorker() {
             group.enter()
-            fetchProductFileSizes(forObsids: chunk) { sizes in
-                lock.lock()
-                output.append(contentsOf: sizes)
-                lock.unlock()
-                group.leave()
+            func fetchNext() {
+                guard let chunk = nextChunk() else {
+                    group.leave()
+                    return
+                }
+                fetchProductFileSizes(forObsids: chunk) { sizes in
+                    lock.lock()
+                    output.append(contentsOf: sizes)
+                    lock.unlock()
+                    fetchNext()
+                }
             }
+            fetchNext()
+        }
+
+        let workerCount = min(max(maxConcurrentRequests, 1), chunks.count)
+        for _ in 0..<workerCount {
+            startWorker()
         }
 
         group.notify(queue: .main) {
@@ -150,6 +174,7 @@ extension SwiftMAST {
 
     private func fetchMissingHeaderSizes(
         for results: [CoamResult],
+        maxConcurrentRequests: Int,
         completion: @escaping ([String: Int64]) -> Void
     ) {
         let missingURLs = Set(
@@ -170,12 +195,15 @@ extension SwiftMAST {
             return
         }
 
-        fetchHeaderSizes(for: Array(missingURLs), completion: completion)
+        fetchHeaderSizes(
+            for: Array(missingURLs),
+            maxConcurrentRequests: maxConcurrentRequests,
+            completion: completion)
     }
 
     internal func fetchHeaderSizes(
         for productURLs: [String],
-        maxConcurrentRequests: Int = SwiftMAST.maxConcurrentHeaderSizeRequests,
+        maxConcurrentRequests: Int? = nil,
         completion: @escaping ([String: Int64]) -> Void
     ) {
         let urls = Array(Set(productURLs.filter { !$0.isEmpty }))
@@ -184,7 +212,8 @@ extension SwiftMAST {
             return
         }
 
-        let workerCount = min(max(maxConcurrentRequests, 1), urls.count)
+        let requestLimit = max(maxConcurrentRequests ?? self.maxConcurrentRequests, 1)
+        let workerCount = min(requestLimit, urls.count)
         let group = DispatchGroup()
         let lock = NSLock()
         var sizes = [String: Int64]()
