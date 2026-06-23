@@ -2021,6 +2021,36 @@ final class SwiftMASTTests: XCTestCase {
         XCTAssertEqual(groups[1].instrument, "MIRI/IMAGE")
     }
 
+    func testObservationGroupLimitCapsReturnedGroupsAndPageSize() {
+        let mast = SwiftMAST()
+        let groups = [
+            ObservationGroup(
+                mission: "JWST",
+                observationKey: "a",
+                instrument: "NIRCAM/IMAGE",
+                products: []
+            ),
+            ObservationGroup(
+                mission: "JWST",
+                observationKey: "b",
+                instrument: "MIRI/IMAGE",
+                products: []
+            ),
+            ObservationGroup(
+                mission: "HST",
+                observationKey: "c",
+                instrument: "WFC3/UVIS",
+                products: []
+            ),
+        ]
+
+        XCTAssertEqual(mast.limitedPageSize(400, limit: 25), 25)
+        XCTAssertEqual(mast.limitedPageSize(10, limit: 25), 10)
+        XCTAssertEqual(mast.limitedObservationGroups(groups, limit: 2).map(\.observationKey), ["a", "b"])
+        XCTAssertEqual(mast.limitedObservationGroups(groups, limit: nil).count, 3)
+        XCTAssertTrue(mast.limitedObservationGroups(groups, limit: 0).isEmpty)
+    }
+
     func testBuildObservationGroupsForHSTAndJWST() {
         let mast = SwiftMAST()
 

@@ -1429,6 +1429,7 @@ extension SwiftMAST {
         calibLevels: [String]? = nil,
         dataProductTypes: [String]? = nil,
         pageSize: Int = 400,
+        limit: Int? = nil,
         sortOrder: ObservationProductSortOrder = .filter,
         result: @escaping ([ObservationGroup]) -> Void
     ) {
@@ -1440,6 +1441,7 @@ extension SwiftMAST {
             calibLevels: calibLevels,
             dataProductTypes: dataProductTypes,
             pageSize: pageSize,
+            limit: limit,
             sortOrder: sortOrder,
             result: result
         )
@@ -1458,6 +1460,7 @@ extension SwiftMAST {
         calibLevels: [String]? = nil,
         dataProductTypes: [String]? = nil,
         pageSize: Int = 400,
+        limit: Int? = nil,
         sortOrder: ObservationProductSortOrder = .filter,
         result: @escaping ([ObservationGroup]) -> Void
     ) {
@@ -1482,6 +1485,7 @@ extension SwiftMAST {
                 calibLevels: calibLevels,
                 dataProductTypes: dataProductTypes,
                 pageSize: pageSize,
+                limit: limit,
                 sortOrder: sortOrder,
                 result: result
             )
@@ -1503,6 +1507,7 @@ extension SwiftMAST {
         calibLevels: [String]? = nil,
         dataProductTypes: [String]? = nil,
         pageSize: Int = 400,
+        limit: Int? = nil,
         sortOrder: ObservationProductSortOrder = .filter,
         result: @escaping ([ObservationGroup]) -> Void
     ) {
@@ -1513,6 +1518,12 @@ extension SwiftMAST {
             result([])
             return
         }
+
+        self.log(
+            .OK,
+            message:
+                "getObservationGroups: Parsed source s_region; bounding cone RA=\(cone.ra), Dec=\(cone.dec), radius=\(cone.radius), containment=\(containment.rawValue)"
+        )
 
         self.getObservationGroups(
             targetName: targetName,
@@ -1525,8 +1536,16 @@ extension SwiftMAST {
             calibLevels: calibLevels,
             dataProductTypes: dataProductTypes,
             pageSize: pageSize,
+            limit: limit,
             sortOrder: sortOrder
         ) { groups in
+            let candidateProductCount = groups.reduce(0) { $0 + $1.products.count }
+            self.log(
+                .OK,
+                message:
+                    "getObservationGroups: Footprint filtering \(groups.count) candidate groups containing \(candidateProductCount) products"
+            )
+
             let filteredGroups = groups.compactMap { group -> ObservationGroup? in
                 let products = group.products.filter {
                     guard let candidateRegion = $0.spaceRegion else { return false }
@@ -1545,7 +1564,15 @@ extension SwiftMAST {
                     products: products
                 )
             }
-            result(filteredGroups)
+
+            let limitedGroups = self.limitedObservationGroups(filteredGroups, limit: limit)
+            let matchedProductCount = filteredGroups.reduce(0) { $0 + $1.products.count }
+            self.log(
+                .OK,
+                message:
+                    "getObservationGroups: Footprint filter matched \(filteredGroups.count) groups / \(matchedProductCount) products; returning \(limitedGroups.count) groups"
+            )
+            result(limitedGroups)
         }
     }
 
@@ -1560,6 +1587,7 @@ extension SwiftMAST {
         calibLevels: [String]? = nil,
         dataProductTypes: [String]? = nil,
         pageSize: Int = 400,
+        limit: Int? = nil,
         sortOrder: ObservationProductSortOrder = .filter,
         result: @escaping ([ObservationGroup]) -> Void
     ) {
@@ -1573,6 +1601,7 @@ extension SwiftMAST {
             calibLevels: calibLevels,
             dataProductTypes: dataProductTypes,
             pageSize: pageSize,
+            limit: limit,
             sortOrder: sortOrder,
             result: result
         )
@@ -1593,6 +1622,7 @@ extension SwiftMAST {
         calibLevels: [String]? = nil,
         dataProductTypes: [String]? = nil,
         pageSize: Int = 400,
+        limit: Int? = nil,
         sortOrder: ObservationProductSortOrder = .filter,
         result: @escaping ([ObservationGroup]) -> Void
     ) {
@@ -1607,6 +1637,7 @@ extension SwiftMAST {
             calibLevels: calibLevels,
             dataProductTypes: dataProductTypes,
             pageSize: pageSize,
+            limit: limit,
             sortOrder: sortOrder,
             result: result
         )
@@ -1625,6 +1656,7 @@ extension SwiftMAST {
      * calibLevels: [String]? - calibration levels; nil chooses collection-aware defaults
      * dataProductTypes: [String]? - CAOM product types; nil chooses collection-aware imagery defaults
      * pageSize: Int - number of results per page (default: 400)
+     * limit: Int? - maximum observation groups to return; also caps the MAST page size
      * result: Closure returning an array of ``ObservationGroup``
      */
     public func getObservationGroups(
@@ -1638,9 +1670,21 @@ extension SwiftMAST {
         calibLevels: [String]? = nil,
         dataProductTypes: [String]? = nil,
         pageSize: Int = 400,
+        limit: Int? = nil,
         sortOrder: ObservationProductSortOrder = .filter,
         result: @escaping ([ObservationGroup]) -> Void
     ) {
+        if let limit, limit <= 0 {
+            self.log(
+                .OK,
+                message:
+                    "getObservationGroups: Limit is \(limit); returning no groups without querying MAST"
+            )
+            result([])
+            return
+        }
+
+        let effectivePageSize = limitedPageSize(pageSize, limit: limit)
         let collections = Array(Set(missions.flatMap(\.collectionNames))).sorted()
         let resolvedCalibLevels = calibLevels
             ?? Array(Set(missions.flatMap(\.defaultCalibrationLevels))).sorted()
@@ -1650,6 +1694,16 @@ extension SwiftMAST {
             .OK,
             message:
                 "getObservationGroups: Starting for \(targetName) collections=\(collections.joined(separator: ",")) at RA=\(ra), Dec=\(dec), radius=\(radius)"
+        )
+        self.log(
+            .OK,
+            message:
+                "getObservationGroups: Request settings pageSize=\(pageSize), effectivePageSize=\(effectivePageSize), limit=\(limit.map(String.init) ?? "none"), sortOrder=\(sortOrder)"
+        )
+        self.log(
+            .OK,
+            message:
+                "getObservationGroups: Filters instruments=\(instruments?.joined(separator: ",") ?? "any"), filterBands=\(filterBands?.joined(separator: ",") ?? "any"), calibLevels=\(resolvedCalibLevels.joined(separator: ",")), dataProductTypes=\(resolvedDataProductTypes.joined(separator: ","))"
         )
 
         let filterOptions = ImageryFilterOptions(
@@ -1664,12 +1718,21 @@ extension SwiftMAST {
         let service = Service.Mast_Caom_Filtered_Position
         var params = service.serviceRequest(requestType: .advancedSearch)
 
+        self.log(
+            .OK,
+            message: "getObservationGroups: Preparing \(service.id) request"
+        )
         params.setGeneralParameters(params: MAP.values.defaultGeneralParameters())
-        params.setParameter(param: MAP.pagesize, value: pageSize)
+        params.setParameter(param: MAP.pagesize, value: effectivePageSize)
         params.setParameter(param: MAP.page, value: 1)
         let filterParams = filterOptions.toMASTFilters()
         params.setFilterParameters(params: filterParams)
         params.setParameters(params: [MAP.columns: "*", MAP.position: "\(ra), \(dec), \(radius)"])
+        self.log(
+            .OK,
+            message:
+                "getObservationGroups: Submitting MAST query position=\(ra), \(dec), \(radius), filters=\(filterParams.count)"
+        )
 
         let start = CACurrentMediaTime()
         self.queryMast(
@@ -1680,6 +1743,10 @@ extension SwiftMAST {
                     .OK,
                     message:
                         "getObservationGroups: Query completed in \(String(format: "%.2f", end - start))s"
+                )
+                self.log(
+                    success ? .OK : .RequestError,
+                    message: "getObservationGroups: MAST query success=\(success)"
                 )
 
                 guard let table = self.targets[targetName] else {
@@ -1701,18 +1768,39 @@ extension SwiftMAST {
                 var filteredResults = coamResults.filter {
                     lowerCollections.contains($0.obs_collection.lowercased())
                 }
+                self.log(
+                    .OK,
+                    message:
+                        "getObservationGroups: After collection filter \(filteredResults.count)/\(coamResults.count) products remain"
+                )
 
                 if let instruments = instruments {
+                    let beforeInstrumentFilter = filteredResults.count
                     let lowerInstruments = Set(instruments.map { $0.lowercased() })
                     filteredResults = filteredResults.filter {
                         lowerInstruments.contains($0.instrument_name.lowercased())
                     }
+                    self.log(
+                        .OK,
+                        message:
+                            "getObservationGroups: After instrument filter \(filteredResults.count)/\(beforeInstrumentFilter) products remain"
+                    )
+                } else {
+                    self.log(.OK, message: "getObservationGroups: No instrument filter applied")
                 }
 
                 if let filterBands = filterBands, !filterBands.isEmpty {
+                    let beforeFilterBandFilter = filteredResults.count
                     filteredResults = filteredResults.filter {
                         $0.matchesObservationFilterBands(filterBands)
                     }
+                    self.log(
+                        .OK,
+                        message:
+                            "getObservationGroups: After filter-band filter \(filteredResults.count)/\(beforeFilterBandFilter) products remain"
+                    )
+                } else {
+                    self.log(.OK, message: "getObservationGroups: No filter-band filter applied")
                 }
 
                 guard !filteredResults.isEmpty else {
@@ -1721,21 +1809,64 @@ extension SwiftMAST {
                     return
                 }
 
+                self.log(
+                    .OK,
+                    message:
+                        "getObservationGroups: Enriching \(filteredResults.count) products with file sizes"
+                )
                 self.enrichCoamResultsWithFileSizes(filteredResults) { enrichedResults in
+                    let sizedProducts = enrichedResults.filter { $0.preferredDownloadSizeBytes != nil }.count
+                    self.log(
+                        .OK,
+                        message:
+                            "getObservationGroups: File-size enrichment complete for \(sizedProducts)/\(enrichedResults.count) products"
+                    )
+                    self.log(
+                        .OK,
+                        message:
+                            "getObservationGroups: Enriching \(enrichedResults.count) products with FITS image metadata"
+                    )
                     self.enrichCoamResultsWithFITSImageMetadata(enrichedResults) {
                         enrichedImageResults in
+                        let metadataProducts =
+                            enrichedImageResults.filter { $0.fitsImageHeaderMetadata != nil }.count
+                        self.log(
+                            .OK,
+                            message:
+                                "getObservationGroups: FITS metadata enrichment complete for \(metadataProducts)/\(enrichedImageResults.count) products"
+                        )
+                        self.log(
+                            .OK,
+                            message:
+                                "getObservationGroups: Building observation groups from \(enrichedImageResults.count) products"
+                        )
                         let groups = self.buildObservationGroups(
                             from: enrichedImageResults, sortOrder: sortOrder)
 
+                        let limitedGroups = self.limitedObservationGroups(groups, limit: limit)
                         self.log(
                             .OK,
-                            message: "getObservationGroups: Built \(groups.count) observation groups"
+                            message:
+                                "getObservationGroups: Built \(groups.count) observation groups; returning \(limitedGroups.count)"
                         )
 
-                        result(groups)
+                        result(limitedGroups)
                     }
                 }
             })
+    }
+
+    internal func limitedPageSize(_ pageSize: Int, limit: Int?) -> Int {
+        guard let limit else { return pageSize }
+        return max(1, min(pageSize, limit))
+    }
+
+    internal func limitedObservationGroups(
+        _ groups: [ObservationGroup],
+        limit: Int?
+    ) -> [ObservationGroup] {
+        guard let limit else { return groups }
+        return Array(groups.prefix(max(0, limit)))
     }
 
     // MARK: - JWST Observation Groups
@@ -1755,6 +1886,7 @@ extension SwiftMAST {
      * filterBands: [String]? - optional filter band filter (e.g. ["F150W"])
      * calibLevels: [String] - calibration levels (default: ["3", "4"])
      * pageSize: Int - number of results per page (default: 400)
+     * limit: Int? - maximum observation groups to return; also caps the MAST page size
      * result: Closure returning an array of ``JWSTObservationGroup``, sorted by observation key
 
      Example usage:
@@ -1777,6 +1909,7 @@ extension SwiftMAST {
         filterBands: [String]? = nil,
         calibLevels: [String] = ["3", "4"],
         pageSize: Int = 400,
+        limit: Int? = nil,
         sortOrder: JWSTProductSortOrder = .filter,
         result: @escaping ([JWSTObservationGroup]) -> Void
     ) {
@@ -1787,6 +1920,7 @@ extension SwiftMAST {
             filterBands: filterBands,
             calibLevels: calibLevels,
             pageSize: pageSize,
+            limit: limit,
             sortOrder: sortOrder,
             result: result
         )
@@ -1803,6 +1937,7 @@ extension SwiftMAST {
      * filterBands: [String]? - optional filter band filter (e.g. ["F150W"])
      * calibLevels: [String] - calibration levels (default: ["3", "4"])
      * pageSize: Int - number of results per page (default: 400)
+     * limit: Int? - maximum observation groups to return; also caps the MAST page size
      * result: Closure returning an array of ``JWSTObservationGroup``
      */
     public func getJWSTObservationGroups(
@@ -1814,6 +1949,7 @@ extension SwiftMAST {
         filterBands: [String]? = nil,
         calibLevels: [String] = ["3", "4"],
         pageSize: Int = 400,
+        limit: Int? = nil,
         sortOrder: JWSTProductSortOrder = .filter,
         result: @escaping ([JWSTObservationGroup]) -> Void
     ) {
@@ -1827,6 +1963,7 @@ extension SwiftMAST {
             filterBands: filterBands,
             calibLevels: calibLevels,
             pageSize: pageSize,
+            limit: limit,
             sortOrder: sortOrder,
             result: result
         )
