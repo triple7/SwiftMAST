@@ -2044,11 +2044,16 @@ final class SwiftMASTTests: XCTestCase {
             ),
         ]
 
-        XCTAssertEqual(mast.limitedPageSize(400, limit: 25), 25)
-        XCTAssertEqual(mast.limitedPageSize(10, limit: 25), 10)
-        XCTAssertEqual(mast.limitedObservationGroups(groups, limit: 2).map(\.observationKey), ["a", "b"])
-        XCTAssertEqual(mast.limitedObservationGroups(groups, limit: nil).count, 3)
-        XCTAssertTrue(mast.limitedObservationGroups(groups, limit: 0).isEmpty)
+        XCTAssertEqual(mast.effectiveObservationGroupLimit(pageSize: 400, limit: 25), 25)
+        XCTAssertEqual(mast.effectiveObservationGroupLimit(pageSize: 50, limit: nil), 50)
+        XCTAssertEqual(mast.limitedPageSize(400, effectiveLimit: 25), 25)
+        XCTAssertEqual(mast.limitedPageSize(10, effectiveLimit: 25), 10)
+        XCTAssertEqual(
+            mast.limitedObservationGroups(groups, effectiveLimit: 2).map(\.observationKey),
+            ["a", "b"]
+        )
+        XCTAssertEqual(mast.limitedObservationGroups(groups, effectiveLimit: 50).count, 3)
+        XCTAssertTrue(mast.limitedObservationGroups(groups, effectiveLimit: 0).isEmpty)
     }
 
     func testBuildObservationGroupsForHSTAndJWST() {

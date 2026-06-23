@@ -386,7 +386,7 @@ mast.getScienceImageQueryResults(
 
 Supported source and candidate footprints are CAOM `CIRCLE` and `POLYGON` `s_region` values, including multi-polygon regions commonly returned by HLA products.
 
-For observation-group searches, use `limit` to cap the number of returned groups. When `limit` is set, SwiftMAST also caps the MAST `pagesize` to avoid requesting more candidate rows than the requested limit.
+For observation-group searches, SwiftMAST uses an effective limit of `limit ?? pageSize`. The MAST `pagesize` never exceeds that effective limit, and the callback never receives more groups than that effective limit.
 
 ## JWST Observation Groups
 
@@ -448,7 +448,7 @@ Filters are sorted by the numeric wavelength extracted from the filter name:
 | `filterBands` | `[String]?` | `nil` | Restrict to specific filters (e.g. `["F150W"]`) |
 | `calibLevels` | `[String]` | `["3", "4"]` | CAOM calibration levels |
 | `pageSize` | `Int` | `400` | Maximum products per MAST page |
-| `limit` | `Int?` | `nil` | Maximum observation groups to return; also caps the MAST page size |
+| `limit` | `Int?` | `nil` | Maximum observation groups to return; when nil, `pageSize` is used as the effective limit |
 | `result` | `([JWSTObservationGroup]) -> Void` | — | Callback receiving sorted observation groups |
 
 A coordinate-based overload is also available with additional `ra`, `dec`, and `radius` parameters.

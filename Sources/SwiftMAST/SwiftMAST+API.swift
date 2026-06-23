@@ -1565,7 +1565,9 @@ extension SwiftMAST {
                 )
             }
 
-            let limitedGroups = self.limitedObservationGroups(filteredGroups, limit: limit)
+            let effectiveLimit = self.effectiveObservationGroupLimit(pageSize: pageSize, limit: limit)
+            let limitedGroups = self.limitedObservationGroups(
+                filteredGroups, effectiveLimit: effectiveLimit)
             let matchedProductCount = filteredGroups.reduce(0) { $0 + $1.products.count }
             self.log(
                 .OK,
@@ -1684,7 +1686,8 @@ extension SwiftMAST {
             return
         }
 
-        let effectivePageSize = limitedPageSize(pageSize, limit: limit)
+        let effectiveLimit = effectiveObservationGroupLimit(pageSize: pageSize, limit: limit)
+        let effectivePageSize = limitedPageSize(pageSize, effectiveLimit: effectiveLimit)
         let collections = Array(Set(missions.flatMap(\.collectionNames))).sorted()
         let resolvedCalibLevels = calibLevels
             ?? Array(Set(missions.flatMap(\.defaultCalibrationLevels))).sorted()
@@ -1698,7 +1701,7 @@ extension SwiftMAST {
         self.log(
             .OK,
             message:
-                "getObservationGroups: Request settings pageSize=\(pageSize), effectivePageSize=\(effectivePageSize), limit=\(limit.map(String.init) ?? "none"), sortOrder=\(sortOrder)"
+                "getObservationGroups: Request settings pageSize=\(pageSize), effectivePageSize=\(effectivePageSize), limit=\(effectiveLimit), sortOrder=\(sortOrder)"
         )
         self.log(
             .OK,
@@ -1843,7 +1846,8 @@ extension SwiftMAST {
                         let groups = self.buildObservationGroups(
                             from: enrichedImageResults, sortOrder: sortOrder)
 
-                        let limitedGroups = self.limitedObservationGroups(groups, limit: limit)
+                        let limitedGroups = self.limitedObservationGroups(
+                            groups, effectiveLimit: effectiveLimit)
                         self.log(
                             .OK,
                             message:
@@ -1856,17 +1860,19 @@ extension SwiftMAST {
             })
     }
 
-    internal func limitedPageSize(_ pageSize: Int, limit: Int?) -> Int {
-        guard let limit else { return pageSize }
-        return max(1, min(pageSize, limit))
+    internal func effectiveObservationGroupLimit(pageSize: Int, limit: Int?) -> Int {
+        limit ?? pageSize
+    }
+
+    internal func limitedPageSize(_ pageSize: Int, effectiveLimit: Int) -> Int {
+        max(1, min(pageSize, effectiveLimit))
     }
 
     internal func limitedObservationGroups(
         _ groups: [ObservationGroup],
-        limit: Int?
+        effectiveLimit: Int
     ) -> [ObservationGroup] {
-        guard let limit else { return groups }
-        return Array(groups.prefix(max(0, limit)))
+        Array(groups.prefix(max(0, effectiveLimit)))
     }
 
     // MARK: - JWST Observation Groups
