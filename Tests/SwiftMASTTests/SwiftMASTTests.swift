@@ -122,6 +122,70 @@ final class SwiftMASTTests: XCTestCase {
         XCTAssertNil(makeCoamResult(s_region: "POLYGON J2000 0 0 1").s_region_area)
     }
 
+    func testSpaceRegionComputesBoundingConeForPolygon() {
+        let region = SpaceRegion("POLYGON J2000 0 0 1 0 1 1 0 1 0 0")
+
+        XCTAssertNotNil(region)
+        XCTAssertNotNil(region?.boundingCone)
+        XCTAssertEqual(region!.boundingCone!.ra, 0.5, accuracy: 0.01)
+        XCTAssertEqual(region!.boundingCone!.dec, 0.5, accuracy: 0.01)
+        XCTAssertGreaterThan(region!.boundingCone!.radius, 0.7)
+    }
+
+    func testSpaceRegionCenterInsideModeUsesCandidateCenter() {
+        let source = SpaceRegion("POLYGON J2000 0 0 1 0 1 1 0 1")!
+        let candidate = SpaceRegion("POLYGON J2000 2 2 3 2 3 3 2 3")!
+
+        XCTAssertTrue(
+            source.matches(
+                candidate: candidate,
+                candidateCenter: SpaceRegion.Coordinate(ra: 0.5, dec: 0.5),
+                mode: .centerInside
+            )
+        )
+        XCTAssertFalse(
+            source.matches(
+                candidate: candidate,
+                candidateCenter: SpaceRegion.Coordinate(ra: 2.5, dec: 2.5),
+                mode: .centerInside
+            )
+        )
+    }
+
+    func testSpaceRegionFootprintIntersectsAllowsPartialOverlap() {
+        let source = SpaceRegion("POLYGON J2000 0 0 1 0 1 1 0 1")!
+        let candidate = SpaceRegion("POLYGON J2000 0.5 0.5 1.5 0.5 1.5 1.5 0.5 1.5")!
+
+        XCTAssertTrue(
+            source.matches(
+                candidate: candidate,
+                candidateCenter: SpaceRegion.Coordinate(ra: 1.0, dec: 1.0),
+                mode: .footprintIntersects
+            )
+        )
+    }
+
+    func testSpaceRegionFootprintContainedRequiresWholeCandidateInsideSource() {
+        let source = SpaceRegion("POLYGON J2000 0 0 2 0 2 2 0 2")!
+        let contained = SpaceRegion("POLYGON J2000 0.5 0.5 1.5 0.5 1.5 1.5 0.5 1.5")!
+        let partial = SpaceRegion("POLYGON J2000 1.5 1.5 2.5 1.5 2.5 2.5 1.5 2.5")!
+
+        XCTAssertTrue(
+            source.matches(
+                candidate: contained,
+                candidateCenter: nil,
+                mode: .footprintContained
+            )
+        )
+        XCTAssertFalse(
+            source.matches(
+                candidate: partial,
+                candidateCenter: nil,
+                mode: .footprintContained
+            )
+        )
+    }
+
     // MARK: - ImageryFilterOptions Tests
 
     func testDefaultFilterOptions() {

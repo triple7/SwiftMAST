@@ -344,6 +344,47 @@ Accepts the same parameters as `getJWSTFilteredProducts`, plus an optional `toke
 
 A coordinate-based overload is also available with additional `ra`, `dec`, and `radius` parameters.
 
+## Footprint-based CAOM and Observation Group Search
+
+MAST returns CAOM footprints in the `s_region` column, but the MAST API position endpoint accepts only a cone search (`ra, dec, radius`). SwiftMAST handles footprint search by deriving a bounding cone from a source `s_region`, querying MAST for candidates, then locally filtering each candidate's own `s_region`.
+
+```swift
+let sourceRegion = product.coamResult.s_region
+
+mast.getObservationGroups(
+    targetName: "same-footprint-search",
+    spaceRegion: sourceRegion,
+    containment: .footprintIntersects,
+    missions: ObservationMission.majorImaging
+) { groups in
+    for group in groups {
+        print(group.description)
+    }
+}
+```
+
+You can also fetch raw CAOM rows:
+
+```swift
+mast.getScienceImageQueryResults(
+    targetName: "same-footprint-search",
+    spaceRegion: sourceRegion,
+    containment: .centerInside
+) { results in
+    print("Matched \(results.count) CAOM products")
+}
+```
+
+### Footprint containment modes
+
+| Mode | Meaning | Best for |
+|------|---------|----------|
+| `.centerInside` | Candidate product center (`s_ra`, `s_dec`) is inside the source footprint. | Fast pointing-center searches; can miss overlapping products whose center is outside. |
+| `.footprintIntersects` | Candidate footprint overlaps or touches the source footprint. | Broad “find related/overlapping products” searches. |
+| `.footprintContained` | Candidate footprint is fully inside the source footprint. | Strict searches where partial overlap is not enough. |
+
+Supported source and candidate footprints are CAOM `CIRCLE` and `POLYGON` `s_region` values, including multi-polygon regions commonly returned by HLA products.
+
 ## JWST Observation Groups
 
 `getJWSTObservationGroups` queries JWST products and groups them by observation session. Each group shares the same program, observation number, target, and instrument — derived from the `obs_id` prefix (e.g. `jw02666-o007_t004_miri`). Within each group, products are sorted by filter wavelength in ascending order (F200W before F1000W).

@@ -348,6 +348,63 @@ extension SwiftMAST {
         }
     }
 
+    /** Search science image CAOM results inside or overlapping a CAOM `s_region` footprint.
+
+     MAST's CAOM position endpoint accepts a cone (`ra, dec, radius`), not a polygon. This method
+     parses the input footprint, queries MAST with its bounding cone, then applies the requested
+     local footprint match mode to the returned `CoamResult.s_region` values.
+
+     Parameters:
+     * targetName: String - Label used to store this query's result table
+     * spaceRegion: String - Source CAOM `s_region` value (CIRCLE or POLYGON)
+     * containment: SpaceRegionContainmentMode - local footprint matching rule
+     * filterOptions: ImageryFilterOptions - Filter criteria for the search (default: science images)
+     * pageSize: Int - Number of candidate rows to request from MAST
+     * page: Int - Page number for pagination
+     * result: Closure returning footprint-filtered CoamResult entries
+     */
+    public func getScienceImageQueryResults(
+        targetName: String,
+        spaceRegion: String,
+        containment: SpaceRegionContainmentMode = .footprintIntersects,
+        filterOptions: ImageryFilterOptions = .defaultScience,
+        pageSize: Int = 400,
+        page: Int = 1,
+        result: @escaping ([CoamResult]) -> Void
+    ) {
+        guard let sourceRegion = SpaceRegion(spaceRegion),
+              let cone = sourceRegion.boundingCone
+        else {
+            self.log(
+                .RequestError,
+                message: "getScienceImageQueryResults: Could not parse source s_region"
+            )
+            result([])
+            return
+        }
+
+        self.getScienceImageQueryResults(
+            targetName: targetName,
+            ra: Float(cone.ra),
+            dec: Float(cone.dec),
+            radius: Float(cone.radius),
+            filterOptions: filterOptions,
+            pageSize: pageSize,
+            page: page
+        ) { candidates in
+            result(
+                candidates.filter {
+                    guard let candidateRegion = $0.spaceRegion else { return false }
+                    return sourceRegion.matches(
+                        candidate: candidateRegion,
+                        candidateCenter: $0.spaceRegionCenter,
+                        mode: containment
+                    )
+                }
+            )
+        }
+    }
+
     /** Make a Science image only cone search and return filtered results
      Parameters:
      * targetName: String - the target identifier
@@ -1429,6 +1486,96 @@ extension SwiftMAST {
                 result: result
             )
         }
+    }
+
+    /** Query observation groups inside or overlapping a CAOM `s_region` footprint.
+
+     The MAST API is queried with a bounding cone derived from `spaceRegion`; returned products are
+     then locally filtered by their own `s_region` using `containment`.
+     */
+    public func getObservationGroups(
+        targetName: String,
+        spaceRegion: String,
+        containment: SpaceRegionContainmentMode = .footprintIntersects,
+        missions: [ObservationMission] = ObservationMission.jwstAndHST,
+        instruments: [String]? = nil,
+        filterBands: [String]? = nil,
+        calibLevels: [String]? = nil,
+        dataProductTypes: [String]? = nil,
+        pageSize: Int = 400,
+        sortOrder: ObservationProductSortOrder = .filter,
+        result: @escaping ([ObservationGroup]) -> Void
+    ) {
+        guard let sourceRegion = SpaceRegion(spaceRegion),
+              let cone = sourceRegion.boundingCone
+        else {
+            self.log(.RequestError, message: "getObservationGroups: Could not parse source s_region")
+            result([])
+            return
+        }
+
+        self.getObservationGroups(
+            targetName: targetName,
+            ra: Float(cone.ra),
+            dec: Float(cone.dec),
+            radius: Float(cone.radius),
+            missions: missions,
+            instruments: instruments,
+            filterBands: filterBands,
+            calibLevels: calibLevels,
+            dataProductTypes: dataProductTypes,
+            pageSize: pageSize,
+            sortOrder: sortOrder
+        ) { groups in
+            let filteredGroups = groups.compactMap { group -> ObservationGroup? in
+                let products = group.products.filter {
+                    guard let candidateRegion = $0.spaceRegion else { return false }
+                    return sourceRegion.matches(
+                        candidate: candidateRegion,
+                        candidateCenter: $0.spaceRegionCenter,
+                        mode: containment
+                    )
+                }
+
+                guard !products.isEmpty else { return nil }
+                return ObservationGroup(
+                    mission: group.mission,
+                    observationKey: group.observationKey,
+                    instrument: group.instrument,
+                    products: products
+                )
+            }
+            result(filteredGroups)
+        }
+    }
+
+    /** Query observation groups for one mission/collection inside or overlapping an `s_region`. */
+    public func getObservationGroups(
+        targetName: String,
+        spaceRegion: String,
+        containment: SpaceRegionContainmentMode = .footprintIntersects,
+        mission: ObservationMission,
+        instruments: [String]? = nil,
+        filterBands: [String]? = nil,
+        calibLevels: [String]? = nil,
+        dataProductTypes: [String]? = nil,
+        pageSize: Int = 400,
+        sortOrder: ObservationProductSortOrder = .filter,
+        result: @escaping ([ObservationGroup]) -> Void
+    ) {
+        getObservationGroups(
+            targetName: targetName,
+            spaceRegion: spaceRegion,
+            containment: containment,
+            missions: [mission],
+            instruments: instruments,
+            filterBands: filterBands,
+            calibLevels: calibLevels,
+            dataProductTypes: dataProductTypes,
+            pageSize: pageSize,
+            sortOrder: sortOrder,
+            result: result
+        )
     }
 
     /** Query observation groups at coordinates for one mission/collection.
