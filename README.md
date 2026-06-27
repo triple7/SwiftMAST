@@ -61,6 +61,27 @@ mast.unsubscribeFromLogs(id: "myAppLogger")
 mast.clearLogSubscribers()
 ```
 
+### File Logging and Request Telemetry
+
+Logs are always kept in memory on `mast.sysLog`. To also append them to a file, enable file logging:
+
+```swift
+let mast = SwiftMAST()
+
+// Defaults to Documents/SwiftMAST.log when no URL is supplied.
+mast.enableFileLogging()
+
+// Or provide your own destination.
+mast.enableFileLogging(to: customLogURL)
+```
+
+MAST network requests log the request that was sent, response status, bytes fetched, and response time. This includes MAST API queries, TAP queries, product downloads, file-size lookups, and FITS metadata byte-range requests. Authorization headers are redacted before logging.
+
+```text
+MAST API Mast.Caom.Filtered.Position: Request sent method=GET, ...
+MAST API Mast.Caom.Filtered.Position: Response received status=200, bytes=123456, time=0.842s, ...
+```
+
 ### MASTSyslog Structure
 
 Each log entry contains:

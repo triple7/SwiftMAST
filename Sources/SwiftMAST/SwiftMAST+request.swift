@@ -47,6 +47,72 @@ extension SwiftMAST {
         return !gotError
     }
 
+    private func logNetworkRequestStart(
+        label: String,
+        request: URLRequest,
+        bodyDescription: String? = nil
+    ) -> CFTimeInterval {
+        let method = request.httpMethod ?? "GET"
+        let url = request.url?.absoluteString ?? "unknown-url"
+        let headers = sanitizedHeaders(request.allHTTPHeaderFields)
+        let bodySize = request.httpBody?.count ?? 0
+        let body = bodyDescription ?? request.httpBody.flatMap { String(data: $0, encoding: .utf8) }
+
+        self.log(
+            .OK,
+            message:
+                "\(label): Request sent method=\(method), url=\(url), headers=\(headers), bodyBytes=\(bodySize), body=\(body ?? "none")"
+        )
+        return Date().timeIntervalSinceReferenceDate
+    }
+
+    private func logNetworkRequestCompletion(
+        label: String,
+        request: URLRequest,
+        response: URLResponse?,
+        dataSize: Int?,
+        startedAt: CFTimeInterval,
+        error: Error? = nil
+    ) {
+        let elapsed = Date().timeIntervalSinceReferenceDate - startedAt
+        let statusCode = (response as? HTTPURLResponse)?.statusCode
+        let url = request.url?.absoluteString ?? "unknown-url"
+        let sizeDescription = dataSize.map { "\($0) bytes" } ?? "unknown"
+
+        if let error {
+            self.log(
+                .RequestError,
+                message:
+                    "\(label): Response failed status=\(statusCode.map(String.init) ?? "none"), bytes=\(sizeDescription), time=\(String(format: "%.3f", elapsed))s, url=\(url), error=\(error.localizedDescription)"
+            )
+        } else {
+            self.log(
+                .OK,
+                message:
+                    "\(label): Response received status=\(statusCode.map(String.init) ?? "none"), bytes=\(sizeDescription), time=\(String(format: "%.3f", elapsed))s, url=\(url)"
+            )
+        }
+    }
+
+    private func sanitizedHeaders(_ headers: [String: String]?) -> [String: String] {
+        guard let headers else { return [:] }
+        return headers.mapValues { value in
+            value.lowercased().contains("token") || value.lowercased().contains("bearer")
+                ? "<redacted>"
+                : value
+        }
+    }
+
+    private func temporaryFileSize(_ url: URL?) -> Int? {
+        guard let url,
+              let size = try? FileManager.default.attributesOfItem(atPath: url.path)[.size]
+                as? NSNumber
+        else {
+            return nil
+        }
+        return size.intValue
+    }
+
     /** Forms a request object from the given MAST service domain path and given parameters
      Adds a resulting table to the targets dictionary for further processing
      Parameters:
@@ -65,6 +131,8 @@ extension SwiftMAST {
         let json = service.jsonData(json: extendedParams)
 
         let url = MASTRequest(searchType: .apiRequest).getApiUrl(json: json)
+        let requestBody = String(data: json, encoding: .utf8)
+        let request = URLRequest(url: url)
 
         let configuration = URLSessionConfiguration.ephemeral
         configuration.timeoutIntervalForRequest = 600
@@ -73,11 +141,22 @@ extension SwiftMAST {
         let queue = OperationQueue.main
         let session = URLSession(configuration: configuration, delegate: self, delegateQueue: queue)
 
-        let task = session.dataTask(with: url) { [weak self] data, response, error in
+        let startedAt = logNetworkRequestStart(
+            label: "MAST API \(service.id)", request: request, bodyDescription: requestBody)
+
+        let task = session.dataTask(with: request) { [weak self] data, response, error in
             guard let self = self else {
                 closure(false)
                 return
             }
+            self.logNetworkRequestCompletion(
+                label: "MAST API \(service.id)",
+                request: request,
+                response: response,
+                dataSize: data?.count,
+                startedAt: startedAt,
+                error: error
+            )
             guard self.requestIsValid(error: error, response: response) else {
                 closure(false)
                 return
@@ -139,7 +218,21 @@ extension SwiftMAST {
         let queue = OperationQueue.main
         let session = URLSession(configuration: configuration, delegate: self, delegateQueue: queue)
 
+        let startedAt = logNetworkRequestStart(
+            label: "MAST bundle \(service.id)",
+            request: request,
+            bodyDescription: String(data: jsonData, encoding: .utf8)
+        )
+
         let task = session.dataTask(with: request) { data, response, error in
+            self.logNetworkRequestCompletion(
+                label: "MAST bundle \(service.id)",
+                request: request,
+                response: response,
+                dataSize: data?.count,
+                startedAt: startedAt,
+                error: error
+            )
             guard error == nil else {
                 self.log(.RequestError, message: error!.localizedDescription)
                 closure(false, [])
@@ -212,10 +305,23 @@ extension SwiftMAST {
                     "Authorization": "token \(token)"
                 ]
             }
+            let startedAt = self.logNetworkRequestStart(
+                label: "MAST product download \(service.id)",
+                request: request,
+                bodyDescription: "uri=\(productUrl)"
+            )
 
             let operation = MASTDownloadOperation(
                 session: URLSession.shared, request: request,
                 completionHandler: { (data, response, error) in
+                    self.logNetworkRequestCompletion(
+                        label: "MAST product download \(service.id)",
+                        request: request,
+                        response: response,
+                        dataSize: data?.count,
+                        startedAt: startedAt,
+                        error: error
+                    )
 
                     if self.requestIsValid(error: error, response: response) {
                         // We either parse the fits or just get a jpeg
@@ -324,10 +430,23 @@ extension SwiftMAST {
                     "Authorization": "token \(token)"
                 ]
             }
+            let startedAt = self.logNetworkRequestStart(
+                label: "Direct product download",
+                request: request
+            )
 
             let operation = MASTDirectDownloadOperation(
                 session: URLSession.shared, request: request,
                 completionHandler: { (tempUrl, response, error) in
+                    let dataSize = self.temporaryFileSize(tempUrl)
+                    self.logNetworkRequestCompletion(
+                        label: "Direct product download",
+                        request: request,
+                        response: response,
+                        dataSize: dataSize,
+                        startedAt: startedAt,
+                        error: error
+                    )
                     if self.requestIsValid(error: error, response: response, url: tempUrl) {
                         self.saveTempUrlToFile(
                             targetName: targetName, product: product, tempUrl: tempUrl!,
@@ -395,10 +514,23 @@ extension SwiftMAST {
 
             let url = remainingUrls.removeFirst()
             let request = URLRequest(url: url)
+            let startedAt = self.logNetworkRequestStart(
+                label: "PS1 cutout download",
+                request: request
+            )
 
             let operation = MASTDirectDownloadOperation(
                 session: URLSession.shared, request: request,
                 completionHandler: { (tempUrl, response, error) in
+                    let dataSize = self.temporaryFileSize(tempUrl)
+                    self.logNetworkRequestCompletion(
+                        label: "PS1 cutout download",
+                        request: request,
+                        response: response,
+                        dataSize: dataSize,
+                        startedAt: startedAt,
+                        error: error
+                    )
                     if self.requestIsValid(error: error, response: response, url: tempUrl) {
                         //                    print("downloadFitsCutout: \(tempUrl)")
                         let url = self.saveImageFile(
@@ -452,7 +584,17 @@ extension SwiftMAST {
         let queue = OperationQueue.main
         let session = URLSession(configuration: configuration, delegate: self, delegateQueue: queue)
 
+        let startedAt = logNetworkRequestStart(label: "PS1 file list", request: request)
+
         let task = session.dataTask(with: request) { [weak self] data, response, error in
+            self?.logNetworkRequestCompletion(
+                label: "PS1 file list",
+                request: request,
+                response: response,
+                dataSize: data?.count,
+                startedAt: startedAt,
+                error: error
+            )
             if self!.requestIsValid(error: error, response: response) {
                 let table = self!.parsePS1table(
                     text: String(data: data!, encoding: .ascii)!,
@@ -469,7 +611,16 @@ extension SwiftMAST {
         let requestBuilder = NedResolverRequest()
 
         let request = requestBuilder.getRequest(target: target)
+        let startedAt = logNetworkRequestStart(label: "NED resolver", request: request)
         URLSession.shared.dataTask(with: request) { data, response, error in
+            self.logNetworkRequestCompletion(
+                label: "NED resolver",
+                request: request,
+                response: response,
+                dataSize: data?.count,
+                startedAt: startedAt,
+                error: error
+            )
             if self.requestIsValid(error: error, response: response) {
                 // Decode JSON into NedResolver
                 do {
@@ -526,7 +677,21 @@ extension SwiftMAST {
             request.addValue("Bearer \(token!)", forHTTPHeaderField: "Authorization")
         }
 
+        let startedAt = logNetworkRequestStart(
+            label: "MAST TAP",
+            request: request,
+            bodyDescription: bodyParameters
+        )
+
         let task = session.dataTask(with: request) { [weak self] data, response, error in
+            self?.logNetworkRequestCompletion(
+                label: "MAST TAP",
+                request: request,
+                response: response,
+                dataSize: data?.count,
+                startedAt: startedAt,
+                error: error
+            )
             //            print("error: \(error)")
             //            print("response: \(response)")
             //            print(String(data: data!, encoding: .utf8))

@@ -57,6 +57,8 @@ public class SwiftMAST: NSObject {
     public var progress: Float?
     private var expectedContentLength: Int?
     public var sysLog: [MASTSyslog]!
+    public private(set) var logFileURL: URL?
+    private let logFileQueue = DispatchQueue(label: "com.swiftmast.logfile")
 
     /// Maximum concurrent requests used by file-size and FITS metadata enrichment.
     /// Values below one are treated as one when a batch begins.
@@ -107,6 +109,43 @@ public class SwiftMAST: NSObject {
         }
     }
 
+    /// Enable appending SwiftMAST log entries to a text file.
+    ///
+    /// If no URL is supplied, the file is created in the user's documents directory
+    /// as `SwiftMAST.log`.
+    @discardableResult
+    public func enableFileLogging(to url: URL? = nil) -> URL? {
+        let resolvedURL: URL?
+        if let url {
+            resolvedURL = url
+        } else {
+            resolvedURL = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)
+                .first?
+                .appendingPathComponent("SwiftMAST.log")
+        }
+
+        guard let resolvedURL else { return nil }
+
+        logFileQueue.sync {
+            let directory = resolvedURL.deletingLastPathComponent()
+            try? FileManager.default.createDirectory(
+                at: directory, withIntermediateDirectories: true)
+            if !FileManager.default.fileExists(atPath: resolvedURL.path) {
+                FileManager.default.createFile(atPath: resolvedURL.path, contents: nil)
+            }
+            self.logFileURL = resolvedURL
+        }
+
+        return resolvedURL
+    }
+
+    /// Stop appending log entries to a file. In-memory logs and subscribers remain active.
+    public func disableFileLogging() {
+        logFileQueue.sync {
+            self.logFileURL = nil
+        }
+    }
+
     /// Log a message and notify all subscribers
     /// - Parameters:
     ///   - log: The log level/type
@@ -114,7 +153,25 @@ public class SwiftMAST: NSObject {
     public func log(_ log: MASTError, message: String) {
         let entry = MASTSyslog(log: log, message: message)
         sysLog.append(entry)
+        appendLogEntryToFile(entry)
         notifySubscribers(entry: entry)
+    }
+
+    private func appendLogEntryToFile(_ entry: MASTSyslog) {
+        logFileQueue.async {
+            guard let logFileURL = self.logFileURL else { return }
+            let line = entry.description + "\n"
+            guard let data = line.data(using: .utf8) else { return }
+
+            if !FileManager.default.fileExists(atPath: logFileURL.path) {
+                FileManager.default.createFile(atPath: logFileURL.path, contents: nil)
+            }
+
+            guard let handle = try? FileHandle(forWritingTo: logFileURL) else { return }
+            defer { try? handle.close() }
+            _ = try? handle.seekToEnd()
+            _ = try? handle.write(contentsOf: data)
+        }
     }
 
     /// Notify all subscribers of a log entry

@@ -116,8 +116,23 @@ extension SwiftMAST {
             return
         }
         let url = MASTRequest(searchType: .apiRequest).getApiUrl(json: data)
+        let request = URLRequest(url: url)
+        let requestBody = String(data: data, encoding: .utf8) ?? ""
+        let start = Date().timeIntervalSinceReferenceDate
+        log(
+            .OK,
+            message:
+                "MAST API \(Service.Mast_Caom_Products.id): Request sent method=GET, url=\(url.absoluteString), bodyBytes=\(data.count), body=\(requestBody)"
+        )
 
-        URLSession.shared.dataTask(with: url) { data, response, error in
+        URLSession.shared.dataTask(with: request) { data, response, error in
+            let elapsed = Date().timeIntervalSinceReferenceDate - start
+            let statusCode = (response as? HTTPURLResponse)?.statusCode
+            self.log(
+                error == nil ? .OK : .RequestError,
+                message:
+                    "MAST API \(Service.Mast_Caom_Products.id): Response received status=\(statusCode.map(String.init) ?? "none"), bytes=\(data?.count ?? 0), time=\(String(format: "%.3f", elapsed))s, url=\(url.absoluteString)"
+            )
             guard
                 error == nil,
                 let httpResponse = response as? HTTPURLResponse,
@@ -267,8 +282,22 @@ extension SwiftMAST {
         var request = URLRequest(url: url)
         request.httpMethod = "HEAD"
         request.timeoutInterval = 20
+        let start = Date().timeIntervalSinceReferenceDate
+        log(
+            .OK,
+            message: "MAST size HEAD: Request sent method=HEAD, url=\(url.absoluteString)"
+        )
 
         URLSession.shared.dataTask(with: request) { _, response, error in
+            let elapsed = Date().timeIntervalSinceReferenceDate - start
+            let statusCode = (response as? HTTPURLResponse)?.statusCode
+            let contentLength = (response as? HTTPURLResponse)?
+                .value(forHTTPHeaderField: "Content-Length")
+            self.log(
+                error == nil ? .OK : .RequestError,
+                message:
+                    "MAST size HEAD: Response received status=\(statusCode.map(String.init) ?? "none"), contentLength=\(contentLength ?? "unknown"), time=\(String(format: "%.3f", elapsed))s, url=\(url.absoluteString)"
+            )
             guard
                 error == nil,
                 let httpResponse = response as? HTTPURLResponse,

@@ -733,7 +733,10 @@ extension SwiftMAST {
         let fetcher = FITSImageHeaderMetadataStreamFetcher(
             url: url,
             maxByteCount: max(maxByteCount, 2_880),
-            configuration: configuration
+            configuration: configuration,
+            log: { [weak self] level, message in
+                self?.log(level, message: message)
+            }
         ) { data, remoteFileSize in
             self.parseFITSHeaderSummary(
                 data: data,
@@ -879,8 +882,21 @@ extension SwiftMAST {
             let rangeEnd = headerOffset + byteCount - 1
             request.setValue("bytes=\(headerOffset)-\(rangeEnd)", forHTTPHeaderField: "Range")
             request.timeoutInterval = 30
+            let start = Date().timeIntervalSinceReferenceDate
+            self.log(
+                .OK,
+                message:
+                    "FITS metadata range: Request sent method=GET, url=\(url.absoluteString), range=bytes=\(headerOffset)-\(rangeEnd)"
+            )
 
             session.dataTask(with: request) { data, response, error in
+                let elapsed = Date().timeIntervalSinceReferenceDate - start
+                let statusCode = (response as? HTTPURLResponse)?.statusCode
+                self.log(
+                    error == nil ? .OK : .RequestError,
+                    message:
+                        "FITS metadata range: Response received status=\(statusCode.map(String.init) ?? "none"), bytes=\(data?.count ?? 0), time=\(String(format: "%.3f", elapsed))s, url=\(url.absoluteString)"
+                )
                 guard
                     error == nil,
                     let data,
@@ -1707,6 +1723,7 @@ private final class FITSImageHeaderMetadataStreamFetcher: NSObject, URLSessionDa
     private let url: URL
     private let maxByteCount: Int
     private let configuration: URLSessionConfiguration
+    private let log: ((MASTError, String) -> Void)?
     private let parse: (Data, Int64?) -> FITSImageHeaderMetadata?
     private let completion: (FITSImageHeaderMetadata?) -> Void
 
@@ -1715,17 +1732,22 @@ private final class FITSImageHeaderMetadataStreamFetcher: NSObject, URLSessionDa
     private var data = Data()
     private var remoteFileSize: Int64?
     private var didComplete = false
+    private var didLogCompletion = false
+    private var startedAt: CFTimeInterval?
+    private var responseStatusCode: Int?
 
     init(
         url: URL,
         maxByteCount: Int,
         configuration: URLSessionConfiguration,
+        log: ((MASTError, String) -> Void)? = nil,
         parse: @escaping (Data, Int64?) -> FITSImageHeaderMetadata?,
         completion: @escaping (FITSImageHeaderMetadata?) -> Void
     ) {
         self.url = url
         self.maxByteCount = maxByteCount
         self.configuration = configuration
+        self.log = log
         self.parse = parse
         self.completion = completion
     }
@@ -1738,6 +1760,11 @@ private final class FITSImageHeaderMetadataStreamFetcher: NSObject, URLSessionDa
 
         var request = URLRequest(url: url)
         request.timeoutInterval = 30
+        startedAt = Date().timeIntervalSinceReferenceDate
+        log?(
+            .OK,
+            "FITS metadata stream: Request sent method=GET, url=\(url.absoluteString), maxBytes=\(maxByteCount)"
+        )
         task = session.dataTask(with: request)
         task?.resume()
     }
@@ -1749,6 +1776,7 @@ private final class FITSImageHeaderMetadataStreamFetcher: NSObject, URLSessionDa
         completionHandler: @escaping (URLSession.ResponseDisposition) -> Void
     ) {
         if let httpResponse = response as? HTTPURLResponse {
+            responseStatusCode = httpResponse.statusCode
             remoteFileSize = remoteFileSize(from: httpResponse)
         } else {
             let expected = response.expectedContentLength
@@ -1773,11 +1801,25 @@ private final class FITSImageHeaderMetadataStreamFetcher: NSObject, URLSessionDa
 
     func urlSession(_ session: URLSession, task: URLSessionTask, didCompleteWithError error: Error?) {
         guard !didComplete else { return }
+        if let error {
+            logCompletion(error: error)
+        }
         finish(parse(data, remoteFileSize))
+    }
+
+    private func logCompletion(error: Error?) {
+        guard !didLogCompletion else { return }
+        didLogCompletion = true
+        let elapsed = startedAt.map { Date().timeIntervalSinceReferenceDate - $0 } ?? 0
+        log?(
+            error == nil ? .OK : .RequestError,
+            "FITS metadata stream: Response received status=\(responseStatusCode.map(String.init) ?? "none"), bytes=\(data.count), time=\(String(format: "%.3f", elapsed))s, url=\(url.absoluteString)"
+        )
     }
 
     private func finish(_ metadata: FITSImageHeaderMetadata?) {
         guard !didComplete else { return }
+        logCompletion(error: nil)
         didComplete = true
         task?.cancel()
         session?.invalidateAndCancel()

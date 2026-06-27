@@ -655,6 +655,27 @@ final class SwiftMASTTests: XCTestCase {
         print("Log appends to sysLog test passed")
     }
 
+    func testFileLoggingWritesLogEntries() {
+        let mast = SwiftMAST()
+        let logURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent("SwiftMAST-\(UUID().uuidString).log")
+
+        XCTAssertEqual(mast.enableFileLogging(to: logURL), logURL)
+        mast.log(.OK, message: "File logging test message")
+
+        let expectation = XCTestExpectation(description: "Wait for async file logging")
+        DispatchQueue.global().asyncAfter(deadline: .now() + 0.2) {
+            expectation.fulfill()
+        }
+        wait(for: [expectation], timeout: 2.0)
+
+        let contents = try? String(contentsOf: logURL, encoding: .utf8)
+        XCTAssertTrue(contents?.contains("File logging test message") == true)
+
+        mast.disableFileLogging()
+        try? FileManager.default.removeItem(at: logURL)
+    }
+
     func testMultipleSubscribers() {
         let mast = SwiftMAST()
         var callbackCount = 0
