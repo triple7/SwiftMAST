@@ -190,6 +190,53 @@ final class FITSObservationProductTests: XCTestCase {
         XCTAssertEqual(metadata.pixelScaleArcsecondsY ?? 0, 0.10000000008, accuracy: 1e-10)
         XCTAssertEqual(metadata.referenceCoordinate?.ra ?? 0, 254.2253014526158, accuracy: 1e-12)
         XCTAssertEqual(metadata.cornerWorldCoordinates.count, 4)
+        XCTAssertEqual(metadata.wcsAxes, 2)
+        XCTAssertEqual(metadata.equinox ?? 0, 2000, accuracy: 1e-12)
+        XCTAssertEqual(metadata.crpix1 ?? 0, 2327.0, accuracy: 1e-12)
+        XCTAssertEqual(metadata.crpix2 ?? 0, 2324.0, accuracy: 1e-12)
+        XCTAssertEqual(metadata.crval1 ?? 0, 254.2253014526158, accuracy: 1e-12)
+        XCTAssertEqual(metadata.crval2 ?? 0, -4.022223357292208, accuracy: 1e-12)
+        XCTAssertEqual(metadata.ctype1, "RA---TAN")
+        XCTAssertEqual(metadata.ctype2, "DEC--TAN")
+        XCTAssertEqual(metadata.cunit1, "deg")
+        XCTAssertEqual(metadata.cunit2, "deg")
+        XCTAssertEqual(metadata.cd1_1 ?? 0, -0.0000277777778, accuracy: 1e-14)
+        XCTAssertEqual(metadata.cd1_2 ?? 1, 0.0, accuracy: 1e-14)
+        XCTAssertEqual(metadata.cd2_1 ?? 1, 0.0, accuracy: 1e-14)
+        XCTAssertEqual(metadata.cd2_2 ?? 0, 0.0000277777778, accuracy: 1e-14)
+    }
+
+    func testParseFITSHeaderSummaryExposesPCMatrixWCSMetadata() throws {
+        let data = makePCMatrixFITSHeaderData()
+        let summary = try XCTUnwrap(
+            SwiftMAST().parseFITSHeaderSummary(
+                data: data,
+                sourceURL: URL(string: "https://example.com/jwst.fits")!
+            )
+        )
+
+        let metadata = try XCTUnwrap(summary.preferredImageMetadata)
+        XCTAssertEqual(metadata.wcsAxes, 2)
+        XCTAssertEqual(metadata.crpix1 ?? 0, 1733.307258618293, accuracy: 1e-12)
+        XCTAssertEqual(metadata.crpix2 ?? 0, 540.3199421605445, accuracy: 1e-12)
+        XCTAssertEqual(metadata.crval1 ?? 0, 24.175785097827205, accuracy: 1e-12)
+        XCTAssertEqual(metadata.crval2 ?? 0, 15.778261038205054, accuracy: 1e-12)
+        XCTAssertEqual(metadata.ctype1, "RA---TAN")
+        XCTAssertEqual(metadata.ctype2, "DEC--TAN")
+        XCTAssertEqual(metadata.cunit1, "deg")
+        XCTAssertEqual(metadata.cunit2, "deg")
+        XCTAssertNil(metadata.cd1_1)
+        XCTAssertNil(metadata.cd1_2)
+        XCTAssertNil(metadata.cd2_1)
+        XCTAssertNil(metadata.cd2_2)
+        XCTAssertEqual(metadata.pc1_1 ?? 0, -0.28414626032242946, accuracy: 1e-15)
+        XCTAssertEqual(metadata.pc1_2 ?? 0, 0.9587800593292748, accuracy: 1e-15)
+        XCTAssertEqual(metadata.pc2_1 ?? 0, 0.9587800593292748, accuracy: 1e-15)
+        XCTAssertEqual(metadata.pc2_2 ?? 0, 0.28414626032242946, accuracy: 1e-15)
+        XCTAssertEqual(metadata.cdelt1 ?? 0, 3.08066304092787e-05, accuracy: 1e-17)
+        XCTAssertEqual(metadata.cdelt2 ?? 0, 3.08066304092787e-05, accuracy: 1e-17)
+        XCTAssertNotNil(metadata.wcs)
+        XCTAssertEqual(metadata.wcs?.cd1_1 ?? 0, -8.753588823931778e-06, accuracy: 1e-17)
     }
 
     func testParseFITSHeaderSummaryReadsPrimaryImageMetadata() throws {
@@ -602,16 +649,56 @@ final class FITSObservationProductTests: XCTestCase {
                 fitsCard("NAXIS1", "4654", "axis 1 length"),
                 fitsCard("NAXIS2", "4648", "axis 2 length"),
                 fitsCard("EXTNAME", "'SCI'", "extension name"),
+                fitsCard("WCSAXES", "2", nil),
+                fitsCard("EQUINOX", "2000.0", nil),
                 fitsCard("CRPIX1", "2327.0", nil),
                 fitsCard("CRPIX2", "2324.0", nil),
                 fitsCard("CRVAL1", "254.2253014526158", nil),
                 fitsCard("CRVAL2", "-4.022223357292208", nil),
                 fitsCard("CTYPE1", "'RA---TAN'", nil),
                 fitsCard("CTYPE2", "'DEC--TAN'", nil),
+                fitsCard("CUNIT1", "'deg'", nil),
+                fitsCard("CUNIT2", "'deg'", nil),
                 fitsCard("CD1_1", "-0.0000277777778", nil),
                 fitsCard("CD1_2", "0.0", nil),
                 fitsCard("CD2_1", "0.0", nil),
                 fitsCard("CD2_2", "0.0000277777778", nil),
+            ]))
+        return data
+    }
+
+    private func makePCMatrixFITSHeaderData() -> Data {
+        var data = Data()
+        data.append(
+            makeFITSHeaderBlock([
+                fitsCard("SIMPLE", "T", "conforms to FITS standard"),
+                fitsCard("BITPIX", "8", "array data type"),
+                fitsCard("NAXIS", "0", "number of data array dimensions"),
+                fitsCard("EXTEND", "T", "extensions may be present"),
+            ]))
+        data.append(
+            makeFITSHeaderBlock([
+                fitsCard("XTENSION", "'IMAGE'", "image extension"),
+                fitsCard("BITPIX", "-32", "array data type"),
+                fitsCard("NAXIS", "2", "number of axes"),
+                fitsCard("NAXIS1", "3000", "axis 1 length"),
+                fitsCard("NAXIS2", "2000", "axis 2 length"),
+                fitsCard("EXTNAME", "'SCI'", "extension name"),
+                fitsCard("WCSAXES", "2", nil),
+                fitsCard("CRPIX1", "1733.307258618293", nil),
+                fitsCard("CRPIX2", "540.3199421605445", nil),
+                fitsCard("CRVAL1", "24.175785097827205", nil),
+                fitsCard("CRVAL2", "15.778261038205054", nil),
+                fitsCard("CTYPE1", "'RA---TAN'", nil),
+                fitsCard("CTYPE2", "'DEC--TAN'", nil),
+                fitsCard("CUNIT1", "'deg'", nil),
+                fitsCard("CUNIT2", "'deg'", nil),
+                fitsCard("CDELT1", "3.08066304092787E-05", nil),
+                fitsCard("CDELT2", "3.08066304092787E-05", nil),
+                fitsCard("PC1_1", "-0.28414626032242946", nil),
+                fitsCard("PC1_2", "0.9587800593292748", nil),
+                fitsCard("PC2_1", "0.9587800593292748", nil),
+                fitsCard("PC2_2", "0.28414626032242946", nil),
             ]))
         return data
     }

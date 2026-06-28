@@ -390,6 +390,26 @@ public struct FITSImageHeaderMetadata: Codable, Equatable {
     public let pixelScaleDegreesY: Double?
     public let pixelScaleArcsecondsX: Double?
     public let pixelScaleArcsecondsY: Double?
+    public let wcsAxes: Int?
+    public let equinox: Double?
+    public let crpix1: Double?
+    public let crpix2: Double?
+    public let crval1: Double?
+    public let crval2: Double?
+    public let ctype1: String?
+    public let ctype2: String?
+    public let cunit1: String?
+    public let cunit2: String?
+    public let cd1_1: Double?
+    public let cd1_2: Double?
+    public let cd2_1: Double?
+    public let cd2_2: Double?
+    public let pc1_1: Double?
+    public let pc1_2: Double?
+    public let pc2_1: Double?
+    public let pc2_2: Double?
+    public let cdelt1: Double?
+    public let cdelt2: Double?
     public let referenceCoordinate: FITSWorldCoordinate?
     public let cornerWorldCoordinates: [FITSWorldCoordinate]
     public let headers: [FITSHeaderUnit]
@@ -417,6 +437,26 @@ public struct FITSImageHeaderMetadata: Codable, Equatable {
         self.dataOffset = hdu.dataOffset
         self.headers = hdu.headers
         self.wcs = hdu.wcs
+        self.wcsAxes = Self.headerInt("WCSAXES", in: hdu.headers)
+        self.equinox = Self.headerDouble("EQUINOX", in: hdu.headers)
+        self.crpix1 = Self.headerDouble("CRPIX1", in: hdu.headers)
+        self.crpix2 = Self.headerDouble("CRPIX2", in: hdu.headers)
+        self.crval1 = Self.headerDouble("CRVAL1", in: hdu.headers)
+        self.crval2 = Self.headerDouble("CRVAL2", in: hdu.headers)
+        self.ctype1 = Self.headerString("CTYPE1", in: hdu.headers)
+        self.ctype2 = Self.headerString("CTYPE2", in: hdu.headers)
+        self.cunit1 = Self.headerString("CUNIT1", in: hdu.headers)
+        self.cunit2 = Self.headerString("CUNIT2", in: hdu.headers)
+        self.cd1_1 = Self.headerDouble("CD1_1", in: hdu.headers)
+        self.cd1_2 = Self.headerDouble("CD1_2", in: hdu.headers)
+        self.cd2_1 = Self.headerDouble("CD2_1", in: hdu.headers)
+        self.cd2_2 = Self.headerDouble("CD2_2", in: hdu.headers)
+        self.pc1_1 = Self.headerDouble("PC1_1", in: hdu.headers)
+        self.pc1_2 = Self.headerDouble("PC1_2", in: hdu.headers)
+        self.pc2_1 = Self.headerDouble("PC2_1", in: hdu.headers)
+        self.pc2_2 = Self.headerDouble("PC2_2", in: hdu.headers)
+        self.cdelt1 = Self.headerDouble("CDELT1", in: hdu.headers)
+        self.cdelt2 = Self.headerDouble("CDELT2", in: hdu.headers)
 
         if let pixelScale = hdu.pixelScaleDegrees {
             self.pixelScaleDegreesX = pixelScale.x
@@ -440,6 +480,18 @@ public struct FITSImageHeaderMetadata: Codable, Equatable {
             self.referenceCoordinate = nil
             self.cornerWorldCoordinates = []
         }
+    }
+
+    private static func headerDouble(_ keyword: String, in headers: [FITSHeaderUnit]) -> Double? {
+        headers.first { $0.keyword == keyword }?.value.doubleValue
+    }
+
+    private static func headerInt(_ keyword: String, in headers: [FITSHeaderUnit]) -> Int? {
+        headers.first { $0.keyword == keyword }?.value.intValue
+    }
+
+    private static func headerString(_ keyword: String, in headers: [FITSHeaderUnit]) -> String? {
+        headers.first { $0.keyword == keyword }?.value.rawString
     }
 }
 

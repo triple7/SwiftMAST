@@ -78,11 +78,23 @@ public struct FITSMetadata: Codable, CustomStringConvertible {
     /// WCS coordinate delta per pixel Y (degrees)
     public let cdelt2: Double?
 
+    /// Number of WCS coordinate axes
+    public let wcsAxes: Int?
+
+    /// WCS equinox
+    public let equinox: Double?
+
     /// WCS coordinate type 1 (usually RA)
     public let ctype1: String?
 
     /// WCS coordinate type 2 (usually DEC)
     public let ctype2: String?
+
+    /// WCS coordinate unit 1
+    public let cunit1: String?
+
+    /// WCS coordinate unit 2
+    public let cunit2: String?
 
     /// WCS rotation matrix element 1,1
     public let cd1_1: Double?
@@ -95,6 +107,18 @@ public struct FITSMetadata: Codable, CustomStringConvertible {
 
     /// WCS rotation matrix element 2,2
     public let cd2_2: Double?
+
+    /// WCS PC matrix element 1,1
+    public let pc1_1: Double?
+
+    /// WCS PC matrix element 1,2
+    public let pc1_2: Double?
+
+    /// WCS PC matrix element 2,1
+    public let pc2_1: Double?
+
+    /// WCS PC matrix element 2,2
+    public let pc2_2: Double?
 
     // MARK: - Instrument & Mission
 
@@ -213,12 +237,20 @@ public struct FITSMetadata: Codable, CustomStringConvertible {
         self.crval2 = Self.extractDouble(from: metadata, key: "CRVAL2")
         self.cdelt1 = Self.extractDouble(from: metadata, key: "CDELT1")
         self.cdelt2 = Self.extractDouble(from: metadata, key: "CDELT2")
+        self.wcsAxes = Self.extractInt(from: metadata, key: "WCSAXES")
+        self.equinox = Self.extractDouble(from: metadata, key: "EQUINOX")
         self.ctype1 = Self.extractString(from: metadata, key: "CTYPE1")
         self.ctype2 = Self.extractString(from: metadata, key: "CTYPE2")
+        self.cunit1 = Self.extractString(from: metadata, key: "CUNIT1")
+        self.cunit2 = Self.extractString(from: metadata, key: "CUNIT2")
         self.cd1_1 = Self.extractDouble(from: metadata, key: "CD1_1")
         self.cd1_2 = Self.extractDouble(from: metadata, key: "CD1_2")
         self.cd2_1 = Self.extractDouble(from: metadata, key: "CD2_1")
         self.cd2_2 = Self.extractDouble(from: metadata, key: "CD2_2")
+        self.pc1_1 = Self.extractDouble(from: metadata, key: "PC1_1")
+        self.pc1_2 = Self.extractDouble(from: metadata, key: "PC1_2")
+        self.pc2_1 = Self.extractDouble(from: metadata, key: "PC2_1")
+        self.pc2_2 = Self.extractDouble(from: metadata, key: "PC2_2")
 
         // Instrument & Mission
         self.telescope = Self.extractString(from: metadata, keys: ["TELESCOP", "TELESCOPE"])
