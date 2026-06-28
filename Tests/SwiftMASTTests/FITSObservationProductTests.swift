@@ -265,6 +265,36 @@ final class FITSObservationProductTests: XCTestCase {
         XCTAssertEqual(metadata.pixelScaleArcsecondsY ?? 0, 0.4, accuracy: 1e-12)
     }
 
+    func testFetchPreferredFITSImageHeaderMetadataUsesLocalCacheFirst() throws {
+        let mast = SwiftMAST()
+        let targetName = "Header Cache \(UUID().uuidString)"
+        let coam = makeCoamResult(dataURL: "https://example.invalid/not-requested.fits")
+        let cachedFITSURL = mast.localProductURL(
+            targetName: targetName, product: coam, productType: .Fits)
+        try FileManager.default.createDirectory(
+            at: cachedFITSURL.deletingLastPathComponent(),
+            withIntermediateDirectories: true
+        )
+        try makePartialFITSHeaderData().write(to: cachedFITSURL)
+        defer { removeMASTTargetFolder(targetName, mast: mast) }
+
+        let expectation = expectation(description: "Local FITS metadata cache returns")
+        mast.fetchPreferredFITSImageHeaderMetadata(
+            for: coam,
+            targetName: targetName,
+            fetchMode: .range,
+            session: URLSession.mockFITSHeaderSummary
+        ) { metadata in
+            XCTAssertEqual(metadata?.width, 4654)
+            XCTAssertEqual(metadata?.height, 4648)
+            XCTAssertEqual(metadata?.role, .science)
+            XCTAssertEqual(metadata?.referenceCoordinate?.ra ?? 0, 254.2253014526158, accuracy: 1e-12)
+            expectation.fulfill()
+        }
+
+        wait(for: [expectation], timeout: 2)
+    }
+
     func testFetchFITSHeaderSummaryUsesRangeRequest() throws {
         let data = makePartialFITSHeaderData()
         let expectedURL = URL(string: "https://example.com/test.fits")!
@@ -799,6 +829,23 @@ final class FITSObservationProductTests: XCTestCase {
         image.header("CD1_2", value: Float(0.0), comment: nil)
         image.header("CD2_1", value: Float(0.0), comment: nil)
         image.header("CD2_2", value: Float(0.0001), comment: nil)
+    }
+
+    private func removeMASTTargetFolder(_ targetName: String, mast: SwiftMAST) {
+        guard
+            let documentsDirectory = FileManager.default.urls(
+                for: .documentDirectory, in: .userDomainMask
+            ).first
+        else {
+            return
+        }
+        let targetFolder = documentsDirectory
+            .appendingPathComponent("MAST", isDirectory: true)
+            .appendingPathComponent(
+                mast.storageSafePathComponent(targetName, fallback: "unknown-target"),
+                isDirectory: true
+            )
+        try? FileManager.default.removeItem(at: targetFolder)
     }
 
     private func makeCoamResult(dataURL: String = "") -> CoamResult {

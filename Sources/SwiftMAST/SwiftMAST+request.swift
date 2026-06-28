@@ -296,6 +296,16 @@ extension SwiftMAST {
 
             let product = remainingProducts.removeFirst()
             let productUrl = productType == .Fits ? product.dataURL : product.jpegURL
+            if let cached = self.localCachedDownloadResult(
+                targetName: targetName, product: product, productType: productType)
+            {
+                fitsData.append(cached)
+                serialQueue.async {
+                    downloadNextproduct()
+                }
+                return
+            }
+            self.log(.OK, message: "Cache miss: \(productType.id) product for \(targetName)")
             var request = URLRequest(
                 url: MASTRequest(searchType: .image).getFileDownloadUrl(
                     service: service, parameters: ["uri": productUrl]))
@@ -421,6 +431,17 @@ extension SwiftMAST {
 
             let product = remainingProducts.removeFirst()
             var productUrl = productType == .Fits ? product.dataURL : product.jpegURL
+            if let cached = self.localCachedDownloadResult(
+                targetName: targetName, product: product, productType: productType),
+                let url = cached.url
+            {
+                urls.append(url)
+                serialQueue.async {
+                    downloadNextproduct()
+                }
+                return
+            }
+            self.log(.OK, message: "Cache miss: direct \(productType.id) product for \(targetName)")
             if !productUrl.contains("https") {
                 productUrl = productUrl.replacingOccurrences(of: "http", with: "https")
             }
@@ -513,6 +534,15 @@ extension SwiftMAST {
             }
 
             let url = remainingUrls.removeFirst()
+            if let cached = self.existingPS1CutoutURL(targetName: targetName) {
+                urls.append(cached)
+                self.log(.OK, message: "Cache hit: PS1 cutout \(cached.lastPathComponent) for \(targetName)")
+                serialQueue.async {
+                    downloadNextUrl()
+                }
+                return
+            }
+            self.log(.OK, message: "Cache miss: PS1 cutout for \(targetName)")
             let request = URLRequest(url: url)
             let startedAt = self.logNetworkRequestStart(
                 label: "PS1 cutout download",

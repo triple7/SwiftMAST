@@ -17,12 +17,22 @@ extension SwiftMAST {
 
         let requestLimit = max(maxConcurrentRequests, 1)
         fetchProductFileSizes(for: results, maxConcurrentRequests: requestLimit) { productSizes in
+            var cacheableProductSizes = [String: Int64]()
             var enriched = results.map { coam -> CoamResult in
-                coam.withFileSizes(
-                    dataURLSizeBytes: self.productSize(for: coam.dataURL, in: productSizes),
-                    jpegURLSizeBytes: self.productSize(for: coam.jpegURL, in: productSizes)
+                let dataURLSize = self.productSize(for: coam.dataURL, in: productSizes)
+                let jpegURLSize = self.productSize(for: coam.jpegURL, in: productSizes)
+                if let dataURLSize {
+                    cacheableProductSizes[coam.dataURL] = dataURLSize
+                }
+                if let jpegURLSize {
+                    cacheableProductSizes[coam.jpegURL] = jpegURLSize
+                }
+                return coam.withFileSizes(
+                    dataURLSizeBytes: dataURLSize,
+                    jpegURLSizeBytes: jpegURLSize
                 )
             }
+            self.storeCachedProductFileSizes(cacheableProductSizes)
 
             self.fetchMissingHeaderSizes(
                 for: enriched, maxConcurrentRequests: requestLimit
@@ -227,19 +237,34 @@ extension SwiftMAST {
             return
         }
 
+        var sizes = [String: Int64]()
+        let uncachedURLs = urls.filter { productURL in
+            if let cachedSize = cachedProductFileSize(for: productURL) {
+                sizes[productURL] = cachedSize
+                log(.OK, message: "MAST size cache hit: url=\(productURL), bytes=\(cachedSize)")
+                return false
+            }
+            log(.OK, message: "MAST size cache miss: url=\(productURL)")
+            return true
+        }
+
+        guard !uncachedURLs.isEmpty else {
+            completion(sizes)
+            return
+        }
+
         let requestLimit = max(maxConcurrentRequests ?? self.maxConcurrentRequests, 1)
-        let workerCount = min(requestLimit, urls.count)
+        let workerCount = min(requestLimit, uncachedURLs.count)
         let group = DispatchGroup()
         let lock = NSLock()
-        var sizes = [String: Int64]()
         var nextIndex = 0
 
         func nextURL() -> String? {
             lock.lock()
             defer { lock.unlock() }
 
-            guard nextIndex < urls.count else { return nil }
-            let url = urls[nextIndex]
+            guard nextIndex < uncachedURLs.count else { return nil }
+            let url = uncachedURLs[nextIndex]
             nextIndex += 1
             return url
         }
@@ -269,6 +294,7 @@ extension SwiftMAST {
         }
 
         group.notify(queue: .main) {
+            self.storeCachedProductFileSizes(sizes)
             completion(sizes)
         }
     }
@@ -336,6 +362,60 @@ extension SwiftMAST {
         let unescaped = value
             .replacingOccurrences(of: "&amp;", with: "&")
         return (unescaped.removingPercentEncoding ?? unescaped).lowercased()
+    }
+
+    internal func productFileSizeCacheURL() -> URL? {
+        FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)
+            .first?
+            .appendingPathComponent("MAST", isDirectory: true)
+            .appendingPathComponent(".cache", isDirectory: true)
+            .appendingPathComponent("product-file-sizes.json")
+    }
+
+    internal func cachedProductFileSize(for productURL: String) -> Int64? {
+        let key = normalizeProductLocator(productURL)
+        guard !key.isEmpty else { return nil }
+        return readProductFileSizeCache()[key]
+    }
+
+    internal func storeCachedProductFileSizes(_ sizes: [String: Int64]) {
+        let normalizedSizes = sizes.reduce(into: [String: Int64]()) { output, entry in
+            let key = normalizeProductLocator(entry.key)
+            if !key.isEmpty, entry.value > 0 {
+                output[key] = entry.value
+            }
+        }
+        guard !normalizedSizes.isEmpty,
+              let cacheURL = productFileSizeCacheURL()
+        else {
+            return
+        }
+
+        var cache = readProductFileSizeCache()
+        for (key, value) in normalizedSizes {
+            cache[key] = value
+        }
+
+        do {
+            try FileManager.default.createDirectory(
+                at: cacheURL.deletingLastPathComponent(),
+                withIntermediateDirectories: true
+            )
+            let data = try JSONEncoder().encode(cache)
+            try data.write(to: cacheURL, options: .atomic)
+        } catch {
+            log(.RequestError, message: "Unable to write product file-size cache: \(error.localizedDescription)")
+        }
+    }
+
+    internal func readProductFileSizeCache() -> [String: Int64] {
+        guard let cacheURL = productFileSizeCacheURL(),
+              let data = try? Data(contentsOf: cacheURL),
+              let cache = try? JSONDecoder().decode([String: Int64].self, from: data)
+        else {
+            return [:]
+        }
+        return cache
     }
 
     private static func int64Value(_ value: Any?) -> Int64? {

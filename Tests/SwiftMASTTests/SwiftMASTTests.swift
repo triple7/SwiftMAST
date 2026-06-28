@@ -967,6 +967,28 @@ final class SwiftMASTTests: XCTestCase {
             .deletingLastPathComponent()  // project root
     }
 
+    private func removeMASTTargetFolder(_ targetName: String, mast: SwiftMAST) {
+        guard
+            let documentsDirectory = FileManager.default.urls(
+                for: .documentDirectory, in: .userDomainMask
+            ).first
+        else {
+            return
+        }
+        let targetFolder = documentsDirectory
+            .appendingPathComponent("MAST", isDirectory: true)
+            .appendingPathComponent(
+                mast.storageSafePathComponent(targetName, fallback: "unknown-target"),
+                isDirectory: true
+            )
+        try? FileManager.default.removeItem(at: targetFolder)
+    }
+
+    private func removeProductFileSizeCache(_ mast: SwiftMAST) {
+        guard let cacheURL = mast.productFileSizeCacheURL() else { return }
+        try? FileManager.default.removeItem(at: cacheURL)
+    }
+
     func testExtractScienceProductsFromJWSTFits() {
         let mast = SwiftMAST()
         let projectRoot = projectRootURL()
@@ -2183,6 +2205,144 @@ final class SwiftMASTTests: XCTestCase {
             mast.productFileName(target: "NGC 628", product: product, productType: .Fits),
             "NGC_628_JWST_jw02666-o007_t004_miri_f1000w_F1000W-F770W.fits"
         )
+    }
+
+    func testDirectDownloadUsesSmallLocalJPEGCacheBeforeNetwork() throws {
+        let mast = SwiftMAST()
+        let targetName = "Cache Tiny \(UUID().uuidString)"
+        let product = makeCoamResult(
+            jpegURL: "https://example.invalid/not-requested.jpg",
+            obs_id: "obs-cache-small",
+            filters: "F606W",
+            obs_collection: "HST"
+        )
+        let cachedURL = mast.localProductURL(
+            targetName: targetName, product: product, productType: .Jpeg)
+        try FileManager.default.createDirectory(
+            at: cachedURL.deletingLastPathComponent(),
+            withIntermediateDirectories: true
+        )
+        let expectedData = Data([0x01, 0x02, 0x03, 0x04])
+        try expectedData.write(to: cachedURL)
+        defer { removeMASTTargetFolder(targetName, mast: mast) }
+
+        XCTAssertEqual(
+            mast.existingLocalProductURL(
+                targetName: targetName, product: product, productType: .Jpeg),
+            cachedURL
+        )
+
+        let expectation = XCTestExpectation(description: "Local JPEG cache returns")
+        mast.getDirectDataproducts(
+            targetName: targetName,
+            service: .Download_file,
+            products: [product],
+            productType: .Jpeg,
+            token: nil
+        ) { urls in
+            XCTAssertEqual(urls, [cachedURL])
+            XCTAssertEqual(try? Data(contentsOf: cachedURL), expectedData)
+            expectation.fulfill()
+        }
+
+        wait(for: [expectation], timeout: 2.0)
+    }
+
+    func testFetchHeaderSizesUsesPersistentCacheBeforeNetwork() throws {
+        let mast = SwiftMAST()
+        removeProductFileSizeCache(mast)
+        defer { removeProductFileSizeCache(mast) }
+
+        let productURL = "http://example.invalid/path/science.fits"
+        mast.storeCachedProductFileSizes([productURL: 12_345])
+
+        XCTAssertEqual(mast.cachedProductFileSize(for: productURL), 12_345)
+
+        let expectation = XCTestExpectation(description: "Cached file size returns")
+        mast.fetchHeaderSizes(for: [productURL], maxConcurrentRequests: 1) { sizes in
+            XCTAssertEqual(sizes[productURL], 12_345)
+            expectation.fulfill()
+        }
+
+        wait(for: [expectation], timeout: 2.0)
+    }
+
+    func testPS1CutoutUsesSmallLocalPreviewCacheBeforeNetwork() throws {
+        let mast = SwiftMAST()
+        let targetName = "Cache Preview \(UUID().uuidString)"
+        let directory = mast.productStorageFolder(
+            target: targetName,
+            mission: "PS1",
+            observationId: "cutout",
+            filter: "OPTICAL",
+            contentType: .image
+        )
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        let safeTarget = mast.storageSafePathComponent(targetName, fallback: "unknown-target")
+        let cachedURL = directory.appendingPathComponent("\(safeTarget)_PS1_cutout_OPTICAL.jpg")
+        let expectedData = Data([0x09, 0x08, 0x07])
+        try expectedData.write(to: cachedURL)
+        defer { removeMASTTargetFolder(targetName, mast: mast) }
+
+        XCTAssertEqual(mast.existingPS1CutoutURL(targetName: targetName), cachedURL)
+
+        let expectation = XCTestExpectation(description: "Local PS1 preview cache returns")
+        mast.downloadPS1Cutouts(
+            targetName: targetName,
+            urls: [URL(string: "https://example.invalid/not-requested.jpg")!]
+        ) { urls in
+            XCTAssertEqual(urls, [cachedURL])
+            XCTAssertEqual(try? Data(contentsOf: cachedURL), expectedData)
+            expectation.fulfill()
+        }
+
+        wait(for: [expectation], timeout: 2.0)
+    }
+
+    func testMASTDownloadUsesRealLocalFITSCacheBeforeNetwork() throws {
+        let projectRoot = projectRootURL()
+        let realFITSURL = projectRoot.appendingPathComponent(
+            "Resources/fits/_UV_hst_9422_01_acs_hrc_f220w_j8d001.fits")
+        guard FileManager.default.fileExists(atPath: realFITSURL.path) else {
+            print("Skipping test: FITS file not found at \(realFITSURL.path)")
+            return
+        }
+
+        let mast = SwiftMAST()
+        let targetName = "Cache Real \(UUID().uuidString)"
+        let product = makeCoamResult(
+            dataURL: "mast:HST/product/not-requested.fits",
+            obs_id: "obs-cache-real",
+            filters: "F814W",
+            obs_collection: "HST"
+        )
+        let cachedFITSURL = mast.localProductURL(
+            targetName: targetName, product: product, productType: .Fits)
+        try FileManager.default.createDirectory(
+            at: cachedFITSURL.deletingLastPathComponent(),
+            withIntermediateDirectories: true
+        )
+        try FileManager.default.copyItem(at: realFITSURL, to: cachedFITSURL)
+        defer { removeMASTTargetFolder(targetName, mast: mast) }
+
+        let expectation = XCTestExpectation(description: "Local FITS cache returns")
+        mast.getDataproducts(
+            targetName: targetName,
+            service: .Download_file,
+            products: [product],
+            productType: .Fits,
+            token: nil
+        ) { results in
+            XCTAssertEqual(results.count, 1)
+            let result = results[0]
+            XCTAssertNotNil(result.url)
+            XCTAssertTrue(FileManager.default.fileExists(atPath: result.url!.path))
+            XCTAssertNotNil(result.structuredMetadata)
+            XCTAssertEqual(result.structuredMetadata?.fileIdentifier, cachedFITSURL.lastPathComponent)
+            expectation.fulfill()
+        }
+
+        wait(for: [expectation], timeout: 60.0)
     }
 
     // MARK: - jwstFilters on CoamResult (unit tests)

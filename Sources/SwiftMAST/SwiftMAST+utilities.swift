@@ -91,6 +91,134 @@ extension SwiftMAST {
         return "\(targetName)_\(mission)_\(observationId)_\(filter).\(productType.id)"
     }
 
+    internal func localProductURL(
+        targetName: String,
+        product: CoamResult,
+        productType: ProductType
+    ) -> URL {
+        let contentType: ObservationProductContentType = productType == .Fits ? .fit : .image
+        return productStorageFolder(target: targetName, product: product, contentType: contentType)
+            .appendingPathComponent(
+                productFileName(target: targetName, product: product, productType: productType))
+    }
+
+    internal func localConvertedImageURL(targetName: String, product: CoamResult) -> URL {
+        productStorageFolder(target: targetName, product: product, contentType: .image)
+            .appendingPathComponent(
+                productFileName(target: targetName, product: product, productType: .Fits)
+                    .replacingOccurrences(of: ".fits", with: ".jpg"))
+    }
+
+    internal func existingLocalProductURL(
+        targetName: String,
+        product: CoamResult,
+        productType: ProductType
+    ) -> URL? {
+        let url = localProductURL(targetName: targetName, product: product, productType: productType)
+        guard FileManager.default.fileExists(atPath: url.path),
+              (localFileSize(url) ?? 0) > 0
+        else {
+            return nil
+        }
+        return url
+    }
+
+    internal func localFileSize(_ url: URL) -> Int64? {
+        guard
+            let size = try? FileManager.default.attributesOfItem(atPath: url.path)[.size]
+                as? NSNumber
+        else {
+            return nil
+        }
+        return size.int64Value
+    }
+
+    internal func localFitsData(
+        targetName: String,
+        product: CoamResult,
+        fitsURL: URL
+    ) -> FitsData {
+        let jpegURL = localConvertedImageURL(targetName: targetName, product: product)
+        try? FileManager.default.createDirectory(
+            at: jpegURL.deletingLastPathComponent(),
+            withIntermediateDirectories: true,
+            attributes: nil
+        )
+        let fitsData = convertFitsToJpeg(url: fitsURL, writeToUrl: jpegURL)
+        appendFitsData(target: targetName, fitsData: fitsData)
+
+        let resultURL = fitsData.url ?? fitsURL
+        return FitsData(
+            metadata: fitsData.metadata,
+            url: resultURL,
+            structuredMetadata: fitsData.structuredMetadata
+        )
+    }
+
+    internal func localCachedDownloadResult(
+        targetName: String,
+        product: CoamResult,
+        productType: ProductType
+    ) -> FitsData? {
+        if productType == .Fits {
+            guard
+                let fitsURL = existingLocalProductURL(
+                    targetName: targetName, product: product, productType: .Fits)
+            else {
+                return nil
+            }
+            log(.OK, message: "Cache hit: FITS \(fitsURL.lastPathComponent) for \(targetName)")
+            return localFitsData(targetName: targetName, product: product, fitsURL: fitsURL)
+        }
+
+        guard
+            let imageURL = existingLocalProductURL(
+                targetName: targetName, product: product, productType: productType)
+        else {
+            return nil
+        }
+        log(.OK, message: "Cache hit: \(productType.id) \(imageURL.lastPathComponent) for \(targetName)")
+        return FitsData(metadata: [:], url: imageURL)
+    }
+
+    internal func localFITSHeaderMetadata(
+        targetName: String,
+        product: CoamResult
+    ) -> FITSImageHeaderMetadata? {
+        guard
+            let fitsURL = existingLocalProductURL(
+                targetName: targetName, product: product, productType: .Fits),
+            let data = try? Data(contentsOf: fitsURL)
+        else {
+            return nil
+        }
+
+        log(.OK, message: "Cache hit: FITS metadata \(fitsURL.lastPathComponent) for \(targetName)")
+        return parseFITSHeaderSummary(
+            data: data,
+            sourceURL: fitsURL,
+            remoteFileSizeBytes: localFileSize(fitsURL)
+        )?.preferredImageMetadata
+    }
+
+    internal func existingPS1CutoutURL(targetName: String) -> URL? {
+        let directory = productStorageFolder(
+            target: targetName,
+            mission: "PS1",
+            observationId: "cutout",
+            filter: "OPTICAL",
+            contentType: .image
+        )
+        let safeTarget = storageSafePathComponent(targetName, fallback: "unknown-target")
+        let url = directory.appendingPathComponent("\(safeTarget)_PS1_cutout_OPTICAL.jpg")
+        guard FileManager.default.fileExists(atPath: url.path),
+              (localFileSize(url) ?? 0) > 0
+        else {
+            return nil
+        }
+        return url
+    }
+
     func unzipResponseData(_ data: Data, completion: @escaping ([URL]) -> Void) {
         DispatchQueue.global().async {
             // Get the Documents directory
@@ -716,6 +844,35 @@ extension SwiftMAST {
 
         fetchPreferredFITSImageHeaderMetadata(
             from: coamResult.dataURL,
+            initialByteCount: initialByteCount,
+            maxByteCount: maxByteCount,
+            fetchMode: fetchMode,
+            session: session,
+            completion: completion
+        )
+    }
+
+    /// Fetch key image metadata from a ``CoamResult`` data URL, preferring an
+    /// already-downloaded FITS file in SwiftMAST's local product storage.
+    public func fetchPreferredFITSImageHeaderMetadata(
+        for coamResult: CoamResult,
+        targetName: String,
+        initialByteCount: Int = 2_880,
+        maxByteCount: Int = 262_144,
+        fetchMode: FITSImageMetadataFetchMode = .stream,
+        session: URLSession = .shared,
+        completion: @escaping (FITSImageHeaderMetadata?) -> Void
+    ) {
+        if let metadata = localFITSHeaderMetadata(targetName: targetName, product: coamResult) {
+            DispatchQueue.main.async {
+                completion(metadata)
+            }
+            return
+        }
+
+        log(.OK, message: "Cache miss: FITS metadata for \(targetName)")
+        fetchPreferredFITSImageHeaderMetadata(
+            for: coamResult,
             initialByteCount: initialByteCount,
             maxByteCount: maxByteCount,
             fetchMode: fetchMode,
