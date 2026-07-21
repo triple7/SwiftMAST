@@ -40,6 +40,7 @@ public class LogSubscriber {
 public class SwiftMAST: NSObject {
     /// Default ceiling for concurrent network requests started by batch enrichment.
     public static let defaultMaxConcurrentRequests = 20
+    internal static var queryRequestProtocolClasses: [AnyClass]?
 
     /** Model holding all MAST archive fits network related processes including Url requests and returned data storage
      properties:

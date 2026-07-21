@@ -129,6 +129,38 @@ extension SwiftMAST {
         var extendedParams = params
         extendedParams.setParameter(param: MAP.format, value: returnType.id as Any)
         let json = service.jsonData(json: extendedParams)
+        let cacheKey = mastQueryCacheKey(
+            service: service,
+            returnType: returnType,
+            params: extendedParams
+        )
+
+        if let cacheKey,
+           let cachedData = cachedQueryResponse(key: cacheKey),
+           let targetId = self.currentTargetId
+        {
+            var table: MASTTable?
+            switch returnType {
+            case .json:
+                table = self.parseJson(data: cachedData)
+            case .xml:
+                table = self.parseXml(data: cachedData)
+            default:
+                self.log(.RequestError, message: "Return type not recognized or not yet available")
+                closure(false)
+                return
+            }
+
+            if let table = table {
+                self.targets[targetId] = table
+                closure(true)
+                return
+            }
+        }
+
+        if let cacheKey {
+            self.log(.OK, message: "Query cache miss: \(service.id) key=\(cacheKey)")
+        }
 
         let url = MASTRequest(searchType: .apiRequest).getApiUrl(json: json)
         let requestBody = String(data: json, encoding: .utf8)
@@ -137,6 +169,9 @@ extension SwiftMAST {
         let configuration = URLSessionConfiguration.ephemeral
         configuration.timeoutIntervalForRequest = 600
         configuration.timeoutIntervalForResource = 1200
+        if let protocolClasses = SwiftMAST.queryRequestProtocolClasses {
+            configuration.protocolClasses = protocolClasses
+        }
 
         let queue = OperationQueue.main
         let session = URLSession(configuration: configuration, delegate: self, delegateQueue: queue)
@@ -187,6 +222,14 @@ extension SwiftMAST {
             }
             if let table = table {
                 self.targets[targetId] = table
+                if let cacheKey {
+                    self.storeCachedQueryResponse(
+                        data,
+                        key: cacheKey,
+                        service: service.id,
+                        returnType: returnType.id
+                    )
+                }
                 closure(true)
             } else {
                 self.log(.RequestError, message: "Failed to parse response table")
@@ -691,20 +734,37 @@ extension SwiftMAST {
                 table: table, fields: fields, parameters: parameters, format: format)
         }
         let configuration = URLSessionConfiguration.ephemeral
+        if let protocolClasses = SwiftMAST.queryRequestProtocolClasses {
+            configuration.protocolClasses = protocolClasses
+        }
         let queue = OperationQueue.main
         let session = URLSession(configuration: configuration, delegate: self, delegateQueue: queue)
         var request = URLRequest(url: mASTTapRequest.getBaseUrl())
         request.httpMethod = "POST"
         request.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
 
+        let tapQuery = selectQuery ?? mASTTapRequest.getSelectQuery()
         let bodyParameters =
-            "QUERY=\(selectQuery!.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? "")&LANG=ADQL-2.0&responseformat=json"
+            "QUERY=\(tapQuery.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? "")&LANG=ADQL-2.0&responseformat=\(format.id)"
 
         //        print(bodyParameters)
         request.httpBody = bodyParameters.data(using: .utf8)
 
         if token != nil {
             request.addValue("Bearer \(token!)", forHTTPHeaderField: "Authorization")
+        }
+
+        let cacheKey = token == nil ? tapQueryCacheKey(query: tapQuery, format: format) : nil
+        if let cacheKey,
+           let cachedData = cachedQueryResponse(key: cacheKey),
+           let cachedResult = try? JSONDecoder().decode(MASTTAPResponse.self, from: cachedData)
+        {
+            closure(cachedResult)
+            return
+        }
+
+        if let cacheKey {
+            self.log(.OK, message: "Query cache miss: MAST TAP key=\(cacheKey)")
         }
 
         let startedAt = logNetworkRequestStart(
@@ -729,8 +789,15 @@ extension SwiftMAST {
                 //                print(String(data: data!, encoding: .utf8))
                 let result = try! JSONDecoder().decode(MASTTAPResponse.self, from: data!)
 
-                self?.log(
-                    .OK, message: "query \(mASTTapRequest.getSelectQuery()) result downloaded")
+                self?.log(.OK, message: "query \(tapQuery) result downloaded")
+                if let cacheKey, let data {
+                    self?.storeCachedQueryResponse(
+                        data,
+                        key: cacheKey,
+                        service: "MAST TAP",
+                        returnType: format.id
+                    )
+                }
                 closure(result)
                 return
 
