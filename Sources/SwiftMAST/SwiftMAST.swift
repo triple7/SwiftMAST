@@ -5,8 +5,15 @@ public struct MASTSyslog: CustomStringConvertible {
     public let message: String
     public let timecode: String
     public let date: Date
+    public let durationSeconds: TimeInterval?
+    public let metadata: [String: String]
 
-    public init(log: MASTError, message: String) {
+    public init(
+        log: MASTError,
+        message: String,
+        durationSeconds: TimeInterval? = nil,
+        metadata: [String: String] = [:]
+    ) {
         self.date = Date()
         let dateFormatter = DateFormatter()
         dateFormatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
@@ -14,10 +21,51 @@ public struct MASTSyslog: CustomStringConvertible {
 
         self.log = log
         self.message = message
+        self.durationSeconds = durationSeconds
+        self.metadata = metadata
     }
 
     public var description: String {
-        return "MAST: \(log)-\(message) \(timecode)"
+        var output = "MAST: \(log)-\(message) \(timecode)"
+        if let durationSeconds {
+            output += " duration=\(String(format: "%.3f", durationSeconds))s"
+        }
+        return output
+    }
+}
+
+public struct MASTNetworkTransaction: Codable, Equatable {
+    public let label: String
+    public let method: String
+    public let url: String
+    public let statusCode: Int?
+    public let requestBodyBytes: Int
+    public let responseBodyBytes: Int?
+    public let startedAt: Date
+    public let completedAt: Date
+    public let durationSeconds: TimeInterval
+    public let errorMessage: String?
+
+    public var highLevelNote: String {
+        "\(MASTNetworkTransaction.readableLabel(label)) took \(String(format: "%.3f", durationSeconds)) seconds"
+    }
+
+    internal static func readableLabel(_ label: String) -> String {
+        switch label {
+        case "MAST API Mast.Caom.Cone":
+            return "MAST cone search"
+        case "MAST TAP":
+            return "MAST TAP query"
+        case "PS1 file list":
+            return "PS1 file list request"
+        case "NED resolver":
+            return "NED resolver request"
+        default:
+            if label.hasPrefix("MAST API ") {
+                return label.replacingOccurrences(of: "MAST API ", with: "MAST ")
+            }
+            return label
+        }
     }
 }
 
@@ -60,6 +108,14 @@ public class SwiftMAST: NSObject {
     public var sysLog: [MASTSyslog]!
     public private(set) var logFileURL: URL?
     private let logFileQueue = DispatchQueue(label: "com.swiftmast.logfile")
+    private var storedNetworkTransactions: [MASTNetworkTransaction] = []
+    private let networkTimelineQueue = DispatchQueue(label: "com.swiftmast.networkTimeline")
+
+    public var networkTransactions: [MASTNetworkTransaction] {
+        networkTimelineQueue.sync {
+            storedNetworkTransactions
+        }
+    }
 
     /// Maximum concurrent requests used by file-size and FITS metadata enrichment.
     /// Values below one are treated as one when a batch begins.
@@ -77,6 +133,7 @@ public class SwiftMAST: NSObject {
         self.buffer = 0
         self.sysLog = [MASTSyslog]()
         self.logSubscribers = []
+        self.storedNetworkTransactions = []
     }
 
     // MARK: - Log Subscription Management
@@ -151,11 +208,84 @@ public class SwiftMAST: NSObject {
     /// - Parameters:
     ///   - log: The log level/type
     ///   - message: The log message
-    public func log(_ log: MASTError, message: String) {
-        let entry = MASTSyslog(log: log, message: message)
+    public func log(
+        _ log: MASTError,
+        message: String,
+        durationSeconds: TimeInterval? = nil,
+        metadata: [String: String] = [:]
+    ) {
+        let entry = MASTSyslog(
+            log: log,
+            message: message,
+            durationSeconds: durationSeconds,
+            metadata: metadata
+        )
         sysLog.append(entry)
         appendLogEntryToFile(entry)
         notifySubscribers(entry: entry)
+    }
+
+    public func resetNetworkTimeline() {
+        networkTimelineQueue.sync {
+            storedNetworkTransactions.removeAll()
+        }
+    }
+
+    public func networkTimelineNotes() -> [String] {
+        networkTransactions.map { $0.highLevelNote }
+    }
+
+    public func networkTransactionRows() -> [[String: String]] {
+        networkTransactions.map { transaction in
+            [
+                "label": transaction.label,
+                "method": transaction.method,
+                "url": transaction.url,
+                "statusCode": transaction.statusCode.map(String.init) ?? "",
+                "requestBodyBytes": String(transaction.requestBodyBytes),
+                "responseBodyBytes": transaction.responseBodyBytes.map(String.init) ?? "",
+                "durationSeconds": String(format: "%.3f", transaction.durationSeconds),
+                "startedAt": ISO8601DateFormatter().string(from: transaction.startedAt),
+                "completedAt": ISO8601DateFormatter().string(from: transaction.completedAt),
+                "errorMessage": transaction.errorMessage ?? "",
+            ]
+        }
+    }
+
+    public func networkTimelineText() -> String {
+        let notes = networkTimelineNotes()
+        let transactions = networkTransactions
+        let summary = notes.isEmpty
+            ? "High level notes:\nNo network transactions recorded."
+            : "High level notes:\n" + notes.map { "- \($0)" }.joined(separator: "\n")
+
+        let rawHeader = [
+            "label",
+            "method",
+            "status",
+            "durationSeconds",
+            "responseBytes",
+            "url",
+        ].joined(separator: "\t")
+        let rawRows = transactions.map { transaction in
+            [
+                transaction.label,
+                transaction.method,
+                transaction.statusCode.map(String.init) ?? "",
+                String(format: "%.3f", transaction.durationSeconds),
+                transaction.responseBodyBytes.map(String.init) ?? "",
+                transaction.url,
+            ].joined(separator: "\t")
+        }
+
+        let raw = ([rawHeader] + rawRows).joined(separator: "\n")
+        return "\(summary)\n\nRaw network transactions:\n\(raw)"
+    }
+
+    internal func recordNetworkTransaction(_ transaction: MASTNetworkTransaction) {
+        networkTimelineQueue.sync {
+            storedNetworkTransactions.append(transaction)
+        }
     }
 
     private func appendLogEntryToFile(_ entry: MASTSyslog) {

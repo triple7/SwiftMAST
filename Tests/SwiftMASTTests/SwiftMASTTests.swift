@@ -655,6 +655,56 @@ final class SwiftMASTTests: XCTestCase {
         print("Log appends to sysLog test passed")
     }
 
+    func testLogStoresDurationAndMetadata() {
+        let mast = SwiftMAST()
+
+        mast.log(
+            .OK,
+            message: "Timed event",
+            durationSeconds: 1.25,
+            metadata: ["event": "cone-search"]
+        )
+
+        XCTAssertEqual(mast.sysLog.count, 1)
+        XCTAssertEqual(mast.sysLog[0].durationSeconds, 1.25)
+        XCTAssertEqual(mast.sysLog[0].metadata["event"], "cone-search")
+        XCTAssertTrue(mast.sysLog[0].description.contains("duration=1.250s"))
+    }
+
+    func testNetworkTimelineProvidesSummaryAndRawRows() {
+        let mast = SwiftMAST()
+        let startedAt = Date(timeIntervalSince1970: 10)
+        let completedAt = Date(timeIntervalSince1970: 12.5)
+
+        mast.recordNetworkTransaction(
+            MASTNetworkTransaction(
+                label: "MAST API Mast.Caom.Cone",
+                method: "GET",
+                url: "https://mast.stsci.edu/api/v0/invoke",
+                statusCode: 200,
+                requestBodyBytes: 0,
+                responseBodyBytes: 128,
+                startedAt: startedAt,
+                completedAt: completedAt,
+                durationSeconds: 2.5,
+                errorMessage: nil
+            )
+        )
+
+        XCTAssertEqual(mast.networkTimelineNotes(), ["MAST cone search took 2.500 seconds"])
+
+        let rows = mast.networkTransactionRows()
+        XCTAssertEqual(rows.count, 1)
+        XCTAssertEqual(rows[0]["label"], "MAST API Mast.Caom.Cone")
+        XCTAssertEqual(rows[0]["durationSeconds"], "2.500")
+        XCTAssertEqual(rows[0]["responseBodyBytes"], "128")
+
+        let text = mast.networkTimelineText()
+        XCTAssertTrue(text.contains("High level notes:"))
+        XCTAssertTrue(text.contains("MAST cone search took 2.500 seconds"))
+        XCTAssertTrue(text.contains("Raw network transactions:"))
+    }
+
     func testFileLoggingWritesLogEntries() {
         let mast = SwiftMAST()
         let logURL = FileManager.default.temporaryDirectory

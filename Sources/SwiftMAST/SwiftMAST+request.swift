@@ -74,22 +74,50 @@ extension SwiftMAST {
         startedAt: CFTimeInterval,
         error: Error? = nil
     ) {
-        let elapsed = Date().timeIntervalSinceReferenceDate - startedAt
+        let completedAt = Date()
+        let elapsed = completedAt.timeIntervalSinceReferenceDate - startedAt
         let statusCode = (response as? HTTPURLResponse)?.statusCode
         let url = request.url?.absoluteString ?? "unknown-url"
         let sizeDescription = dataSize.map { "\($0) bytes" } ?? "unknown"
+        let metadata = [
+            "networkLabel": label,
+            "method": request.httpMethod ?? "GET",
+            "url": url,
+            "statusCode": statusCode.map(String.init) ?? "",
+            "requestBodyBytes": String(request.httpBody?.count ?? 0),
+            "responseBodyBytes": dataSize.map(String.init) ?? "",
+        ]
+
+        recordNetworkTransaction(
+            MASTNetworkTransaction(
+                label: label,
+                method: request.httpMethod ?? "GET",
+                url: url,
+                statusCode: statusCode,
+                requestBodyBytes: request.httpBody?.count ?? 0,
+                responseBodyBytes: dataSize,
+                startedAt: Date(timeIntervalSinceReferenceDate: startedAt),
+                completedAt: completedAt,
+                durationSeconds: elapsed,
+                errorMessage: error?.localizedDescription
+            )
+        )
 
         if let error {
             self.log(
                 .RequestError,
                 message:
-                    "\(label): Response failed status=\(statusCode.map(String.init) ?? "none"), bytes=\(sizeDescription), time=\(String(format: "%.3f", elapsed))s, url=\(url), error=\(error.localizedDescription)"
+                    "\(label): Response failed status=\(statusCode.map(String.init) ?? "none"), bytes=\(sizeDescription), time=\(String(format: "%.3f", elapsed))s, url=\(url), error=\(error.localizedDescription)",
+                durationSeconds: elapsed,
+                metadata: metadata
             )
         } else {
             self.log(
                 .OK,
                 message:
-                    "\(label): Response received status=\(statusCode.map(String.init) ?? "none"), bytes=\(sizeDescription), time=\(String(format: "%.3f", elapsed))s, url=\(url)"
+                    "\(label): Response received status=\(statusCode.map(String.init) ?? "none"), bytes=\(sizeDescription), time=\(String(format: "%.3f", elapsed))s, url=\(url)",
+                durationSeconds: elapsed,
+                metadata: metadata
             )
         }
     }

@@ -183,6 +183,46 @@ final class QueryCacheTests: XCTestCase {
         XCTAssertNil(mast.cachedQueryResponse(key: key))
     }
 
+    func testQueryMastRecordsNetworkTransactionTimeline() {
+        let mast = SwiftMAST()
+        mast.resetQueryCache()
+        mast.resetNetworkTimeline()
+        mast.currentTargetId = "cache-target"
+        SwiftMAST.queryRequestProtocolClasses = [QueryCacheMockURLProtocol.self]
+
+        QueryCacheMockURLProtocol.requestHandler = { request in
+            (
+                HTTPURLResponse(
+                    url: request.url!,
+                    statusCode: 200,
+                    httpVersion: nil,
+                    headerFields: nil
+                )!,
+                Self.tablePayload(value: "network")
+            )
+        }
+
+        let service = Service.Mast_Caom_Cone
+        var params = service.serviceRequest(requestType: .coneSearch)
+        params.setParameters(params: [MAP.ra: Float(1.0), MAP.dec: Float(2.0), MAP.radius: Float(0.2)])
+
+        let complete = expectation(description: "Query returns")
+        mast.queryMast(service: service, params: params, returnType: .json) { success in
+            XCTAssertTrue(success)
+            complete.fulfill()
+        }
+        wait(for: [complete], timeout: 2)
+
+        XCTAssertEqual(mast.networkTransactions.count, 1)
+        XCTAssertEqual(mast.networkTransactions[0].label, "MAST API Mast.Caom.Cone")
+        XCTAssertEqual(mast.networkTransactions[0].statusCode, 200)
+        XCTAssertTrue(mast.networkTimelineNotes()[0].contains("MAST cone search took"))
+
+        let completionLog = mast.sysLog.last { $0.message.contains("Response received") }
+        XCTAssertNotNil(completionLog?.durationSeconds)
+        XCTAssertEqual(completionLog?.metadata["networkLabel"], "MAST API Mast.Caom.Cone")
+    }
+
     func testResetQueryCacheRemovesStoredEntries() {
         let mast = SwiftMAST()
         mast.resetQueryCache()
