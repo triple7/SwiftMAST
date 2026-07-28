@@ -1468,7 +1468,11 @@ extension SwiftMAST {
             guard let coordinates = coordinates else {
                 self.log(
                     .RequestError,
-                    message: "getObservationGroups: Could not resolve target '\(targetName)'"
+                    message: "Could not resolve target for observation search",
+                    metadata: [
+                        "event": "observationSearchTargetResolutionFailed",
+                        "targetName": targetName,
+                    ]
                 )
                 result([])
                 return
@@ -1514,15 +1518,29 @@ extension SwiftMAST {
         guard let sourceRegion = SpaceRegion(spaceRegion),
               let cone = sourceRegion.boundingCone
         else {
-            self.log(.RequestError, message: "getObservationGroups: Could not parse source s_region")
+            self.log(
+                .RequestError,
+                message: "Could not parse observation search region",
+                metadata: [
+                    "event": "observationSearchRegionParseFailed",
+                    "spaceRegion": spaceRegion,
+                ]
+            )
             result([])
             return
         }
 
         self.log(
             .OK,
-            message:
-                "getObservationGroups: Parsed source s_region; bounding cone RA=\(cone.ra), Dec=\(cone.dec), radius=\(cone.radius), containment=\(containment.rawValue)"
+            message: "Prepared observation search region",
+            metadata: [
+                "audience": "developer",
+                "event": "observationSearchRegionPrepared",
+                "ra": String(cone.ra),
+                "dec": String(cone.dec),
+                "radius": String(cone.radius),
+                "containment": containment.rawValue,
+            ]
         )
 
         self.getObservationGroups(
@@ -1542,8 +1560,13 @@ extension SwiftMAST {
             let candidateProductCount = groups.reduce(0) { $0 + $1.products.count }
             self.log(
                 .OK,
-                message:
-                    "getObservationGroups: Footprint filtering \(groups.count) candidate groups containing \(candidateProductCount) products"
+                message: "Filtering observations by footprint",
+                metadata: [
+                    "audience": "developer",
+                    "event": "observationFootprintFilterStarted",
+                    "candidateGroups": String(groups.count),
+                    "candidateProducts": String(candidateProductCount),
+                ]
             )
 
             let filteredGroups = groups.compactMap { group -> ObservationGroup? in
@@ -1571,8 +1594,14 @@ extension SwiftMAST {
             let matchedProductCount = filteredGroups.reduce(0) { $0 + $1.products.count }
             self.log(
                 .OK,
-                message:
-                    "getObservationGroups: Footprint filter matched \(filteredGroups.count) groups / \(matchedProductCount) products; returning \(limitedGroups.count) groups"
+                message: "Filtered observations by footprint",
+                metadata: [
+                    "audience": "developer",
+                    "event": "observationFootprintFilterFinished",
+                    "matchedGroups": String(filteredGroups.count),
+                    "matchedProducts": String(matchedProductCount),
+                    "returnedGroups": String(limitedGroups.count),
+                ]
             )
             result(limitedGroups)
         }
@@ -1679,8 +1708,12 @@ extension SwiftMAST {
         if let limit, limit <= 0 {
             self.log(
                 .OK,
-                message:
-                    "getObservationGroups: Limit is \(limit); returning no groups without querying MAST"
+                message: "Finished grouping observations",
+                metadata: [
+                    "event": "observationSearchSkipped",
+                    "limit": String(limit),
+                    "returnedGroups": "0",
+                ]
             )
             result([])
             return
@@ -1695,18 +1728,39 @@ extension SwiftMAST {
             ?? Array(Set(missions.flatMap(\.imageryDataProductTypes))).sorted()
         self.log(
             .OK,
-            message:
-                "getObservationGroups: Starting for \(targetName) collections=\(collections.joined(separator: ",")) at RA=\(ra), Dec=\(dec), radius=\(radius)"
+            message: "Started observation search",
+            metadata: [
+                "event": "observationSearchStarted",
+                "targetName": targetName,
+                "collections": collections.joined(separator: ","),
+                "ra": String(ra),
+                "dec": String(dec),
+                "radius": String(radius),
+            ]
         )
         self.log(
             .OK,
-            message:
-                "getObservationGroups: Request settings pageSize=\(pageSize), effectivePageSize=\(effectivePageSize), limit=\(effectiveLimit), sortOrder=\(sortOrder)"
+            message: "Prepared observation search settings",
+            metadata: [
+                "audience": "developer",
+                "event": "observationSearchSettingsPrepared",
+                "pageSize": String(pageSize),
+                "effectivePageSize": String(effectivePageSize),
+                "limit": String(effectiveLimit),
+                "sortOrder": String(describing: sortOrder),
+            ]
         )
         self.log(
             .OK,
-            message:
-                "getObservationGroups: Filters instruments=\(instruments?.joined(separator: ",") ?? "any"), filterBands=\(filterBands?.joined(separator: ",") ?? "any"), calibLevels=\(resolvedCalibLevels.joined(separator: ",")), dataProductTypes=\(resolvedDataProductTypes.joined(separator: ","))"
+            message: "Prepared observation search filters",
+            metadata: [
+                "audience": "developer",
+                "event": "observationSearchFiltersPrepared",
+                "instruments": instruments?.joined(separator: ",") ?? "any",
+                "filterBands": filterBands?.joined(separator: ",") ?? "any",
+                "calibLevels": resolvedCalibLevels.joined(separator: ","),
+                "dataProductTypes": resolvedDataProductTypes.joined(separator: ","),
+            ]
         )
 
         let filterOptions = ImageryFilterOptions(
@@ -1723,7 +1777,12 @@ extension SwiftMAST {
 
         self.log(
             .OK,
-            message: "getObservationGroups: Preparing \(service.id) request"
+            message: "Preparing observation search request",
+            metadata: [
+                "audience": "developer",
+                "event": "observationSearchRequestPrepared",
+                "service": service.id,
+            ]
         )
         params.setGeneralParameters(params: MAP.values.defaultGeneralParameters())
         params.setParameter(param: MAP.pagesize, value: effectivePageSize)
@@ -1733,8 +1792,13 @@ extension SwiftMAST {
         params.setParameters(params: [MAP.columns: "*", MAP.position: "\(ra), \(dec), \(radius)"])
         self.log(
             .OK,
-            message:
-                "getObservationGroups: Submitting MAST query position=\(ra), \(dec), \(radius), filters=\(filterParams.count)"
+            message: "Submitting observation search",
+            metadata: [
+                "audience": "developer",
+                "event": "observationSearchRequestSubmitted",
+                "position": "\(ra), \(dec), \(radius)",
+                "filterCount": String(filterParams.count),
+            ]
         )
 
         let start = CACurrentMediaTime()
@@ -1744,18 +1808,28 @@ extension SwiftMAST {
                 let end = CACurrentMediaTime()
                 self.log(
                     .OK,
-                    message:
-                        "getObservationGroups: Query completed in \(String(format: "%.2f", end - start))s"
+                    message: "Finished observation search",
+                    durationSeconds: end - start,
+                    metadata: ["event": "observationSearchFinished"]
                 )
                 self.log(
                     success ? .OK : .RequestError,
-                    message: "getObservationGroups: MAST query success=\(success)"
+                    message: success ? "Observation search returned results" : "Observation search failed",
+                    metadata: [
+                        "audience": success ? "developer" : "user",
+                        "event": "observationSearchQueryResult",
+                        "success": String(success),
+                    ]
                 )
 
                 guard let table = self.targets[targetName] else {
                     self.log(
                         .RequestError,
-                        message: "getObservationGroups: No target table for '\(targetName)'"
+                        message: "Observation search returned no table",
+                        metadata: [
+                            "event": "observationSearchMissingTable",
+                            "targetName": targetName,
+                        ]
                     )
                     result([])
                     return
@@ -1764,7 +1838,11 @@ extension SwiftMAST {
                 let coamResults = table.getCoamResults()
                 self.log(
                     .OK,
-                    message: "getObservationGroups: Found \(coamResults.count) total products"
+                    message: "Found observation products",
+                    metadata: [
+                        "event": "observationProductsFound",
+                        "productCount": String(coamResults.count),
+                    ]
                 )
 
                 let lowerCollections = Set(collections.map { $0.lowercased() })
@@ -1773,8 +1851,13 @@ extension SwiftMAST {
                 }
                 self.log(
                     .OK,
-                    message:
-                        "getObservationGroups: After collection filter \(filteredResults.count)/\(coamResults.count) products remain"
+                    message: "Filtered observations by collection",
+                    metadata: [
+                        "audience": "developer",
+                        "event": "observationCollectionFilterFinished",
+                        "remainingProducts": String(filteredResults.count),
+                        "inputProducts": String(coamResults.count),
+                    ]
                 )
 
                 if let instruments = instruments {
@@ -1785,11 +1868,23 @@ extension SwiftMAST {
                     }
                     self.log(
                         .OK,
-                        message:
-                            "getObservationGroups: After instrument filter \(filteredResults.count)/\(beforeInstrumentFilter) products remain"
+                        message: "Filtered observations by instrument",
+                        metadata: [
+                            "audience": "developer",
+                            "event": "observationInstrumentFilterFinished",
+                            "remainingProducts": String(filteredResults.count),
+                            "inputProducts": String(beforeInstrumentFilter),
+                        ]
                     )
                 } else {
-                    self.log(.OK, message: "getObservationGroups: No instrument filter applied")
+                    self.log(
+                        .OK,
+                        message: "No instrument filter applied",
+                        metadata: [
+                            "audience": "developer",
+                            "event": "observationInstrumentFilterSkipped",
+                        ]
+                    )
                 }
 
                 if let filterBands = filterBands, !filterBands.isEmpty {
@@ -1799,35 +1894,64 @@ extension SwiftMAST {
                     }
                     self.log(
                         .OK,
-                        message:
-                            "getObservationGroups: After filter-band filter \(filteredResults.count)/\(beforeFilterBandFilter) products remain"
+                        message: "Filtered observations by filter band",
+                        metadata: [
+                            "audience": "developer",
+                            "event": "observationFilterBandFilterFinished",
+                            "remainingProducts": String(filteredResults.count),
+                            "inputProducts": String(beforeFilterBandFilter),
+                        ]
                     )
                 } else {
-                    self.log(.OK, message: "getObservationGroups: No filter-band filter applied")
+                    self.log(
+                        .OK,
+                        message: "No filter-band filter applied",
+                        metadata: [
+                            "audience": "developer",
+                            "event": "observationFilterBandFilterSkipped",
+                        ]
+                    )
                 }
 
                 guard !filteredResults.isEmpty else {
-                    self.log(.OK, message: "getObservationGroups: No products after filtering")
+                    self.log(
+                        .OK,
+                        message: "Finished grouping observations",
+                        metadata: [
+                            "event": "observationGroupingFinished",
+                            "returnedGroups": "0",
+                        ]
+                    )
                     result([])
                     return
                 }
 
                 self.log(
                     .OK,
-                    message:
-                        "getObservationGroups: Enriching \(filteredResults.count) products with file sizes"
+                    message: "Checking product file sizes",
+                    metadata: [
+                        "event": "observationFileSizeEnrichmentStarted",
+                        "productCount": String(filteredResults.count),
+                    ]
                 )
                 self.enrichCoamResultsWithFileSizes(filteredResults) { enrichedResults in
                     let sizedProducts = enrichedResults.filter { $0.preferredDownloadSizeBytes != nil }.count
                     self.log(
                         .OK,
-                        message:
-                            "getObservationGroups: File-size enrichment complete for \(sizedProducts)/\(enrichedResults.count) products"
+                        message: "Checked product file sizes",
+                        metadata: [
+                            "event": "observationFileSizeEnrichmentFinished",
+                            "sizedProducts": String(sizedProducts),
+                            "productCount": String(enrichedResults.count),
+                        ]
                     )
                     self.log(
                         .OK,
-                        message:
-                            "getObservationGroups: Enriching \(enrichedResults.count) products with FITS image metadata"
+                        message: "Reading FITS image headers",
+                        metadata: [
+                            "event": "observationFITSHeaderEnrichmentStarted",
+                            "productCount": String(enrichedResults.count),
+                        ]
                     )
                     self.enrichCoamResultsWithFITSImageMetadata(enrichedResults) {
                         enrichedImageResults in
@@ -1835,13 +1959,20 @@ extension SwiftMAST {
                             enrichedImageResults.filter { $0.fitsImageHeaderMetadata != nil }.count
                         self.log(
                             .OK,
-                            message:
-                                "getObservationGroups: FITS metadata enrichment complete for \(metadataProducts)/\(enrichedImageResults.count) products"
+                            message: "Read FITS image headers",
+                            metadata: [
+                                "event": "observationFITSHeaderEnrichmentFinished",
+                                "metadataProducts": String(metadataProducts),
+                                "productCount": String(enrichedImageResults.count),
+                            ]
                         )
                         self.log(
                             .OK,
-                            message:
-                                "getObservationGroups: Building observation groups from \(enrichedImageResults.count) products"
+                            message: "Grouping observations",
+                            metadata: [
+                                "event": "observationGroupingStarted",
+                                "productCount": String(enrichedImageResults.count),
+                            ]
                         )
                         let groups = self.buildObservationGroups(
                             from: enrichedImageResults, sortOrder: sortOrder)
@@ -1850,8 +1981,12 @@ extension SwiftMAST {
                             groups, effectiveLimit: effectiveLimit)
                         self.log(
                             .OK,
-                            message:
-                                "getObservationGroups: Built \(groups.count) observation groups; returning \(limitedGroups.count)"
+                            message: "Finished grouping observations",
+                            metadata: [
+                                "event": "observationGroupingFinished",
+                                "builtGroups": String(groups.count),
+                                "returnedGroups": String(limitedGroups.count),
+                            ]
                         )
 
                         result(limitedGroups)

@@ -55,6 +55,11 @@ final class QueryCacheTests: XCTestCase {
         wait(for: [second], timeout: 2)
 
         XCTAssertEqual(requestCount, 1)
+        XCTAssertTrue(mast.sysLog.contains { log in
+            log.message == "Using cached MAST query results for cache-target"
+                && log.metadata["event"] == "queryCacheHit"
+                && log.metadata["targetId"] == "cache-target"
+        })
     }
 
     func testQueryCacheKeyChangesWhenInputsChange() {
@@ -218,9 +223,15 @@ final class QueryCacheTests: XCTestCase {
         XCTAssertEqual(mast.networkTransactions[0].statusCode, 200)
         XCTAssertTrue(mast.networkTimelineNotes()[0].contains("MAST cone search took"))
 
-        let completionLog = mast.sysLog.last { $0.message.contains("Response received") }
+        let startLog = mast.sysLog.last { $0.message == "Started MAST cone search for cache-target" }
+        XCTAssertEqual(startLog?.metadata["url"]?.contains("mast.stsci.edu"), true)
+        XCTAssertFalse(startLog?.message.contains("mast.stsci.edu") == true)
+        XCTAssertEqual(startLog?.metadata["targetId"], "cache-target")
+
+        let completionLog = mast.sysLog.last { $0.message == "Finished MAST cone search for cache-target" }
         XCTAssertNotNil(completionLog?.durationSeconds)
         XCTAssertEqual(completionLog?.metadata["networkLabel"], "MAST API Mast.Caom.Cone")
+        XCTAssertEqual(completionLog?.metadata["audience"], "user")
     }
 
     func testResetQueryCacheRemovesStoredEntries() {

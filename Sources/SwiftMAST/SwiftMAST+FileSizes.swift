@@ -131,8 +131,16 @@ extension SwiftMAST {
         let start = Date().timeIntervalSinceReferenceDate
         log(
             .OK,
-            message:
-                "MAST API \(Service.Mast_Caom_Products.id): Request sent method=GET, url=\(url.absoluteString), bodyBytes=\(data.count), body=\(requestBody)"
+            message: "Checking product file sizes",
+            metadata: [
+                "audience": "developer",
+                "event": "productFileSizeRequestStarted",
+                "networkLabel": "MAST API \(Service.Mast_Caom_Products.id)",
+                "method": "GET",
+                "url": url.absoluteString,
+                "requestBodyBytes": String(data.count),
+                "requestBody": requestBody,
+            ]
         )
 
         URLSession.shared.dataTask(with: request) { data, response, error in
@@ -140,8 +148,18 @@ extension SwiftMAST {
             let statusCode = (response as? HTTPURLResponse)?.statusCode
             self.log(
                 error == nil ? .OK : .RequestError,
-                message:
-                    "MAST API \(Service.Mast_Caom_Products.id): Response received status=\(statusCode.map(String.init) ?? "none"), bytes=\(data?.count ?? 0), time=\(String(format: "%.3f", elapsed))s, url=\(url.absoluteString)"
+                message: error == nil ? "Checked product file sizes" : "Failed checking product file sizes",
+                durationSeconds: elapsed,
+                metadata: [
+                    "audience": "developer",
+                    "event": error == nil ? "productFileSizeRequestFinished" : "productFileSizeRequestFailed",
+                    "networkLabel": "MAST API \(Service.Mast_Caom_Products.id)",
+                    "method": "GET",
+                    "url": url.absoluteString,
+                    "statusCode": statusCode.map(String.init) ?? "",
+                    "responseBodyBytes": String(data?.count ?? 0),
+                    "error": error?.localizedDescription ?? "",
+                ]
             )
             guard
                 error == nil,
@@ -241,10 +259,27 @@ extension SwiftMAST {
         let uncachedURLs = urls.filter { productURL in
             if let cachedSize = cachedProductFileSize(for: productURL) {
                 sizes[productURL] = cachedSize
-                log(.OK, message: "MAST size cache hit: url=\(productURL), bytes=\(cachedSize)")
+                log(
+                    .OK,
+                    message: "Using cached product file size",
+                    metadata: [
+                        "audience": "developer",
+                        "event": "productFileSizeCacheHit",
+                        "url": productURL,
+                        "bytes": String(cachedSize),
+                    ]
+                )
                 return false
             }
-            log(.OK, message: "MAST size cache miss: url=\(productURL)")
+            log(
+                .OK,
+                message: "Checking product file size",
+                metadata: [
+                    "audience": "developer",
+                    "event": "productFileSizeCacheMiss",
+                    "url": productURL,
+                ]
+            )
             return true
         }
 
@@ -311,7 +346,13 @@ extension SwiftMAST {
         let start = Date().timeIntervalSinceReferenceDate
         log(
             .OK,
-            message: "MAST size HEAD: Request sent method=HEAD, url=\(url.absoluteString)"
+            message: "Checking product file size",
+            metadata: [
+                "audience": "developer",
+                "event": "productFileSizeHeadStarted",
+                "method": "HEAD",
+                "url": url.absoluteString,
+            ]
         )
 
         URLSession.shared.dataTask(with: request) { _, response, error in
@@ -321,8 +362,17 @@ extension SwiftMAST {
                 .value(forHTTPHeaderField: "Content-Length")
             self.log(
                 error == nil ? .OK : .RequestError,
-                message:
-                    "MAST size HEAD: Response received status=\(statusCode.map(String.init) ?? "none"), contentLength=\(contentLength ?? "unknown"), time=\(String(format: "%.3f", elapsed))s, url=\(url.absoluteString)"
+                message: error == nil ? "Checked product file size" : "Failed checking product file size",
+                durationSeconds: elapsed,
+                metadata: [
+                    "audience": "developer",
+                    "event": error == nil ? "productFileSizeHeadFinished" : "productFileSizeHeadFailed",
+                    "method": "HEAD",
+                    "url": url.absoluteString,
+                    "statusCode": statusCode.map(String.init) ?? "",
+                    "contentLength": contentLength ?? "",
+                    "error": error?.localizedDescription ?? "",
+                ]
             )
             guard
                 error == nil,

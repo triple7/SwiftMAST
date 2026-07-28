@@ -891,8 +891,13 @@ extension SwiftMAST {
             url: url,
             maxByteCount: max(maxByteCount, 2_880),
             configuration: configuration,
-            log: { [weak self] level, message in
-                self?.log(level, message: message)
+            log: { [weak self] level, message, durationSeconds, metadata in
+                self?.log(
+                    level,
+                    message: message,
+                    durationSeconds: durationSeconds,
+                    metadata: metadata
+                )
             }
         ) { data, remoteFileSize in
             self.parseFITSHeaderSummary(
@@ -1042,8 +1047,14 @@ extension SwiftMAST {
             let start = Date().timeIntervalSinceReferenceDate
             self.log(
                 .OK,
-                message:
-                    "FITS metadata range: Request sent method=GET, url=\(url.absoluteString), range=bytes=\(headerOffset)-\(rangeEnd)"
+                message: "Reading FITS image headers",
+                metadata: [
+                    "audience": "developer",
+                    "event": "fitsMetadataRangeStarted",
+                    "method": "GET",
+                    "url": url.absoluteString,
+                    "range": "bytes=\(headerOffset)-\(rangeEnd)",
+                ]
             )
 
             session.dataTask(with: request) { data, response, error in
@@ -1051,8 +1062,18 @@ extension SwiftMAST {
                 let statusCode = (response as? HTTPURLResponse)?.statusCode
                 self.log(
                     error == nil ? .OK : .RequestError,
-                    message:
-                        "FITS metadata range: Response received status=\(statusCode.map(String.init) ?? "none"), bytes=\(data?.count ?? 0), time=\(String(format: "%.3f", elapsed))s, url=\(url.absoluteString)"
+                    message: error == nil ? "Read FITS image headers" : "Failed reading FITS image headers",
+                    durationSeconds: elapsed,
+                    metadata: [
+                        "audience": "developer",
+                        "event": error == nil ? "fitsMetadataRangeFinished" : "fitsMetadataRangeFailed",
+                        "method": "GET",
+                        "url": url.absoluteString,
+                        "range": "bytes=\(headerOffset)-\(rangeEnd)",
+                        "statusCode": statusCode.map(String.init) ?? "",
+                        "responseBodyBytes": String(data?.count ?? 0),
+                        "error": error?.localizedDescription ?? "",
+                    ]
                 )
                 guard
                     error == nil,
@@ -1880,7 +1901,7 @@ private final class FITSImageHeaderMetadataStreamFetcher: NSObject, URLSessionDa
     private let url: URL
     private let maxByteCount: Int
     private let configuration: URLSessionConfiguration
-    private let log: ((MASTError, String) -> Void)?
+    private let log: ((MASTError, String, TimeInterval?, [String: String]) -> Void)?
     private let parse: (Data, Int64?) -> FITSImageHeaderMetadata?
     private let completion: (FITSImageHeaderMetadata?) -> Void
 
@@ -1897,7 +1918,7 @@ private final class FITSImageHeaderMetadataStreamFetcher: NSObject, URLSessionDa
         url: URL,
         maxByteCount: Int,
         configuration: URLSessionConfiguration,
-        log: ((MASTError, String) -> Void)? = nil,
+        log: ((MASTError, String, TimeInterval?, [String: String]) -> Void)? = nil,
         parse: @escaping (Data, Int64?) -> FITSImageHeaderMetadata?,
         completion: @escaping (FITSImageHeaderMetadata?) -> Void
     ) {
@@ -1920,7 +1941,15 @@ private final class FITSImageHeaderMetadataStreamFetcher: NSObject, URLSessionDa
         startedAt = Date().timeIntervalSinceReferenceDate
         log?(
             .OK,
-            "FITS metadata stream: Request sent method=GET, url=\(url.absoluteString), maxBytes=\(maxByteCount)"
+            "Reading FITS image headers",
+            nil,
+            [
+                "audience": "developer",
+                "event": "fitsMetadataStreamStarted",
+                "method": "GET",
+                "url": url.absoluteString,
+                "maxBytes": String(maxByteCount),
+            ]
         )
         task = session.dataTask(with: request)
         task?.resume()
@@ -1970,7 +1999,17 @@ private final class FITSImageHeaderMetadataStreamFetcher: NSObject, URLSessionDa
         let elapsed = startedAt.map { Date().timeIntervalSinceReferenceDate - $0 } ?? 0
         log?(
             error == nil ? .OK : .RequestError,
-            "FITS metadata stream: Response received status=\(responseStatusCode.map(String.init) ?? "none"), bytes=\(data.count), time=\(String(format: "%.3f", elapsed))s, url=\(url.absoluteString)"
+            error == nil ? "Read FITS image headers" : "Failed reading FITS image headers",
+            elapsed,
+            [
+                "audience": "developer",
+                "event": error == nil ? "fitsMetadataStreamFinished" : "fitsMetadataStreamFailed",
+                "method": "GET",
+                "url": url.absoluteString,
+                "statusCode": responseStatusCode.map(String.init) ?? "",
+                "responseBodyBytes": String(data.count),
+                "error": error?.localizedDescription ?? "",
+            ]
         )
     }
 

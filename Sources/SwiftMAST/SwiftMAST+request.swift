@@ -57,11 +57,23 @@ extension SwiftMAST {
         let headers = sanitizedHeaders(request.allHTTPHeaderFields)
         let bodySize = request.httpBody?.count ?? 0
         let body = bodyDescription ?? request.httpBody.flatMap { String(data: $0, encoding: .utf8) }
+        let readableLabel = MASTNetworkTransaction.readableLabel(label)
+        let subject = logSubjectDescription()
 
         self.log(
             .OK,
-            message:
-                "\(label): Request sent method=\(method), url=\(url), headers=\(headers), bodyBytes=\(bodySize), body=\(body ?? "none")"
+            message: userNetworkMessage("Started", readableLabel: readableLabel, subject: subject),
+            metadata: [
+                "audience": "user",
+                "event": "networkRequestStarted",
+                "networkLabel": label,
+                "targetId": subject ?? "",
+                "method": method,
+                "url": url,
+                "headers": String(describing: headers),
+                "requestBodyBytes": String(bodySize),
+                "requestBody": body ?? "",
+            ]
         )
         return Date().timeIntervalSinceReferenceDate
     }
@@ -78,14 +90,19 @@ extension SwiftMAST {
         let elapsed = completedAt.timeIntervalSinceReferenceDate - startedAt
         let statusCode = (response as? HTTPURLResponse)?.statusCode
         let url = request.url?.absoluteString ?? "unknown-url"
-        let sizeDescription = dataSize.map { "\($0) bytes" } ?? "unknown"
+        let readableLabel = MASTNetworkTransaction.readableLabel(label)
+        let subject = logSubjectDescription()
         let metadata = [
+            "audience": error == nil ? "user" : "developer",
+            "event": error == nil ? "networkRequestFinished" : "networkRequestFailed",
             "networkLabel": label,
+            "targetId": subject ?? "",
             "method": request.httpMethod ?? "GET",
             "url": url,
             "statusCode": statusCode.map(String.init) ?? "",
             "requestBodyBytes": String(request.httpBody?.count ?? 0),
             "responseBodyBytes": dataSize.map(String.init) ?? "",
+            "error": error?.localizedDescription ?? "",
         ]
 
         recordNetworkTransaction(
@@ -103,23 +120,41 @@ extension SwiftMAST {
             )
         )
 
-        if let error {
+        if error != nil {
             self.log(
                 .RequestError,
-                message:
-                    "\(label): Response failed status=\(statusCode.map(String.init) ?? "none"), bytes=\(sizeDescription), time=\(String(format: "%.3f", elapsed))s, url=\(url), error=\(error.localizedDescription)",
+                message: userNetworkMessage("Failed", readableLabel: readableLabel, subject: subject),
                 durationSeconds: elapsed,
                 metadata: metadata
             )
         } else {
             self.log(
                 .OK,
-                message:
-                    "\(label): Response received status=\(statusCode.map(String.init) ?? "none"), bytes=\(sizeDescription), time=\(String(format: "%.3f", elapsed))s, url=\(url)",
+                message: userNetworkMessage("Finished", readableLabel: readableLabel, subject: subject),
                 durationSeconds: elapsed,
                 metadata: metadata
             )
         }
+    }
+
+    private func logSubjectDescription() -> String? {
+        guard let targetId = currentTargetId?.trimmingCharacters(in: .whitespacesAndNewlines),
+              !targetId.isEmpty
+        else {
+            return nil
+        }
+        return targetId
+    }
+
+    private func userNetworkMessage(
+        _ action: String,
+        readableLabel: String,
+        subject: String?
+    ) -> String {
+        guard let subject, !subject.isEmpty else {
+            return "\(action) \(readableLabel)"
+        }
+        return "\(action) \(readableLabel) for \(subject)"
     }
 
     private func sanitizedHeaders(_ headers: [String: String]?) -> [String: String] {
@@ -187,7 +222,16 @@ extension SwiftMAST {
         }
 
         if let cacheKey {
-            self.log(.OK, message: "Query cache miss: \(service.id) key=\(cacheKey)")
+            self.log(
+                .OK,
+                message: "Checking MAST query cache",
+                metadata: [
+                    "audience": "developer",
+                    "event": "queryCacheMiss",
+                    "service": service.id,
+                    "cacheKey": cacheKey,
+                ]
+            )
         }
 
         let url = MASTRequest(searchType: .apiRequest).getApiUrl(json: json)
@@ -792,7 +836,16 @@ extension SwiftMAST {
         }
 
         if let cacheKey {
-            self.log(.OK, message: "Query cache miss: MAST TAP key=\(cacheKey)")
+            self.log(
+                .OK,
+                message: "Checking MAST query cache",
+                metadata: [
+                    "audience": "developer",
+                    "event": "queryCacheMiss",
+                    "service": "MAST TAP",
+                    "cacheKey": cacheKey,
+                ]
+            )
         }
 
         let startedAt = logNetworkRequestStart(

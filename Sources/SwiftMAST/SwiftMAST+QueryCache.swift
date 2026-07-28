@@ -76,11 +76,36 @@ extension SwiftMAST {
 
         guard Date().timeIntervalSince(entry.createdAt) <= ttl else {
             try? FileManager.default.removeItem(at: cacheURL)
-            log(.OK, message: "Query cache expired: key=\(key)")
+            log(
+                .OK,
+                message: "Refreshing cached MAST query results",
+                metadata: [
+                    "audience": "developer",
+                    "event": "queryCacheExpired",
+                    "cacheKey": key,
+                    "service": entry.service,
+                    "returnType": entry.returnType,
+                ]
+            )
             return nil
         }
 
-        log(.OK, message: "Query cache hit: key=\(key)")
+        let targetId = currentTargetId?.trimmingCharacters(in: .whitespacesAndNewlines)
+        let targetDescription = targetId?.isEmpty == false ? targetId : nil
+
+        log(
+            .OK,
+            message: targetDescription.map { "Using cached MAST query results for \($0)" }
+                ?? "Using cached MAST query results",
+            metadata: [
+                "audience": "user",
+                "event": "queryCacheHit",
+                "cacheKey": key,
+                "service": entry.service,
+                "returnType": entry.returnType,
+                "targetId": targetDescription ?? "",
+            ]
+        )
         return entry.data
     }
 
@@ -113,7 +138,18 @@ extension SwiftMAST {
             let encoded = try JSONEncoder().encode(entry)
             try encoded.write(to: cacheURL, options: .atomic)
         } catch {
-            log(.RequestError, message: "Unable to write query cache: \(error.localizedDescription)")
+            log(
+                .RequestError,
+                message: "Unable to write query cache",
+                metadata: [
+                    "audience": "developer",
+                    "event": "queryCacheWriteFailed",
+                    "cacheKey": key,
+                    "service": service,
+                    "returnType": returnType,
+                    "error": error.localizedDescription,
+                ]
+            )
         }
     }
 
@@ -122,7 +158,7 @@ extension SwiftMAST {
             return
         }
         try? FileManager.default.removeItem(at: cacheDirectoryURL)
-        log(.OK, message: "Query cache reset")
+        log(.OK, message: "Cleared MAST query cache", metadata: ["event": "queryCacheReset"])
     }
 
     public func clearQueryCache() {
