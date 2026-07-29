@@ -898,6 +898,9 @@ extension SwiftMAST {
                     durationSeconds: durationSeconds,
                     metadata: metadata
                 )
+            },
+            recordTransaction: { [weak self] transaction in
+                self?.recordNetworkTransaction(transaction)
             }
         ) { data, remoteFileSize in
             self.parseFITSHeaderSummary(
@@ -1060,6 +1063,17 @@ extension SwiftMAST {
             session.dataTask(with: request) { data, response, error in
                 let elapsed = Date().timeIntervalSinceReferenceDate - start
                 let statusCode = (response as? HTTPURLResponse)?.statusCode
+                let range = "bytes=\(headerOffset)-\(rangeEnd)"
+                self.recordNetworkTransaction(
+                    label: "FITS metadata range \(range)",
+                    method: "GET",
+                    url: url.absoluteString,
+                    statusCode: statusCode,
+                    requestBodyBytes: 0,
+                    responseBodyBytes: data?.count,
+                    startedAt: start,
+                    errorMessage: error?.localizedDescription
+                )
                 self.log(
                     error == nil ? .OK : .RequestError,
                     message: error == nil ? "Read FITS image headers" : "Failed reading FITS image headers",
@@ -1902,6 +1916,7 @@ private final class FITSImageHeaderMetadataStreamFetcher: NSObject, URLSessionDa
     private let maxByteCount: Int
     private let configuration: URLSessionConfiguration
     private let log: ((MASTError, String, TimeInterval?, [String: String]) -> Void)?
+    private let recordTransaction: ((MASTNetworkTransaction) -> Void)?
     private let parse: (Data, Int64?) -> FITSImageHeaderMetadata?
     private let completion: (FITSImageHeaderMetadata?) -> Void
 
@@ -1919,6 +1934,7 @@ private final class FITSImageHeaderMetadataStreamFetcher: NSObject, URLSessionDa
         maxByteCount: Int,
         configuration: URLSessionConfiguration,
         log: ((MASTError, String, TimeInterval?, [String: String]) -> Void)? = nil,
+        recordTransaction: ((MASTNetworkTransaction) -> Void)? = nil,
         parse: @escaping (Data, Int64?) -> FITSImageHeaderMetadata?,
         completion: @escaping (FITSImageHeaderMetadata?) -> Void
     ) {
@@ -1926,6 +1942,7 @@ private final class FITSImageHeaderMetadataStreamFetcher: NSObject, URLSessionDa
         self.maxByteCount = maxByteCount
         self.configuration = configuration
         self.log = log
+        self.recordTransaction = recordTransaction
         self.parse = parse
         self.completion = completion
     }
@@ -1997,6 +2014,23 @@ private final class FITSImageHeaderMetadataStreamFetcher: NSObject, URLSessionDa
         guard !didLogCompletion else { return }
         didLogCompletion = true
         let elapsed = startedAt.map { Date().timeIntervalSinceReferenceDate - $0 } ?? 0
+        if let startedAt {
+            let completedAt = Date()
+            recordTransaction?(
+                MASTNetworkTransaction(
+                    label: "FITS metadata stream",
+                    method: "GET",
+                    url: url.absoluteString,
+                    statusCode: responseStatusCode,
+                    requestBodyBytes: 0,
+                    responseBodyBytes: data.count,
+                    startedAt: Date(timeIntervalSinceReferenceDate: startedAt),
+                    completedAt: completedAt,
+                    durationSeconds: completedAt.timeIntervalSinceReferenceDate - startedAt,
+                    errorMessage: error?.localizedDescription
+                )
+            )
+        }
         log?(
             error == nil ? .OK : .RequestError,
             error == nil ? "Read FITS image headers" : "Failed reading FITS image headers",

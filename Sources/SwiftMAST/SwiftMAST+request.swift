@@ -106,18 +106,14 @@ extension SwiftMAST {
         ]
 
         recordNetworkTransaction(
-            MASTNetworkTransaction(
-                label: label,
-                method: request.httpMethod ?? "GET",
-                url: url,
-                statusCode: statusCode,
-                requestBodyBytes: request.httpBody?.count ?? 0,
-                responseBodyBytes: dataSize,
-                startedAt: Date(timeIntervalSinceReferenceDate: startedAt),
-                completedAt: completedAt,
-                durationSeconds: elapsed,
-                errorMessage: error?.localizedDescription
-            )
+            label: label,
+            method: request.httpMethod ?? "GET",
+            url: url,
+            statusCode: statusCode,
+            requestBodyBytes: request.httpBody?.count ?? 0,
+            responseBodyBytes: dataSize,
+            startedAt: startedAt,
+            errorMessage: error?.localizedDescription
         )
 
         if error != nil {

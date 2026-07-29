@@ -121,13 +121,13 @@ extension SwiftMAST {
             "format": APIReturnType.json.id,
         ]
 
-        guard let data = try? JSONSerialization.data(withJSONObject: payload) else {
+        guard let requestData = try? JSONSerialization.data(withJSONObject: payload) else {
             completion([])
             return
         }
-        let url = MASTRequest(searchType: .apiRequest).getApiUrl(json: data)
+        let url = MASTRequest(searchType: .apiRequest).getApiUrl(json: requestData)
         let request = URLRequest(url: url)
-        let requestBody = String(data: data, encoding: .utf8) ?? ""
+        let requestBody = String(data: requestData, encoding: .utf8) ?? ""
         let start = Date().timeIntervalSinceReferenceDate
         log(
             .OK,
@@ -138,7 +138,7 @@ extension SwiftMAST {
                 "networkLabel": "MAST API \(Service.Mast_Caom_Products.id)",
                 "method": "GET",
                 "url": url.absoluteString,
-                "requestBodyBytes": String(data.count),
+                "requestBodyBytes": String(requestData.count),
                 "requestBody": requestBody,
             ]
         )
@@ -146,6 +146,16 @@ extension SwiftMAST {
         URLSession.shared.dataTask(with: request) { data, response, error in
             let elapsed = Date().timeIntervalSinceReferenceDate - start
             let statusCode = (response as? HTTPURLResponse)?.statusCode
+            self.recordNetworkTransaction(
+                label: "MAST API \(Service.Mast_Caom_Products.id)",
+                method: "GET",
+                url: url.absoluteString,
+                statusCode: statusCode,
+                requestBodyBytes: requestData.count,
+                responseBodyBytes: data?.count,
+                startedAt: start,
+                errorMessage: error?.localizedDescription
+            )
             self.log(
                 error == nil ? .OK : .RequestError,
                 message: error == nil ? "Checked product file sizes" : "Failed checking product file sizes",
@@ -360,6 +370,16 @@ extension SwiftMAST {
             let statusCode = (response as? HTTPURLResponse)?.statusCode
             let contentLength = (response as? HTTPURLResponse)?
                 .value(forHTTPHeaderField: "Content-Length")
+            self.recordNetworkTransaction(
+                label: "MAST product size HEAD",
+                method: "HEAD",
+                url: url.absoluteString,
+                statusCode: statusCode,
+                requestBodyBytes: 0,
+                responseBodyBytes: 0,
+                startedAt: start,
+                errorMessage: error?.localizedDescription
+            )
             self.log(
                 error == nil ? .OK : .RequestError,
                 message: error == nil ? "Checked product file size" : "Failed checking product file size",

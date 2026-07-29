@@ -56,11 +56,20 @@ public struct MASTNetworkTransaction: Codable, Equatable {
             return "MAST cone search"
         case "MAST TAP":
             return "MAST TAP query"
+        case "MAST API Mast.Caom.Products":
+            return "MAST product lookup"
+        case "MAST product size HEAD":
+            return "MAST product size check"
+        case "FITS metadata stream":
+            return "FITS header scan"
         case "PS1 file list":
             return "PS1 file list request"
         case "NED resolver":
             return "NED resolver request"
         default:
+            if label.hasPrefix("FITS metadata range") {
+                return "FITS header scan"
+            }
             if label.hasPrefix("MAST API ") {
                 return label.replacingOccurrences(of: "MAST API ", with: "MAST ")
             }
@@ -286,6 +295,34 @@ public class SwiftMAST: NSObject {
         networkTimelineQueue.sync {
             storedNetworkTransactions.append(transaction)
         }
+    }
+
+    @discardableResult
+    internal func recordNetworkTransaction(
+        label: String,
+        method: String,
+        url: String,
+        statusCode: Int?,
+        requestBodyBytes: Int = 0,
+        responseBodyBytes: Int?,
+        startedAt: CFTimeInterval,
+        errorMessage: String? = nil
+    ) -> MASTNetworkTransaction {
+        let completedAt = Date()
+        let transaction = MASTNetworkTransaction(
+            label: label,
+            method: method,
+            url: url,
+            statusCode: statusCode,
+            requestBodyBytes: requestBodyBytes,
+            responseBodyBytes: responseBodyBytes,
+            startedAt: Date(timeIntervalSinceReferenceDate: startedAt),
+            completedAt: completedAt,
+            durationSeconds: completedAt.timeIntervalSinceReferenceDate - startedAt,
+            errorMessage: errorMessage
+        )
+        recordNetworkTransaction(transaction)
+        return transaction
     }
 
     private func appendLogEntryToFile(_ entry: MASTSyslog) {

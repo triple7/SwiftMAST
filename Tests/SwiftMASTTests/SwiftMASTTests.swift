@@ -705,6 +705,33 @@ final class SwiftMASTTests: XCTestCase {
         XCTAssertTrue(text.contains("Raw network transactions:"))
     }
 
+    func testDirectNetworkTransactionHelperRecordsExportRow() {
+        let mast = SwiftMAST()
+        let startedAt = Date(timeIntervalSince1970: 20).timeIntervalSinceReferenceDate
+
+        mast.recordNetworkTransaction(
+            label: "FITS metadata stream",
+            method: "GET",
+            url: "https://mast.stsci.edu/fits",
+            statusCode: 206,
+            requestBodyBytes: 0,
+            responseBodyBytes: 4096,
+            startedAt: startedAt,
+            errorMessage: nil
+        )
+
+        XCTAssertEqual(mast.networkTransactions.count, 1)
+        XCTAssertEqual(mast.networkTimelineNotes(), ["FITS header scan took \(String(format: "%.3f", mast.networkTransactions[0].durationSeconds)) seconds"])
+
+        let row = mast.networkTransactionRows()[0]
+        XCTAssertEqual(row["label"], "FITS metadata stream")
+        XCTAssertEqual(row["method"], "GET")
+        XCTAssertEqual(row["url"], "https://mast.stsci.edu/fits")
+        XCTAssertEqual(row["statusCode"], "206")
+        XCTAssertEqual(row["requestBodyBytes"], "0")
+        XCTAssertEqual(row["responseBodyBytes"], "4096")
+    }
+
     func testFileLoggingWritesLogEntries() {
         let mast = SwiftMAST()
         let logURL = FileManager.default.temporaryDirectory
