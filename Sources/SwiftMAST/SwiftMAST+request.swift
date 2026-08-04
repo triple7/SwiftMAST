@@ -783,6 +783,7 @@ extension SwiftMAST {
     public func queryMASTTap(
         selectQuery: String? = nil, table: MASTTap, fields: [String],
         parameters: [MASTTapParameter], format: APIReturnType = .json, token: String? = nil,
+        endpoint: MASTTapEndpoint = .tic,
         closure: @escaping (MASTTAPResponse) -> Void
     ) {
         /** Gets a TAP (Table Access protocol) result
@@ -796,10 +797,11 @@ extension SwiftMAST {
          */
         var mASTTapRequest: MASTTapRequest
         if selectQuery != nil {
-            mASTTapRequest = MASTTapRequest()
+            mASTTapRequest = MASTTapRequest(endpoint: endpoint)
         } else {
             mASTTapRequest = MASTTapRequest(
-                table: table, fields: fields, parameters: parameters, format: format)
+                table: table, fields: fields, parameters: parameters, format: format,
+                endpoint: endpoint)
         }
         let configuration = URLSessionConfiguration.ephemeral
         if let protocolClasses = SwiftMAST.queryRequestProtocolClasses {
@@ -813,7 +815,7 @@ extension SwiftMAST {
 
         let tapQuery = selectQuery ?? mASTTapRequest.getSelectQuery()
         let bodyParameters =
-            "QUERY=\(tapQuery.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? "")&LANG=ADQL-2.0&responseformat=\(format.id)"
+            "QUERY=\(tapQuery.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? "")&LANG=ADQL&responseformat=\(format.id)"
 
         //        print(bodyParameters)
         request.httpBody = bodyParameters.data(using: .utf8)
@@ -822,7 +824,9 @@ extension SwiftMAST {
             request.addValue("Bearer \(token!)", forHTTPHeaderField: "Authorization")
         }
 
-        let cacheKey = token == nil ? tapQueryCacheKey(query: tapQuery, format: format) : nil
+        let cacheKey =
+            token == nil
+            ? tapQueryCacheKey(query: tapQuery, format: format, endpoint: endpoint) : nil
         if let cacheKey,
            let cachedData = cachedQueryResponse(key: cacheKey),
            let cachedResult = try? JSONDecoder().decode(MASTTAPResponse.self, from: cachedData)
@@ -839,6 +843,7 @@ extension SwiftMAST {
                     "audience": "developer",
                     "event": "queryCacheMiss",
                     "service": "MAST TAP",
+                    "tapEndpoint": endpoint.id,
                     "cacheKey": cacheKey,
                 ]
             )

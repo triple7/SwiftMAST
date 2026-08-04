@@ -7,6 +7,7 @@
 
 import Foundation
 import QuartzCore
+import SwiftQValue
 
 public typealias TargetCoordinates = (ra: Float, dec: Float, radius: Float)
 
@@ -1995,6 +1996,288 @@ extension SwiftMAST {
             })
     }
 
+    /** Query science products using MAST CAOM TAP and group them by observation session.
+
+     This TAP-backed variant returns the same ``ObservationGroup`` model as `getObservationGroups`,
+     but uses ADQL against the CAOM TAP service instead of the Mast.Caom Mashup endpoint. TAP rows
+     include artifact `contentlength` when available, so FITS file sizes can be attached without a
+     separate product-size lookup. FITS header metadata enrichment remains available for WCS details.
+     */
+    public func getObservationGroupsUsingTAP(
+        targetName: String,
+        missions: [ObservationMission] = ObservationMission.jwstAndHST,
+        instruments: [String]? = nil,
+        filterBands: [String]? = nil,
+        calibLevels: [String]? = nil,
+        dataProductTypes: [String]? = nil,
+        pageSize: Int = 400,
+        limit: Int? = nil,
+        sortOrder: ObservationProductSortOrder = .filter,
+        includeFITSImageHeaderMetadata: Bool = true,
+        result: @escaping ([ObservationGroup]) -> Void
+    ) {
+        self.lookupTargetCoordinates(targetName: targetName) { coordinates in
+            guard let coordinates = coordinates else {
+                self.log(
+                    .RequestError,
+                    message: "Could not resolve target for TAP observation search",
+                    metadata: [
+                        "event": "tapObservationSearchTargetResolutionFailed",
+                        "targetName": targetName,
+                    ]
+                )
+                result([])
+                return
+            }
+
+            self.getObservationGroupsUsingTAP(
+                targetName: targetName,
+                ra: coordinates.ra,
+                dec: coordinates.dec,
+                radius: coordinates.radius,
+                missions: missions,
+                instruments: instruments,
+                filterBands: filterBands,
+                calibLevels: calibLevels,
+                dataProductTypes: dataProductTypes,
+                pageSize: pageSize,
+                limit: limit,
+                sortOrder: sortOrder,
+                includeFITSImageHeaderMetadata: includeFITSImageHeaderMetadata,
+                result: result
+            )
+        }
+    }
+
+    /** Query TAP observation groups inside or overlapping a CAOM `s_region` footprint. */
+    public func getObservationGroupsUsingTAP(
+        targetName: String,
+        spaceRegion: String,
+        containment: SpaceRegionContainmentMode = .footprintIntersects,
+        missions: [ObservationMission] = ObservationMission.jwstAndHST,
+        instruments: [String]? = nil,
+        filterBands: [String]? = nil,
+        calibLevels: [String]? = nil,
+        dataProductTypes: [String]? = nil,
+        pageSize: Int = 400,
+        limit: Int? = nil,
+        sortOrder: ObservationProductSortOrder = .filter,
+        includeFITSImageHeaderMetadata: Bool = true,
+        result: @escaping ([ObservationGroup]) -> Void
+    ) {
+        guard let sourceRegion = SpaceRegion(spaceRegion),
+              let cone = sourceRegion.boundingCone
+        else {
+            self.log(
+                .RequestError,
+                message: "Could not parse TAP observation search region",
+                metadata: [
+                    "event": "tapObservationSearchRegionParseFailed",
+                    "spaceRegion": spaceRegion,
+                ]
+            )
+            result([])
+            return
+        }
+
+        self.getObservationGroupsUsingTAP(
+            targetName: targetName,
+            ra: Float(cone.ra),
+            dec: Float(cone.dec),
+            radius: Float(cone.radius),
+            missions: missions,
+            instruments: instruments,
+            filterBands: filterBands,
+            calibLevels: calibLevels,
+            dataProductTypes: dataProductTypes,
+            pageSize: pageSize,
+            limit: limit,
+            sortOrder: sortOrder,
+            includeFITSImageHeaderMetadata: includeFITSImageHeaderMetadata
+        ) { groups in
+            let filteredGroups = groups.compactMap { group -> ObservationGroup? in
+                let products = group.products.filter {
+                    guard let candidateRegion = $0.spaceRegion else { return false }
+                    return sourceRegion.matches(
+                        candidate: candidateRegion,
+                        candidateCenter: $0.spaceRegionCenter,
+                        mode: containment
+                    )
+                }
+
+                guard !products.isEmpty else { return nil }
+                return ObservationGroup(
+                    mission: group.mission,
+                    observationKey: group.observationKey,
+                    instrument: group.instrument,
+                    products: products
+                )
+            }
+
+            let effectiveLimit = self.effectiveObservationGroupLimit(pageSize: pageSize, limit: limit)
+            let limitedGroups = self.limitedObservationGroups(
+                filteredGroups, effectiveLimit: effectiveLimit)
+            self.log(
+                .OK,
+                message: "Filtered observations by footprint",
+                metadata: [
+                    "event": "tapObservationFootprintFilterFinished",
+                    "matchedGroups": String(filteredGroups.count),
+                    "matchedProducts": String(filteredGroups.reduce(0) { $0 + $1.products.count }),
+                    "returnedGroups": String(limitedGroups.count),
+                ]
+            )
+            result(limitedGroups)
+        }
+    }
+
+    /** Query science products at coordinates using MAST CAOM TAP and group them by observation session. */
+    public func getObservationGroupsUsingTAP(
+        targetName: String,
+        ra: Float,
+        dec: Float,
+        radius: Float,
+        missions: [ObservationMission] = ObservationMission.jwstAndHST,
+        instruments: [String]? = nil,
+        filterBands: [String]? = nil,
+        calibLevels: [String]? = nil,
+        dataProductTypes: [String]? = nil,
+        pageSize: Int = 400,
+        limit: Int? = nil,
+        sortOrder: ObservationProductSortOrder = .filter,
+        includeFITSImageHeaderMetadata: Bool = true,
+        result: @escaping ([ObservationGroup]) -> Void
+    ) {
+        if let limit, limit <= 0 {
+            self.log(
+                .OK,
+                message: "Finished grouping observations",
+                metadata: [
+                    "event": "tapObservationSearchSkipped",
+                    "limit": String(limit),
+                    "returnedGroups": "0",
+                ]
+            )
+            result([])
+            return
+        }
+
+        let effectiveLimit = effectiveObservationGroupLimit(pageSize: pageSize, limit: limit)
+        let effectivePageSize = limitedPageSize(pageSize, effectiveLimit: effectiveLimit)
+        let collections = Array(Set(missions.flatMap(\.collectionNames))).sorted()
+        let resolvedCalibLevels = calibLevels
+            ?? Array(Set(missions.flatMap(\.defaultCalibrationLevels))).sorted()
+        let resolvedDataProductTypes = dataProductTypes
+            ?? Array(Set(missions.flatMap(\.imageryDataProductTypes))).sorted()
+        let query = caomObservationGroupsTAPQuery(
+            ra: ra,
+            dec: dec,
+            radius: radius,
+            collections: collections,
+            instruments: instruments,
+            filterBands: filterBands,
+            calibLevels: resolvedCalibLevels,
+            dataProductTypes: resolvedDataProductTypes,
+            pageSize: effectivePageSize
+        )
+
+        self.log(
+            .OK,
+            message: "Started TAP observation search",
+            metadata: [
+                "event": "tapObservationSearchStarted",
+                "targetName": targetName,
+                "collections": collections.joined(separator: ","),
+                "ra": String(ra),
+                "dec": String(dec),
+                "radius": String(radius),
+            ]
+        )
+
+        let start = CACurrentMediaTime()
+        self.queryMASTTap(
+            selectQuery: query,
+            table: .tap_schema_columns,
+            fields: [],
+            parameters: [],
+            endpoint: .caom
+        ) { response in
+            let queryDuration = CACurrentMediaTime() - start
+            let tapResults = self.coamResultsFromCAOMTapResponse(response)
+            let sizedProducts = tapResults.filter { $0.preferredDownloadSizeBytes != nil }.count
+            self.log(
+                .OK,
+                message: "Finished TAP observation search",
+                durationSeconds: queryDuration,
+                metadata: [
+                    "event": "tapObservationSearchFinished",
+                    "productCount": String(tapResults.count),
+                    "sizedProducts": String(sizedProducts),
+                    "fitsHeaderMetadataRequested": String(includeFITSImageHeaderMetadata),
+                ]
+            )
+
+            guard !tapResults.isEmpty else {
+                self.log(
+                    .OK,
+                    message: "Finished grouping observations",
+                    metadata: [
+                        "event": "tapObservationGroupingFinished",
+                        "returnedGroups": "0",
+                    ]
+                )
+                result([])
+                return
+            }
+
+            let finish: ([CoamResult]) -> Void = { products in
+                let groups = self.buildObservationGroups(from: products, sortOrder: sortOrder)
+                let limitedGroups = self.limitedObservationGroups(groups, effectiveLimit: effectiveLimit)
+                self.log(
+                    .OK,
+                    message: "Finished grouping observations",
+                    metadata: [
+                        "event": "tapObservationGroupingFinished",
+                        "builtGroups": String(groups.count),
+                        "returnedGroups": String(limitedGroups.count),
+                    ]
+                )
+                result(limitedGroups)
+            }
+
+            guard includeFITSImageHeaderMetadata else {
+                finish(tapResults)
+                return
+            }
+
+            self.log(
+                .OK,
+                message: "Reading FITS image headers",
+                metadata: [
+                    "event": "tapObservationFITSHeaderEnrichmentStarted",
+                    "productCount": String(tapResults.count),
+                ]
+            )
+            let metadataStart = CACurrentMediaTime()
+            self.enrichCoamResultsWithFITSImageMetadata(tapResults) { enrichedResults in
+                let metadataDuration = CACurrentMediaTime() - metadataStart
+                let metadataProducts =
+                    enrichedResults.filter { $0.fitsImageHeaderMetadata != nil }.count
+                self.log(
+                    .OK,
+                    message: "Read FITS image headers",
+                    durationSeconds: metadataDuration,
+                    metadata: [
+                        "event": "tapObservationFITSHeaderEnrichmentFinished",
+                        "metadataProducts": String(metadataProducts),
+                        "productCount": String(enrichedResults.count),
+                    ]
+                )
+                finish(enrichedResults)
+            }
+        }
+    }
+
     internal func effectiveObservationGroupLimit(pageSize: Int, limit: Int?) -> Int {
         limit ?? pageSize
     }
@@ -2008,6 +2291,144 @@ extension SwiftMAST {
         effectiveLimit: Int
     ) -> [ObservationGroup] {
         Array(groups.prefix(max(0, effectiveLimit)))
+    }
+
+    private func caomObservationGroupsTAPQuery(
+        ra: Float,
+        dec: Float,
+        radius: Float,
+        collections: [String],
+        instruments: [String]?,
+        filterBands: [String]?,
+        calibLevels: [String],
+        dataProductTypes: [String],
+        pageSize: Int
+    ) -> String {
+        var predicates = [
+            "CONTAINS(POINT('ICRS', o.s_ra, o.s_dec), CIRCLE('ICRS', \(ra), \(dec), \(radius))) = 1",
+            "o.obs_collection IN (\(adqlQuotedList(collections)))",
+            "o.datarights = 'PUBLIC'",
+            "LOWER(a.productfilename) LIKE '%.fits'",
+        ]
+
+        let numericCalibLevels = calibLevels.compactMap { Int($0) }.map { String($0) }
+        if !numericCalibLevels.isEmpty {
+            predicates.append("o.calib_level IN (\(numericCalibLevels.joined(separator: ",")))")
+        }
+
+        let productTypes = dataProductTypes.map { $0.lowercased() }
+        if !productTypes.isEmpty {
+            predicates.append("LOWER(o.dataproduct_type) IN (\(adqlQuotedList(productTypes)))")
+        }
+
+        if let instruments, !instruments.isEmpty {
+            predicates.append("o.instrument_name IN (\(adqlQuotedList(instruments)))")
+        }
+
+        if let filterBands, !filterBands.isEmpty {
+            let filterPredicates = filterBands.map {
+                "UPPER(o.filters) LIKE '%\(adqlEscaped($0.uppercased()))%'"
+            }
+            predicates.append("(\(filterPredicates.joined(separator: " OR ")))")
+        }
+
+        return """
+            SELECT TOP \(max(pageSize, 1))
+                o.calib_level,
+                o.datarights,
+                o.dataurl,
+                o.dataproduct_type,
+                o.em_max,
+                o.em_min,
+                o.filters,
+                o.instrument_name,
+                o.intenttype,
+                o.jpegurl,
+                o.mtflag,
+                o.objid,
+                o.obs_collection,
+                o.obs_id,
+                o.obs_title,
+                o.obsid,
+                o.project,
+                o.proposal_id,
+                o.proposal_pi,
+                o.proposal_type,
+                o.provenance_name,
+                o.s_dec,
+                o.s_ra,
+                o.s_region,
+                o.sequence_number,
+                o.srcden,
+                o.t_exptime,
+                o.t_max,
+                o.t_min,
+                o.t_obs_release,
+                o.target_classification,
+                o.target_name,
+                o.wavelength_region,
+                a.contentlength
+            FROM dbo.obspointing AS o
+            JOIN dbo.caomplane AS p ON p.planetid = o.objid
+            JOIN dbo.caomartifact AS a ON a.planetid = p.planetid
+            WHERE \(predicates.joined(separator: "\n                AND "))
+            ORDER BY o.obs_collection, o.instrument_name, o.obs_id, o.filters, o.t_min
+            """
+    }
+
+    private func coamResultsFromCAOMTapResponse(_ response: MASTTAPResponse) -> [CoamResult] {
+        response.data.q2dArray.compactMap(coamResultFromCAOMTapRow)
+    }
+
+    private func coamResultFromCAOMTapRow(_ row: [QValue]) -> CoamResult? {
+        guard row.count >= 34 else { return nil }
+        let contentLength = row[33].int64Value
+        return CoamResult(
+            calib_level: row[0].intValue ?? 0,
+            dataRights: row[1].stringValue,
+            dataURL: row[2].stringValue,
+            dataproduct_type: row[3].stringValue.uppercased(),
+            distance: 0,
+            em_max: Int(row[4].floatValue ?? 0),
+            em_min: Int(row[5].floatValue ?? 0),
+            filters: row[6].stringValue,
+            instrument_name: row[7].stringValue,
+            intentType: row[8].stringValue,
+            jpegURL: row[9].stringValue,
+            mtFlag: row[10].boolValue ?? false,
+            objID: row[11].intValue ?? 0,
+            obs_collection: row[12].stringValue,
+            obs_id: row[13].stringValue,
+            obs_title: row[14].stringValue,
+            obsid: row[15].intValue ?? 0,
+            project: row[16].stringValue,
+            proposal_id: row[17].stringValue,
+            proposal_pi: row[18].stringValue,
+            proposal_type: row[19].stringValue,
+            provenance_name: row[20].stringValue,
+            s_dec: row[21],
+            s_ra: row[22],
+            s_region: row[23].stringValue,
+            sequence_number: row[24].intValue ?? 0,
+            srcDen: row[25].intValue ?? Int(row[25].floatValue ?? 0),
+            t_exptime: row[26].floatValue ?? 0,
+            t_max: row[27].floatValue ?? 0,
+            t_min: row[28].floatValue ?? 0,
+            t_obs_release: row[29].floatValue ?? 0,
+            target_classification: row[30].stringValue,
+            target_name: row[31].stringValue,
+            wavelength_region: row[32].stringValue,
+            dataURLSizeBytes: contentLength,
+            jpegURLSizeBytes: nil
+        )
+    }
+
+    private func adqlQuotedList(_ values: [String]) -> String {
+        values.map { "'\(adqlEscaped($0))'" }.joined(separator: ",")
+    }
+
+    private func adqlEscaped(_ value: String) -> String {
+        value.replacingOccurrences(of: "'", with: "''")
     }
 
     // MARK: - JWST Observation Groups
@@ -2158,4 +2579,71 @@ extension SwiftMAST {
         return groups
     }
 
+}
+
+private extension QValue {
+    var stringValue: String {
+        switch self {
+        case .string(let value):
+            return value
+        case .int(let value):
+            return String(value)
+        case .float(let value):
+            return String(value)
+        case .bool(let value):
+            return String(value)
+        }
+    }
+
+    var intValue: Int? {
+        switch self {
+        case .int(let value):
+            return value
+        case .float(let value):
+            return Int(value)
+        case .string(let value):
+            return Int(value)
+        case .bool:
+            return nil
+        }
+    }
+
+    var int64Value: Int64? {
+        switch self {
+        case .int(let value):
+            return Int64(value)
+        case .float(let value):
+            return Int64(value)
+        case .string(let value):
+            return Int64(value)
+        case .bool:
+            return nil
+        }
+    }
+
+    var floatValue: Float? {
+        switch self {
+        case .float(let value):
+            return value
+        case .int(let value):
+            return Float(value)
+        case .string(let value):
+            return Float(value)
+        case .bool:
+            return nil
+        }
+    }
+
+    var boolValue: Bool? {
+        switch self {
+        case .bool(let value):
+            return value
+        case .string(let value):
+            return Bool(value)
+        case .int(let value):
+            return value != 0
+        case .float(let value):
+            return value != 0
+        }
+    }
 }

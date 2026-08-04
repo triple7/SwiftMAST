@@ -16,8 +16,24 @@ public struct MASTTapRequestBody:Codable {
     public init(query: String) {
         self.query = query
         self.request = "doQuery"
-        self.lang = "ADQL-2.0"
+        self.lang = "ADQL"
         self.format = "json"
+    }
+}
+
+public enum MASTTapEndpoint: String, Codable, CaseIterable, Identifiable {
+    case tic
+    case caom
+
+    public var id: String { rawValue }
+
+    public var url: URL {
+        switch self {
+        case .tic:
+            return URL(string: "https://mast.stsci.edu/vo-tap/api/v0.1/tic/sync")!
+        case .caom:
+            return URL(string: "https://mast.stsci.edu/vo-tap/api/v0.1/caom/sync")!
+        }
     }
 }
 
@@ -25,13 +41,20 @@ public struct MASTTapRequest {
     /** MAST TAP request formatter
      Creates a request Url from the API and configured parameters, with TAP sql like queries
      */
-private let APIUrl = "https://mast.stsci.edu/vo-tap/api/v0.1/tic/sync"
+    private let endpoint: MASTTapEndpoint
     private let table:MASTTap
     private let fields:[String]
     private(set) var parameters:[MASTTapParameter]
     private let format:APIReturnType
     
-    public init(table: MASTTap, fields: [String], parameters: [MASTTapParameter], format: APIReturnType = .json) {
+    public init(
+        table: MASTTap,
+        fields: [String],
+        parameters: [MASTTapParameter],
+        format: APIReturnType = .json,
+        endpoint: MASTTapEndpoint = .tic
+    ) {
+        self.endpoint = endpoint
         self.table = table
         self.fields = fields
         self.parameters = parameters
@@ -39,7 +62,8 @@ private let APIUrl = "https://mast.stsci.edu/vo-tap/api/v0.1/tic/sync"
     }
     
 
-    public init(format: APIReturnType = .json) {
+    public init(format: APIReturnType = .json, endpoint: MASTTapEndpoint = .tic) {
+        self.endpoint = endpoint
         self.table = .dbo_catalog_record
         self.fields = []
         self.parameters = []
@@ -55,20 +79,19 @@ private let APIUrl = "https://mast.stsci.edu/vo-tap/api/v0.1/tic/sync"
     
     
     public func getUrl(_ query: String? = nil) -> URL {
-        var url = URLComponents(string: APIUrl)
+        var url = URLComponents(url: endpoint.url, resolvingAgainstBaseURL: false)
         let tapQuery = query != nil ? query! : self.getSelectQuery()
         url!.queryItems = [
             URLQueryItem(name: "QUERY", value: tapQuery),
-            URLQueryItem(name: "LANG", value: "ADQL-2.0"),
+            URLQueryItem(name: "LANG", value: "ADQL"),
             URLQueryItem(name: "responseformat", value: self.format.id)
         ]
         return url!.url!
     }
 
     public func getBaseUrl() -> URL {
-        return URL(string: self.APIUrl)!
+        return endpoint.url
     }
 
     
 }
-

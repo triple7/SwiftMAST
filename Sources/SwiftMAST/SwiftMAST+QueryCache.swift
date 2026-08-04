@@ -49,9 +49,11 @@ extension SwiftMAST {
 
     internal func tapQueryCacheKey(
         query: String,
-        format: APIReturnType
+        format: APIReturnType,
+        endpoint: MASTTapEndpoint = .tic
     ) -> String? {
-        let body = "QUERY=\(query)&LANG=ADQL-2.0&responseformat=\(format.id)"
+        let body =
+            "ENDPOINT=\(endpoint.id)&QUERY=\(query)&LANG=ADQL&responseformat=\(format.id)"
         guard let data = body.data(using: .utf8) else {
             return nil
         }
