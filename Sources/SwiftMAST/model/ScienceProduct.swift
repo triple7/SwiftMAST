@@ -8,6 +8,7 @@
 //
 
 import Foundation
+import SwiftQValue
 
 /// Represents a single extracted science image from a CoamResult download.
 /// A single FITS file may produce multiple ScienceProduct entries (one per image HDU).
@@ -246,6 +247,115 @@ public struct FITSWCS: Codable, Equatable, Hashable {
 
     private static func stringValue(_ keyword: String, in headers: [FITSHeaderUnit]) -> String? {
         headers.first { $0.keyword == keyword }?.value.rawString
+    }
+}
+
+/// Normalized WCS data extracted from any SwiftMAST metadata source.
+public struct FITSWCSData: Codable, Equatable, Hashable {
+    public let wcs: FITSWCS
+    public let width: Int?
+    public let height: Int?
+    public let referenceCoordinate: FITSWorldCoordinate
+    public let cornerWorldCoordinates: [FITSWorldCoordinate]
+    public let pixelScaleDegreesX: Double
+    public let pixelScaleDegreesY: Double
+    public let pixelScaleArcsecondsX: Double
+    public let pixelScaleArcsecondsY: Double
+
+    public init(wcs: FITSWCS, width: Int? = nil, height: Int? = nil) {
+        self.wcs = wcs
+        self.width = width
+        self.height = height
+        self.referenceCoordinate = FITSWorldCoordinate(ra: wcs.crval1, dec: wcs.crval2)
+
+        if let width, let height {
+            self.cornerWorldCoordinates = wcs.cornerWorldCoordinates(width: width, height: height)
+        } else {
+            self.cornerWorldCoordinates = []
+        }
+
+        let pixelScaleDegrees = wcs.pixelScaleDegrees
+        self.pixelScaleDegreesX = pixelScaleDegrees.x
+        self.pixelScaleDegreesY = pixelScaleDegrees.y
+        self.pixelScaleArcsecondsX = pixelScaleDegrees.x * 3_600
+        self.pixelScaleArcsecondsY = pixelScaleDegrees.y * 3_600
+    }
+
+    public static func wcsData(
+        from headers: [FITSHeaderUnit],
+        width: Int? = nil,
+        height: Int? = nil
+    ) -> FITSWCSData? {
+        FITSWCS(headers: headers).map {
+            FITSWCSData(wcs: $0, width: width, height: height)
+        }
+    }
+
+    public static func wcsData(from product: ScienceProduct) -> FITSWCSData? {
+        wcsData(from: product.headers)
+    }
+
+    public static func wcsData(from hdu: FITSHeaderHDUSummary) -> FITSWCSData? {
+        let wcs = hdu.wcs ?? FITSWCS(headers: hdu.headers)
+        return wcs.map {
+            FITSWCSData(wcs: $0, width: hdu.width, height: hdu.height)
+        }
+    }
+
+    public static func wcsData(from metadata: FITSImageHeaderMetadata) -> FITSWCSData? {
+        let wcs = metadata.wcs ?? FITSWCS(
+            crpix1: metadata.crpix1,
+            crpix2: metadata.crpix2,
+            crval1: metadata.crval1,
+            crval2: metadata.crval2,
+            ctype1: metadata.ctype1,
+            ctype2: metadata.ctype2,
+            cd1_1: metadata.cd1_1,
+            cd1_2: metadata.cd1_2,
+            cd2_1: metadata.cd2_1,
+            cd2_2: metadata.cd2_2,
+            cdelt1: metadata.cdelt1,
+            cdelt2: metadata.cdelt2,
+            pc1_1: metadata.pc1_1,
+            pc1_2: metadata.pc1_2,
+            pc2_1: metadata.pc2_1,
+            pc2_2: metadata.pc2_2
+        )
+        return wcs.map {
+            FITSWCSData(wcs: $0, width: metadata.width, height: metadata.height)
+        }
+    }
+
+    public static func wcsData(from metadata: FITSMetadata) -> FITSWCSData? {
+        let wcs = FITSWCS(
+            crpix1: metadata.crpix1,
+            crpix2: metadata.crpix2,
+            crval1: metadata.crval1,
+            crval2: metadata.crval2,
+            ctype1: metadata.ctype1,
+            ctype2: metadata.ctype2,
+            cd1_1: metadata.cd1_1,
+            cd1_2: metadata.cd1_2,
+            cd2_1: metadata.cd2_1,
+            cd2_2: metadata.cd2_2,
+            cdelt1: metadata.cdelt1,
+            cdelt2: metadata.cdelt2,
+            pc1_1: metadata.pc1_1,
+            pc1_2: metadata.pc1_2,
+            pc2_1: metadata.pc2_1,
+            pc2_2: metadata.pc2_2
+        )
+        return wcs.map {
+            FITSWCSData(
+                wcs: $0,
+                width: metadata.axisDimensions.first,
+                height: metadata.axisDimensions.dropFirst().first
+            )
+        }
+    }
+
+    public static func wcsData(from rawMetadata: [String: QValue]) -> FITSWCSData? {
+        wcsData(from: FITSMetadata(fileIdentifier: "metadata", metadata: rawMetadata))
     }
 }
 

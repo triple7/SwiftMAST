@@ -80,6 +80,79 @@ final class FITSObservationProductTests: XCTestCase {
         XCTAssertEqual(world.dec, 22, accuracy: 1e-12)
     }
 
+    func testWCSDataExtractsFromHeaderUnitsAndScienceProduct() throws {
+        let headers = [
+            header("CRPIX1", .double(10)),
+            header("CRPIX2", .double(20)),
+            header("CRVAL1", .double(150)),
+            header("CRVAL2", .double(2)),
+            header("CTYPE1", .string("RA---TAN")),
+            header("CTYPE2", .string("DEC--TAN")),
+            header("CD1_1", .double(-0.0001)),
+            header("CD1_2", .double(0)),
+            header("CD2_1", .double(0)),
+            header("CD2_2", .double(0.0001)),
+        ]
+
+        let headerWCS = try XCTUnwrap(FITSWCSData.wcsData(
+            from: headers,
+            width: 100,
+            height: 50
+        ))
+        XCTAssertEqual(headerWCS.referenceCoordinate.ra, 150, accuracy: 1e-12)
+        XCTAssertEqual(headerWCS.pixelScaleArcsecondsX, 0.36, accuracy: 1e-12)
+        XCTAssertEqual(headerWCS.cornerWorldCoordinates.count, 4)
+
+        let product = ScienceProduct(
+            name: "science",
+            imageLocation: nil,
+            sourceFileLocation: nil,
+            headers: headers,
+            coamResult: makeCoamResult()
+        )
+        let productWCS = try XCTUnwrap(FITSWCSData.wcsData(from: product))
+        XCTAssertEqual(productWCS.wcs.crval1, headerWCS.wcs.crval1, accuracy: 1e-12)
+        XCTAssertNil(productWCS.width)
+        XCTAssertTrue(productWCS.cornerWorldCoordinates.isEmpty)
+    }
+
+    func testWCSDataExtractsFromOnlineAndStructuredMetadataSources() throws {
+        let summary = try XCTUnwrap(
+            SwiftMAST().parseFITSHeaderSummary(
+                data: makePartialFITSHeaderData(),
+                sourceURL: URL(string: "https://example.com/test.fits")!,
+                remoteFileSizeBytes: 86_535_360
+            )
+        )
+        let onlineMetadata = try XCTUnwrap(summary.preferredImageMetadata)
+        let onlineWCS = try XCTUnwrap(FITSWCSData.wcsData(from: onlineMetadata))
+        XCTAssertEqual(onlineWCS.width, 4654)
+        XCTAssertEqual(onlineWCS.height, 4648)
+        XCTAssertEqual(onlineWCS.referenceCoordinate.ra, 254.2253014526158, accuracy: 1e-12)
+
+        let rawMetadata: [String: QValue] = [
+            "NAXIS": QValue(value: "2"),
+            "NAXIS1": QValue(value: "64"),
+            "NAXIS2": QValue(value: "32"),
+            "CRPIX1": QValue(value: "1.0"),
+            "CRPIX2": QValue(value: "1.0"),
+            "CRVAL1": QValue(value: "24.0"),
+            "CRVAL2": QValue(value: "15.0"),
+            "CTYPE1": QValue(value: "RA---TAN"),
+            "CTYPE2": QValue(value: "DEC--TAN"),
+            "CDELT1": QValue(value: "-0.0000277777778"),
+            "CDELT2": QValue(value: "0.0000277777778"),
+        ]
+        let structured = FITSMetadata(fileIdentifier: "structured.fits", metadata: rawMetadata)
+        let structuredWCS = try XCTUnwrap(FITSWCSData.wcsData(from: structured))
+        let rawWCS = try XCTUnwrap(FITSWCSData.wcsData(from: rawMetadata))
+
+        XCTAssertEqual(structuredWCS.width, 64)
+        XCTAssertEqual(structuredWCS.height, 32)
+        XCTAssertEqual(rawWCS.wcs.crval1, structuredWCS.wcs.crval1, accuracy: 1e-12)
+        XCTAssertEqual(rawWCS.pixelScaleArcsecondsX, 0.10000000008, accuracy: 2e-9)
+    }
+
     func testExtractFITSObservationProductDecodesScienceAndWeightPlanes() throws {
         let fitsURL = FileManager.default.temporaryDirectory
             .appendingPathComponent(UUID().uuidString)
