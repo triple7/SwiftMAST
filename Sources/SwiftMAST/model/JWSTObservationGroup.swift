@@ -83,6 +83,33 @@ public enum ObservationProductSortOrder {
 
 public typealias JWSTProductSortOrder = ObservationProductSortOrder
 
+/// TAP column sets used when querying CAOM observation groups.
+public enum ObservationTAPColumnProfile: Codable, CaseIterable, Equatable {
+    /// Full observation-group compatibility profile.
+    case observationGroupDefault
+
+    /// Narrow profile for target composite candidate selection and scoring.
+    case targetCompositeSelection
+}
+
+/// Product families that may be requested from CAOM TAP artifact rows.
+public enum ObservationTAPProductKind: Codable, CaseIterable, Equatable {
+    /// Calibrated science FITS products suitable for image rendering.
+    case scienceFITS
+}
+
+/// Controls when TAP observation products are enriched with remote FITS headers.
+public enum ObservationFITSHeaderFetchPolicy: Equatable {
+    /// Do not fetch FITS header metadata during candidate discovery.
+    case none
+
+    /// Fetch FITS header metadata for every returned TAP product.
+    case all
+
+    /// Fetch FITS header metadata only for the first products in each filter.
+    case shortlistedOnly(maxPerFilter: Int)
+}
+
 /// A group of products from the same observation session, sharing a mission,
 /// observation key, and instrument.
 ///

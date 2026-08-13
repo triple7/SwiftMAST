@@ -9,6 +9,52 @@ final class MASTTapADQLTests: XCTestCase {
         super.tearDown()
     }
 
+    func testTargetCompositeTAPQueryUsesNarrowProfileAndScienceFITSSuffixes() {
+        let mast = SwiftMAST()
+        let query = mast.caomObservationGroupsTAPQuery(
+            ra: 24.174,
+            dec: 15.783,
+            radius: 0.05,
+            collections: ObservationMission.jwstAndHST.flatMap(\.collectionNames),
+            instruments: nil,
+            filterBands: ["F200W"],
+            calibLevels: ["3", "4"],
+            dataProductTypes: ["IMAGE"],
+            pageSize: 25,
+            columnProfile: .targetCompositeSelection,
+            productKinds: [.scienceFITS]
+        )
+
+        XCTAssertTrue(query.contains("SELECT TOP 25"))
+        XCTAssertTrue(query.contains("o.obsid"))
+        XCTAssertTrue(query.contains("COALESCE(a.datauri, o.dataurl)"))
+        XCTAssertTrue(query.contains("a.productfilename"))
+        XCTAssertTrue(query.contains("a.contentlength"))
+        XCTAssertTrue(query.contains("%_i2d.fits"))
+        XCTAssertTrue(query.contains("%_drz.fits"))
+        XCTAssertTrue(query.contains("%_drc.fits"))
+        XCTAssertTrue(query.contains("UPPER(o.filters) LIKE '%F200W%'"))
+        XCTAssertFalse(query.contains("o.proposal_pi"))
+        XCTAssertFalse(query.contains("SELECT TOP 25\n                o.calib_level"))
+    }
+
+    func testShortlistedHeaderPolicyLimitsProductsPerFilter() {
+        let mast = SwiftMAST()
+        let products = [
+            makeTapCoamResult(obsID: "large-f200w", filter: "F200W", size: 300),
+            makeTapCoamResult(obsID: "small-f200w", filter: "F200W", size: 100),
+            makeTapCoamResult(obsID: "small-f356w", filter: "F356W", size: 120),
+            makeTapCoamResult(obsID: "large-f356w", filter: "F356W", size: 450),
+        ]
+
+        let shortlisted = mast.productsForHeaderPolicy(
+            products,
+            headerFetchPolicy: .shortlistedOnly(maxPerFilter: 1)
+        )
+
+        XCTAssertEqual(shortlisted.map(\.obs_id), ["small-f200w", "small-f356w"])
+    }
+
     func testMASTTapAcceptsDirectADQLSelectQuery() {
         let mast = SwiftMAST()
         mast.resetQueryCache()
@@ -333,6 +379,50 @@ final class MASTTapADQLTests: XCTestCase {
             }
         }
         return nil
+    }
+
+    private func makeTapCoamResult(
+        obsID: String,
+        filter: String,
+        size: Int64
+    ) -> CoamResult {
+        CoamResult(
+            calib_level: 3,
+            dataRights: "PUBLIC",
+            dataURL: "mast:TEST/product/\(obsID)_i2d.fits",
+            dataproduct_type: "IMAGE",
+            distance: 0,
+            em_max: 0,
+            em_min: 0,
+            filters: filter,
+            instrument_name: "NIRCAM/IMAGE",
+            intentType: "science",
+            jpegURL: "",
+            mtFlag: false,
+            objID: 0,
+            obs_collection: "JWST",
+            obs_id: obsID,
+            obs_title: "",
+            obsid: 1,
+            project: "",
+            proposal_id: "",
+            proposal_pi: "",
+            proposal_type: "",
+            provenance_name: "",
+            s_dec: .float(15.783),
+            s_ra: .float(24.174),
+            s_region: "",
+            sequence_number: 0,
+            srcDen: 0,
+            t_exptime: 100,
+            t_max: 0,
+            t_min: 0,
+            t_obs_release: 0,
+            target_classification: "",
+            target_name: "NGC 628",
+            wavelength_region: "",
+            dataURLSizeBytes: size
+        )
     }
 }
 

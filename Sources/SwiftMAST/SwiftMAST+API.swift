@@ -2148,6 +2148,124 @@ extension SwiftMAST {
         includeFITSImageHeaderMetadata: Bool = true,
         result: @escaping ([ObservationGroup]) -> Void
     ) {
+        let policy: ObservationFITSHeaderFetchPolicy = includeFITSImageHeaderMetadata ? .all : .none
+        getObservationGroupsUsingTAP(
+            targetName: targetName,
+            ra: ra,
+            dec: dec,
+            radius: radius,
+            missions: missions,
+            instruments: instruments,
+            filterBands: filterBands,
+            calibLevels: calibLevels,
+            dataProductTypes: dataProductTypes,
+            pageSize: pageSize,
+            limit: limit,
+            sortOrder: sortOrder,
+            columnProfile: .observationGroupDefault,
+            productKinds: [],
+            headerFetchPolicy: policy,
+            result: result
+        )
+    }
+
+    /// Query target-composite science FITS candidates using a narrow CAOM TAP profile.
+    public func getTargetCompositeCandidates(
+        targetName: String?,
+        ra: Double?,
+        dec: Double?,
+        radiusDegrees: Double,
+        missions: [ObservationMission] = ObservationMission.jwstAndHST,
+        filters: [String]? = nil,
+        columns: ObservationTAPColumnProfile = .targetCompositeSelection,
+        productKinds: [ObservationTAPProductKind] = [.scienceFITS],
+        pageSize: Int = 400,
+        maxProductsPerFilter: Int? = nil,
+        headerFetchPolicy: ObservationFITSHeaderFetchPolicy = .shortlistedOnly(maxPerFilter: 1),
+        result: @escaping ([ObservationGroup]) -> Void
+    ) {
+        if let ra, let dec {
+            getObservationGroupsUsingTAP(
+                targetName: targetName ?? "Coordinate target",
+                ra: Float(ra),
+                dec: Float(dec),
+                radius: Float(radiusDegrees),
+                missions: missions,
+                filterBands: filters,
+                pageSize: pageSize,
+                limit: nil,
+                sortOrder: .filter,
+                columnProfile: columns,
+                productKinds: productKinds,
+                maxProductsPerFilter: maxProductsPerFilter,
+                headerFetchPolicy: headerFetchPolicy,
+                result: result
+            )
+            return
+        }
+
+        guard let targetName else {
+            self.log(
+                .RequestError,
+                message: "Target composite TAP search requires coordinates or a target name",
+                metadata: [
+                    "event": "tapObservationSearchTargetResolutionFailed"
+                ]
+            )
+            result([])
+            return
+        }
+
+        self.lookupTargetCoordinates(targetName: targetName) { coordinates in
+            guard let coordinates else {
+                self.log(
+                    .RequestError,
+                    message: "Could not resolve target for target composite TAP search",
+                    metadata: [
+                        "event": "tapObservationSearchTargetResolutionFailed",
+                        "targetName": targetName,
+                    ]
+                )
+                result([])
+                return
+            }
+
+            self.getTargetCompositeCandidates(
+                targetName: targetName,
+                ra: Double(coordinates.ra),
+                dec: Double(coordinates.dec),
+                radiusDegrees: radiusDegrees,
+                missions: missions,
+                filters: filters,
+                columns: columns,
+                productKinds: productKinds,
+                pageSize: pageSize,
+                maxProductsPerFilter: maxProductsPerFilter,
+                headerFetchPolicy: headerFetchPolicy,
+                result: result
+            )
+        }
+    }
+
+    private func getObservationGroupsUsingTAP(
+        targetName: String,
+        ra: Float,
+        dec: Float,
+        radius: Float,
+        missions: [ObservationMission],
+        instruments: [String]? = nil,
+        filterBands: [String]? = nil,
+        calibLevels: [String]? = nil,
+        dataProductTypes: [String]? = nil,
+        pageSize: Int,
+        limit: Int? = nil,
+        sortOrder: ObservationProductSortOrder,
+        columnProfile: ObservationTAPColumnProfile,
+        productKinds: [ObservationTAPProductKind],
+        maxProductsPerFilter: Int? = nil,
+        headerFetchPolicy: ObservationFITSHeaderFetchPolicy,
+        result: @escaping ([ObservationGroup]) -> Void
+    ) {
         if let limit, limit <= 0 {
             self.log(
                 .OK,
@@ -2178,7 +2296,9 @@ extension SwiftMAST {
             filterBands: filterBands,
             calibLevels: resolvedCalibLevels,
             dataProductTypes: resolvedDataProductTypes,
-            pageSize: effectivePageSize
+            pageSize: effectivePageSize,
+            columnProfile: columnProfile,
+            productKinds: productKinds
         )
 
         self.log(
@@ -2203,7 +2323,10 @@ extension SwiftMAST {
             endpoint: .caom
         ) { response in
             let queryDuration = CACurrentMediaTime() - start
-            let tapResults = self.coamResultsFromCAOMTapResponse(response)
+            let tapResults = self.coamResultsFromCAOMTapResponse(
+                response,
+                columnProfile: columnProfile
+            )
             let sizedProducts = tapResults.filter { $0.preferredDownloadSizeBytes != nil }.count
             self.log(
                 .OK,
@@ -2213,7 +2336,7 @@ extension SwiftMAST {
                     "event": "tapObservationSearchFinished",
                     "productCount": String(tapResults.count),
                     "sizedProducts": String(sizedProducts),
-                    "fitsHeaderMetadataRequested": String(includeFITSImageHeaderMetadata),
+                    "fitsHeaderMetadataRequested": String(headerFetchPolicy != .none),
                 ]
             )
 
@@ -2231,7 +2354,11 @@ extension SwiftMAST {
             }
 
             let finish: ([CoamResult]) -> Void = { products in
-                let groups = self.buildObservationGroups(from: products, sortOrder: sortOrder)
+                let filteredProducts = self.limitTargetCompositeProductsPerFilter(
+                    products,
+                    maxProductsPerFilter: maxProductsPerFilter
+                )
+                let groups = self.buildObservationGroups(from: filteredProducts, sortOrder: sortOrder)
                 let limitedGroups = self.limitedObservationGroups(groups, effectiveLimit: effectiveLimit)
                 self.log(
                     .OK,
@@ -2245,7 +2372,11 @@ extension SwiftMAST {
                 result(limitedGroups)
             }
 
-            guard includeFITSImageHeaderMetadata else {
+            let productsToEnrich = self.productsForHeaderPolicy(
+                tapResults,
+                headerFetchPolicy: headerFetchPolicy
+            )
+            guard !productsToEnrich.isEmpty else {
                 finish(tapResults)
                 return
             }
@@ -2255,14 +2386,18 @@ extension SwiftMAST {
                 message: "Reading FITS image headers",
                 metadata: [
                     "event": "tapObservationFITSHeaderEnrichmentStarted",
-                    "productCount": String(tapResults.count),
+                    "productCount": String(productsToEnrich.count),
                 ]
             )
             let metadataStart = CACurrentMediaTime()
-            self.enrichCoamResultsWithFITSImageMetadata(tapResults) { enrichedResults in
+            self.enrichCoamResultsWithFITSImageMetadata(productsToEnrich) { enrichedResults in
                 let metadataDuration = CACurrentMediaTime() - metadataStart
                 let metadataProducts =
                     enrichedResults.filter { $0.fitsImageHeaderMetadata != nil }.count
+                let mergedResults = self.mergeFITSHeaderMetadata(
+                    enrichedResults,
+                    into: tapResults
+                )
                 self.log(
                     .OK,
                     message: "Read FITS image headers",
@@ -2273,7 +2408,7 @@ extension SwiftMAST {
                         "productCount": String(enrichedResults.count),
                     ]
                 )
-                finish(enrichedResults)
+                finish(mergedResults)
             }
         }
     }
@@ -2293,7 +2428,7 @@ extension SwiftMAST {
         Array(groups.prefix(max(0, effectiveLimit)))
     }
 
-    private func caomObservationGroupsTAPQuery(
+    internal func caomObservationGroupsTAPQuery(
         ra: Float,
         dec: Float,
         radius: Float,
@@ -2302,7 +2437,9 @@ extension SwiftMAST {
         filterBands: [String]?,
         calibLevels: [String],
         dataProductTypes: [String],
-        pageSize: Int
+        pageSize: Int,
+        columnProfile: ObservationTAPColumnProfile = .observationGroupDefault,
+        productKinds: [ObservationTAPProductKind] = []
     ) -> String {
         var predicates = [
             "CONTAINS(POINT('ICRS', o.s_ra, o.s_dec), CIRCLE('ICRS', \(ra), \(dec), \(radius))) = 1",
@@ -2310,6 +2447,18 @@ extension SwiftMAST {
             "o.datarights = 'PUBLIC'",
             "LOWER(a.productfilename) LIKE '%.fits'",
         ]
+
+        if productKinds.contains(.scienceFITS) {
+            predicates.append(
+                """
+                (
+                    (o.obs_collection = 'JWST' AND LOWER(a.productfilename) LIKE '%_i2d.fits')
+                    OR (o.obs_collection IN ('HST', 'HLA') AND (LOWER(a.productfilename) LIKE '%_drz.fits' OR LOWER(a.productfilename) LIKE '%_drc.fits'))
+                    OR (o.obs_collection NOT IN ('JWST', 'HST', 'HLA'))
+                )
+                """
+            )
+        }
 
         let numericCalibLevels = calibLevels.compactMap { Int($0) }.map { String($0) }
         if !numericCalibLevels.isEmpty {
@@ -2332,11 +2481,13 @@ extension SwiftMAST {
             predicates.append("(\(filterPredicates.joined(separator: " OR ")))")
         }
 
-        return """
-            SELECT TOP \(max(pageSize, 1))
+        let selectColumns: String
+        switch columnProfile {
+        case .observationGroupDefault:
+            selectColumns = """
                 o.calib_level,
                 o.datarights,
-                o.dataurl,
+                COALESCE(a.datauri, o.dataurl),
                 o.dataproduct_type,
                 o.em_max,
                 o.em_min,
@@ -2368,6 +2519,34 @@ extension SwiftMAST {
                 o.target_name,
                 o.wavelength_region,
                 a.contentlength
+            """
+        case .targetCompositeSelection:
+            selectColumns = """
+                o.obsid,
+                o.obs_id,
+                o.obs_collection,
+                o.instrument_name,
+                o.target_name,
+                o.filters,
+                o.calib_level,
+                o.dataproduct_type,
+                o.intenttype,
+                o.datarights,
+                o.s_ra,
+                o.s_dec,
+                o.s_region,
+                o.t_exptime,
+                o.proposal_id,
+                o.obs_title,
+                COALESCE(a.datauri, o.dataurl),
+                a.productfilename,
+                a.contentlength
+            """
+        }
+
+        return """
+            SELECT TOP \(max(pageSize, 1))
+                \(selectColumns)
             FROM dbo.obspointing AS o
             JOIN dbo.caomplane AS p ON p.planetid = o.objid
             JOIN dbo.caomartifact AS a ON a.planetid = p.planetid
@@ -2376,11 +2555,23 @@ extension SwiftMAST {
             """
     }
 
-    private func coamResultsFromCAOMTapResponse(_ response: MASTTAPResponse) -> [CoamResult] {
-        response.data.q2dArray.compactMap(coamResultFromCAOMTapRow)
+    private func coamResultsFromCAOMTapResponse(
+        _ response: MASTTAPResponse,
+        columnProfile: ObservationTAPColumnProfile
+    ) -> [CoamResult] {
+        response.data.q2dArray.compactMap {
+            coamResultFromCAOMTapRow($0, columnProfile: columnProfile)
+        }
     }
 
-    private func coamResultFromCAOMTapRow(_ row: [QValue]) -> CoamResult? {
+    private func coamResultFromCAOMTapRow(
+        _ row: [QValue],
+        columnProfile: ObservationTAPColumnProfile
+    ) -> CoamResult? {
+        if columnProfile == .targetCompositeSelection {
+            return coamResultFromTargetCompositeTAPRow(row)
+        }
+
         guard row.count >= 34 else { return nil }
         let contentLength = row[33].int64Value
         return CoamResult(
@@ -2421,6 +2612,121 @@ extension SwiftMAST {
             dataURLSizeBytes: contentLength,
             jpegURLSizeBytes: nil
         )
+    }
+
+    private func coamResultFromTargetCompositeTAPRow(_ row: [QValue]) -> CoamResult? {
+        guard row.count >= 19 else { return nil }
+        return CoamResult(
+            calib_level: row[6].intValue ?? 0,
+            dataRights: row[9].stringValue,
+            dataURL: row[16].stringValue,
+            dataproduct_type: row[7].stringValue.uppercased(),
+            distance: 0,
+            em_max: 0,
+            em_min: 0,
+            filters: row[5].stringValue,
+            instrument_name: row[3].stringValue,
+            intentType: row[8].stringValue,
+            jpegURL: "",
+            mtFlag: false,
+            objID: 0,
+            obs_collection: row[2].stringValue,
+            obs_id: row[1].stringValue,
+            obs_title: row[15].stringValue,
+            obsid: row[0].intValue ?? 0,
+            project: "",
+            proposal_id: row[14].stringValue,
+            proposal_pi: "",
+            proposal_type: "",
+            provenance_name: "",
+            s_dec: row[11],
+            s_ra: row[10],
+            s_region: row[12].stringValue,
+            sequence_number: 0,
+            srcDen: 0,
+            t_exptime: row[13].floatValue ?? 0,
+            t_max: 0,
+            t_min: 0,
+            t_obs_release: 0,
+            target_classification: "",
+            target_name: row[4].stringValue,
+            wavelength_region: "",
+            dataURLSizeBytes: row[18].int64Value,
+            jpegURLSizeBytes: nil
+        )
+    }
+
+    internal func productsForHeaderPolicy(
+        _ products: [CoamResult],
+        headerFetchPolicy: ObservationFITSHeaderFetchPolicy
+    ) -> [CoamResult] {
+        switch headerFetchPolicy {
+        case .none:
+            return []
+        case .all:
+            return products
+        case .shortlistedOnly(let maxPerFilter):
+            return limitTargetCompositeProductsPerFilter(
+                products,
+                maxProductsPerFilter: maxPerFilter
+            )
+        }
+    }
+
+    internal func limitTargetCompositeProductsPerFilter(
+        _ products: [CoamResult],
+        maxProductsPerFilter: Int?
+    ) -> [CoamResult] {
+        guard let maxProductsPerFilter else { return products }
+        guard maxProductsPerFilter > 0 else { return [] }
+
+        var counts = [String: Int]()
+        var limited = [CoamResult]()
+        for product in products.sorted(by: targetCompositeProductSort) {
+            let key = product.filters.uppercased()
+            let count = counts[key, default: 0]
+            guard count < maxProductsPerFilter else { continue }
+            counts[key] = count + 1
+            limited.append(product)
+        }
+        return limited
+    }
+
+    private func targetCompositeProductSort(_ lhs: CoamResult, _ rhs: CoamResult) -> Bool {
+        let leftSize = lhs.preferredDownloadSizeBytes ?? Int64.max
+        let rightSize = rhs.preferredDownloadSizeBytes ?? Int64.max
+        if leftSize != rightSize { return leftSize < rightSize }
+        if lhs.t_exptime != rhs.t_exptime { return lhs.t_exptime > rhs.t_exptime }
+        return lhs.obs_id < rhs.obs_id
+    }
+
+    private func mergeFITSHeaderMetadata(
+        _ enrichedProducts: [CoamResult],
+        into products: [CoamResult]
+    ) -> [CoamResult] {
+        let metadataByKey = Dictionary(
+            uniqueKeysWithValues: enrichedProducts.compactMap { product in
+                product.fitsImageHeaderMetadata.map {
+                    (targetCompositeProductIdentity(product), $0)
+                }
+            }
+        )
+        return products.map { product in
+            guard let metadata = metadataByKey[targetCompositeProductIdentity(product)] else {
+                return product
+            }
+            return product.withFITSImageHeaderMetadata(metadata)
+        }
+    }
+
+    private func targetCompositeProductIdentity(_ product: CoamResult) -> String {
+        [
+            product.obs_collection,
+            product.obs_id,
+            product.instrument_name,
+            product.filters,
+            product.dataURL,
+        ].joined(separator: "\u{1f}")
     }
 
     private func adqlQuotedList(_ values: [String]) -> String {
