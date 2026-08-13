@@ -2396,6 +2396,103 @@ final class SwiftMASTTests: XCTestCase {
         XCTAssertEqual(decodedStructured.fileIdentifier, structured.fileIdentifier)
     }
 
+    func testLocalObservationGroupsReadCachedFilesSidecarsAndWCS() throws {
+        let mast = SwiftMAST()
+        let targetName = "Local Groups \(UUID().uuidString)"
+        defer { removeMASTTargetFolder(targetName, mast: mast) }
+
+        let f606w = makeCoamResult(
+            dataURL: "mast:HST/product/f606w.fits",
+            jpegURL: "https://example.invalid/f606w.jpg",
+            obs_id: "hst_10775_62_wfc3_f606w",
+            filters: "F606W",
+            instrument_name: "WFC3/UVIS",
+            obs_collection: "HST"
+        )
+        let f814w = makeCoamResult(
+            dataURL: "mast:HST/product/f814w.fits",
+            jpegURL: "https://example.invalid/f814w.jpg",
+            obs_id: "hst_10775_62_wfc3_f814w",
+            filters: "F814W",
+            instrument_name: "WFC3/UVIS",
+            obs_collection: "HST"
+        )
+
+        for product in [f606w, f814w] {
+            let fitsURL = mast.localProductURL(
+                targetName: targetName,
+                product: product,
+                productType: .Fits
+            )
+            let imageURL = mast.localProductURL(
+                targetName: targetName,
+                product: product,
+                productType: .Jpeg
+            )
+            try FileManager.default.createDirectory(
+                at: fitsURL.deletingLastPathComponent(),
+                withIntermediateDirectories: true
+            )
+            try FileManager.default.createDirectory(
+                at: imageURL.deletingLastPathComponent(),
+                withIntermediateDirectories: true
+            )
+            try Data([0x46, 0x49, 0x54, 0x53]).write(to: fitsURL)
+            try Data([0xff, 0xd8, 0xff]).write(to: imageURL)
+
+            let rawMetadata: [String: QValue] = [
+                "NAXIS": QValue(value: "2"),
+                "NAXIS1": QValue(value: "64"),
+                "NAXIS2": QValue(value: "32"),
+                "CRPIX1": QValue(value: "1.0"),
+                "CRPIX2": QValue(value: "1.0"),
+                "CRVAL1": QValue(value: "24.0"),
+                "CRVAL2": QValue(value: "15.0"),
+                "CTYPE1": QValue(value: "RA---TAN"),
+                "CTYPE2": QValue(value: "DEC--TAN"),
+                "CDELT1": QValue(value: "-0.0000277777778"),
+                "CDELT2": QValue(value: "0.0000277777778"),
+                "FILTER": QValue(value: product.filters),
+            ]
+            let structured = FITSMetadata(
+                fileIdentifier: fitsURL.lastPathComponent,
+                metadata: rawMetadata
+            )
+
+            mast.saveCoamResultSidecar(targetName: targetName, product: product)
+            mast.saveFITSMetadataSidecars(
+                targetName: targetName,
+                product: product,
+                fitsData: FitsData(
+                    metadata: rawMetadata,
+                    url: nil,
+                    structuredMetadata: structured
+                ),
+                fitsURL: fitsURL
+            )
+        }
+
+        let groups = mast.getLocalObservationGroups(targetName: targetName)
+        let group = try XCTUnwrap(groups.first)
+
+        XCTAssertEqual(groups.count, 1)
+        XCTAssertEqual(group.targetName, "M31")
+        XCTAssertEqual(group.mission, "HST")
+        XCTAssertEqual(group.observationKey, "hst_10775_62_wfc3")
+        XCTAssertEqual(group.instrument, "WFC3/UVIS")
+        XCTAssertEqual(group.filters.map(\.filterName), ["F606W", "F814W"])
+
+        let first = try XCTUnwrap(group.filters.first)
+        XCTAssertNotNil(first.fitFileURL)
+        XCTAssertNotNil(first.imageFileURL)
+        XCTAssertEqual(first.coamResult?.obs_id, f606w.obs_id)
+        XCTAssertEqual(String(describing: first.rawMetadata?["FILTER"]?.value ?? ""), "F606W")
+        XCTAssertEqual(first.metadata?.fileIdentifier, first.fitFileURL?.lastPathComponent)
+        XCTAssertEqual(first.wcs?.width, 64)
+        XCTAssertEqual(first.wcs?.height, 32)
+        XCTAssertEqual(first.wcs?.referenceCoordinate.ra ?? 0, 24.0, accuracy: 1e-12)
+    }
+
     func testFetchHeaderSizesUsesPersistentCacheBeforeNetwork() throws {
         let mast = SwiftMAST()
         removeProductFileSizeCache(mast)

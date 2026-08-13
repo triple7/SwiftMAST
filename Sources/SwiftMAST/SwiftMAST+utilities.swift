@@ -16,6 +16,14 @@ import Zip
 
 extension SwiftMAST {
 
+    internal func mastStorageRootURL() -> URL {
+        FileManager.default.urls(
+            for: .documentDirectory,
+            in: .userDomainMask
+        ).first!
+            .appendingPathComponent("MAST", isDirectory: true)
+    }
+
     internal func storageSafePathComponent(_ value: String, fallback: String) -> String {
         let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
         let source = trimmed.isEmpty ? fallback : trimmed
@@ -38,12 +46,7 @@ extension SwiftMAST {
         contentType: ObservationProductContentType
     ) -> URL {
 
-        // Get the Documents directory
-        let documentsDirectory = FileManager.default.urls(
-            for: .documentDirectory, in: .userDomainMask
-        ).first!
-
-        var MASTDirectory = documentsDirectory.appendingPathComponent("MAST", isDirectory: true)
+        var MASTDirectory = mastStorageRootURL()
         MASTDirectory = MASTDirectory.appendingPathComponent(
             storageSafePathComponent(target, fallback: "unknown-target"), isDirectory: true)
 
@@ -73,6 +76,238 @@ extension SwiftMAST {
             filter: product.filters,
             contentType: contentType
         )
+    }
+
+    /// Reconstruct observation groups from products available in SwiftMAST's local cache.
+    ///
+    /// The scanner reads the standard product cache layout:
+    /// `MAST/<target>/<mission>/<observation>/<filter>/fit|image`.
+    /// It attaches sidecar JSON when available, including `coam-result.json`,
+    /// raw/structured FITS metadata, preferred image metadata, and normalized WCS data.
+    public func getLocalObservationGroups(
+        targetName: String? = nil,
+        sortOrder: ObservationProductSortOrder = .filter
+    ) -> [LocalObservationGroup] {
+        let root = mastStorageRootURL()
+        guard FileManager.default.fileExists(atPath: root.path) else { return [] }
+
+        let targetFolders: [URL]
+        if let targetName {
+            let targetURL = root.appendingPathComponent(
+                storageSafePathComponent(targetName, fallback: "unknown-target"),
+                isDirectory: true
+            )
+            targetFolders = FileManager.default.fileExists(atPath: targetURL.path) ? [targetURL] : []
+        } else {
+            targetFolders = directoryChildren(of: root)
+        }
+
+        struct GroupIdentity: Hashable {
+            let targetName: String
+            let mission: String
+            let observationKey: String
+            let instrument: String
+        }
+
+        var grouped = [GroupIdentity: [LocalObservationFilterProduct]]()
+
+        for targetFolder in targetFolders {
+            let target = targetFolder.lastPathComponent
+            for missionFolder in directoryChildren(of: targetFolder) {
+                for observationFolder in directoryChildren(of: missionFolder) {
+                    for filterFolder in directoryChildren(of: observationFolder) {
+                        guard let localProduct = localObservationFilterProduct(
+                            targetFolder: targetFolder,
+                            missionFolder: missionFolder,
+                            observationFolder: observationFolder,
+                            filterFolder: filterFolder
+                        ) else {
+                            continue
+                        }
+
+                        let coam = localProduct.coamResult
+                        let mission = coam?.observationMission?.rawValue
+                            ?? coam?.obs_collection
+                            ?? missionFolder.lastPathComponent
+                        let observationKey = coam.map(observationGroupKey)
+                            ?? observationFolder.lastPathComponent
+                        let instrument = coam?.instrument_name ?? ""
+                        let identity = GroupIdentity(
+                            targetName: coam?.target_name.nilIfEmpty ?? target,
+                            mission: mission,
+                            observationKey: observationKey,
+                            instrument: instrument
+                        )
+                        grouped[identity, default: []].append(localProduct)
+                    }
+                }
+            }
+        }
+
+        return grouped.map { identity, products in
+            LocalObservationGroup(
+                targetName: identity.targetName,
+                mission: identity.mission,
+                observationKey: identity.observationKey,
+                instrument: identity.instrument,
+                filters: sortedLocalObservationFilters(products, sortOrder: sortOrder)
+            )
+        }
+        .sorted {
+            if !($0.targetName == $1.targetName) { return $0.targetName < $1.targetName }
+            if !($0.mission == $1.mission) { return $0.mission < $1.mission }
+            if !($0.observationKey == $1.observationKey) {
+                return $0.observationKey < $1.observationKey
+            }
+            return $0.instrument < $1.instrument
+        }
+    }
+
+    private func localObservationFilterProduct(
+        targetFolder: URL,
+        missionFolder: URL,
+        observationFolder: URL,
+        filterFolder: URL
+    ) -> LocalObservationFilterProduct? {
+        let fitFolder = filterFolder.appendingPathComponent(
+            ObservationProductContentType.fit.rawValue,
+            isDirectory: true
+        )
+        let imageFolder = filterFolder.appendingPathComponent(
+            ObservationProductContentType.image.rawValue,
+            isDirectory: true
+        )
+
+        let fitFileURL = firstLocalFile(in: fitFolder, extensions: ["fits", "fit"])
+        let imageFileURL = firstLocalFile(in: imageFolder, extensions: ["jpg", "jpeg", "png"])
+        let coamResult = readJSONSidecar(
+            CoamResult.self,
+            from: filterFolder.appendingPathComponent("coam-result.json")
+        )
+        let rawMetadata = firstLocalFile(in: fitFolder, suffix: ".raw-metadata.json")
+            .flatMap { readJSONSidecar([String: QValue].self, from: $0) }
+        let metadata = firstLocalFile(in: fitFolder, suffix: ".metadata.json")
+            .flatMap { readJSONSidecar(FITSMetadata.self, from: $0) }
+        let imageMetadata = firstLocalFile(in: fitFolder, suffix: ".image-metadata.json")
+            .flatMap { readJSONSidecar(FITSImageHeaderMetadata.self, from: $0) }
+        let parsedImageMetadata = imageMetadata ?? fitFileURL.flatMap {
+            localFITSImageHeaderMetadata(from: $0)
+        }
+        let wcs = localWCSData(
+            imageMetadata: parsedImageMetadata,
+            metadata: metadata,
+            rawMetadata: rawMetadata
+        )
+
+        guard fitFileURL != nil
+            || imageFileURL != nil
+            || coamResult != nil
+            || rawMetadata != nil
+            || metadata != nil
+            || parsedImageMetadata != nil
+        else {
+            return nil
+        }
+
+        return LocalObservationFilterProduct(
+            filterName: coamResult?.filters.nilIfEmpty ?? filterFolder.lastPathComponent,
+            fitFileURL: fitFileURL,
+            imageFileURL: imageFileURL,
+            coamResult: coamResult,
+            rawMetadata: rawMetadata,
+            metadata: metadata,
+            imageMetadata: parsedImageMetadata,
+            wcs: wcs
+        )
+    }
+
+    private func localWCSData(
+        imageMetadata: FITSImageHeaderMetadata?,
+        metadata: FITSMetadata?,
+        rawMetadata: [String: QValue]?
+    ) -> FITSWCSData? {
+        if let imageMetadata, let wcs = FITSWCSData.wcsData(from: imageMetadata) {
+            return wcs
+        }
+        if let metadata, let wcs = FITSWCSData.wcsData(from: metadata) {
+            return wcs
+        }
+        if let rawMetadata, let wcs = FITSWCSData.wcsData(from: rawMetadata) {
+            return wcs
+        }
+        return nil
+    }
+
+    private func localFITSImageHeaderMetadata(from fitsURL: URL) -> FITSImageHeaderMetadata? {
+        guard let data = try? Data(contentsOf: fitsURL) else { return nil }
+        return parseFITSHeaderSummary(
+            data: data,
+            sourceURL: fitsURL,
+            remoteFileSizeBytes: localFileSize(fitsURL)
+        )?.preferredImageMetadata
+    }
+
+    private func sortedLocalObservationFilters(
+        _ products: [LocalObservationFilterProduct],
+        sortOrder: ObservationProductSortOrder
+    ) -> [LocalObservationFilterProduct] {
+        products.sorted { lhs, rhs in
+            switch sortOrder {
+            case .filter:
+                let leftWavelength = observationFilterWavelength(lhs.filterName)
+                let rightWavelength = observationFilterWavelength(rhs.filterName)
+                if !(leftWavelength == rightWavelength) {
+                    return leftWavelength < rightWavelength
+                }
+                return lhs.filterName < rhs.filterName
+            case .time:
+                let leftTime = lhs.coamResult.map(observationEffectiveTime) ?? 0
+                let rightTime = rhs.coamResult.map(observationEffectiveTime) ?? 0
+                if !(leftTime == rightTime) { return leftTime < rightTime }
+                return compareObservationFilters(lhs.filterName, rhs.filterName)
+            }
+        }
+    }
+
+    private func directoryChildren(of url: URL) -> [URL] {
+        guard
+            let children = try? FileManager.default.contentsOfDirectory(
+                at: url,
+                includingPropertiesForKeys: [.isDirectoryKey],
+                options: [.skipsHiddenFiles]
+            )
+        else {
+            return []
+        }
+        return children
+            .filter { ($0.resourceValue(forKey: .isDirectoryKey) ?? false) }
+            .sorted { $0.lastPathComponent < $1.lastPathComponent }
+    }
+
+    private func firstLocalFile(in directory: URL, extensions: [String]) -> URL? {
+        let allowed = Set(extensions.map { $0.lowercased() })
+        return localFiles(in: directory)
+            .first { allowed.contains($0.pathExtension.lowercased()) }
+    }
+
+    private func firstLocalFile(in directory: URL, suffix: String) -> URL? {
+        localFiles(in: directory)
+            .first { $0.lastPathComponent.lowercased().hasSuffix(suffix.lowercased()) }
+    }
+
+    private func localFiles(in directory: URL) -> [URL] {
+        guard
+            let files = try? FileManager.default.contentsOfDirectory(
+                at: directory,
+                includingPropertiesForKeys: [.isRegularFileKey],
+                options: [.skipsHiddenFiles]
+            )
+        else {
+            return []
+        }
+        return files
+            .filter { ($0.resourceValue(forKey: .isRegularFileKey) ?? false) }
+            .sorted { $0.lastPathComponent < $1.lastPathComponent }
     }
 
     internal func productFileName(
@@ -2233,5 +2468,17 @@ private final class FITSImageHeaderMetadataStreamFetcher: NSObject, URLSessionDa
         }
         let expected = response.expectedContentLength
         return expected > 0 ? expected : nil
+    }
+}
+
+private extension URL {
+    func resourceValue(forKey key: URLResourceKey) -> Bool? {
+        (try? resourceValues(forKeys: [key]))?.allValues[key] as? Bool
+    }
+}
+
+private extension String {
+    var nilIfEmpty: String? {
+        isEmpty ? nil : self
     }
 }
