@@ -293,6 +293,15 @@ final class FITSObservationProductTests: XCTestCase {
         }
 
         wait(for: [expectation], timeout: 2)
+
+        let sidecarURL = mast.fitsImageMetadataSidecarURL(targetName: targetName, product: coam)
+        XCTAssertTrue(FileManager.default.fileExists(atPath: sidecarURL.path))
+        let sidecarMetadata = try JSONDecoder().decode(
+            FITSImageHeaderMetadata.self,
+            from: Data(contentsOf: sidecarURL)
+        )
+        XCTAssertEqual(sidecarMetadata.width, 4654)
+        XCTAssertEqual(sidecarMetadata.height, 4648)
     }
 
     func testFetchFITSHeaderSummaryUsesRangeRequest() throws {

@@ -109,6 +109,118 @@ extension SwiftMAST {
                     .replacingOccurrences(of: ".fits", with: ".jpg"))
     }
 
+    internal func productFilterStorageFolder(targetName: String, product: CoamResult) -> URL {
+        productStorageFolder(target: targetName, product: product, contentType: .fit)
+            .deletingLastPathComponent()
+    }
+
+    internal func coamResultSidecarURL(targetName: String, product: CoamResult) -> URL {
+        productFilterStorageFolder(targetName: targetName, product: product)
+            .appendingPathComponent("coam-result.json")
+    }
+
+    internal func fitsRawMetadataSidecarURL(targetName: String, product: CoamResult) -> URL {
+        let baseName = productFileName(target: targetName, product: product, productType: .Fits)
+            .replacingOccurrences(of: ".fits", with: "")
+        return productStorageFolder(target: targetName, product: product, contentType: .fit)
+            .appendingPathComponent("\(baseName).raw-metadata.json")
+    }
+
+    internal func fitsStructuredMetadataSidecarURL(targetName: String, product: CoamResult) -> URL {
+        let baseName = productFileName(target: targetName, product: product, productType: .Fits)
+            .replacingOccurrences(of: ".fits", with: "")
+        return productStorageFolder(target: targetName, product: product, contentType: .fit)
+            .appendingPathComponent("\(baseName).metadata.json")
+    }
+
+    internal func fitsImageMetadataSidecarURL(targetName: String, product: CoamResult) -> URL {
+        let baseName = productFileName(target: targetName, product: product, productType: .Fits)
+            .replacingOccurrences(of: ".fits", with: "")
+        return productStorageFolder(target: targetName, product: product, contentType: .fit)
+            .appendingPathComponent("\(baseName).image-metadata.json")
+    }
+
+    internal func writeJSONSidecar<T: Encodable>(_ value: T, to url: URL) {
+        do {
+            try FileManager.default.createDirectory(
+                at: url.deletingLastPathComponent(),
+                withIntermediateDirectories: true,
+                attributes: nil
+            )
+            let encoder = JSONEncoder()
+            encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
+            encoder.dateEncodingStrategy = .iso8601
+            try encoder.encode(value).write(to: url, options: .atomic)
+        } catch {
+            log(.RequestError, message: "Unable to write JSON sidecar \(url.lastPathComponent): \(error.localizedDescription)")
+        }
+    }
+
+    internal func readJSONSidecar<T: Decodable>(_ type: T.Type, from url: URL) -> T? {
+        guard let data = try? Data(contentsOf: url) else { return nil }
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        return try? decoder.decode(type, from: data)
+    }
+
+    internal func saveCoamResultSidecar(targetName: String, product: CoamResult) {
+        writeJSONSidecar(product, to: coamResultSidecarURL(targetName: targetName, product: product))
+    }
+
+    internal func saveFITSMetadataSidecars(
+        targetName: String,
+        product: CoamResult,
+        fitsData: FitsData,
+        fitsURL: URL
+    ) {
+        writeJSONSidecar(
+            fitsData.metadata,
+            to: fitsRawMetadataSidecarURL(targetName: targetName, product: product)
+        )
+        if let structuredMetadata = fitsData.structuredMetadata {
+            writeJSONSidecar(
+                structuredMetadata,
+                to: fitsStructuredMetadataSidecarURL(targetName: targetName, product: product)
+            )
+        }
+        if let data = try? Data(contentsOf: fitsURL),
+           let imageMetadata = parseFITSHeaderSummary(
+               data: data,
+               sourceURL: fitsURL,
+               remoteFileSizeBytes: localFileSize(fitsURL)
+           )?.preferredImageMetadata {
+            writeJSONSidecar(
+                imageMetadata,
+                to: fitsImageMetadataSidecarURL(targetName: targetName, product: product)
+            )
+        }
+    }
+
+    internal func cachedFITSDataSidecars(
+        targetName: String,
+        product: CoamResult,
+        resultURL: URL
+    ) -> FitsData? {
+        let rawMetadataURL = fitsRawMetadataSidecarURL(targetName: targetName, product: product)
+        guard
+            let rawMetadata = readJSONSidecar(
+                [String: QValue].self,
+                from: rawMetadataURL
+            )
+        else {
+            return nil
+        }
+        let structuredMetadata = readJSONSidecar(
+            FITSMetadata.self,
+            from: fitsStructuredMetadataSidecarURL(targetName: targetName, product: product)
+        )
+        return FitsData(
+            metadata: rawMetadata,
+            url: resultURL,
+            structuredMetadata: structuredMetadata
+        )
+    }
+
     internal func existingLocalProductURL(
         targetName: String,
         product: CoamResult,
@@ -138,7 +250,19 @@ extension SwiftMAST {
         product: CoamResult,
         fitsURL: URL
     ) -> FitsData {
+        saveCoamResultSidecar(targetName: targetName, product: product)
         let jpegURL = localConvertedImageURL(targetName: targetName, product: product)
+        if FileManager.default.fileExists(atPath: jpegURL.path),
+           (localFileSize(jpegURL) ?? 0) > 0,
+           let cachedData = cachedFITSDataSidecars(
+               targetName: targetName,
+               product: product,
+               resultURL: jpegURL
+           ) {
+            appendFitsData(target: targetName, fitsData: cachedData)
+            return cachedData
+        }
+
         try? FileManager.default.createDirectory(
             at: jpegURL.deletingLastPathComponent(),
             withIntermediateDirectories: true,
@@ -146,6 +270,12 @@ extension SwiftMAST {
         )
         let fitsData = convertFitsToJpeg(url: fitsURL, writeToUrl: jpegURL)
         appendFitsData(target: targetName, fitsData: fitsData)
+        saveFITSMetadataSidecars(
+            targetName: targetName,
+            product: product,
+            fitsData: fitsData,
+            fitsURL: fitsURL
+        )
 
         let resultURL = fitsData.url ?? fitsURL
         return FitsData(
@@ -177,6 +307,7 @@ extension SwiftMAST {
         else {
             return nil
         }
+        saveCoamResultSidecar(targetName: targetName, product: product)
         log(.OK, message: "Cache hit: \(productType.id) \(imageURL.lastPathComponent) for \(targetName)")
         return FitsData(metadata: [:], url: imageURL)
     }
@@ -185,6 +316,12 @@ extension SwiftMAST {
         targetName: String,
         product: CoamResult
     ) -> FITSImageHeaderMetadata? {
+        let metadataURL = fitsImageMetadataSidecarURL(targetName: targetName, product: product)
+        if let metadata = readJSONSidecar(FITSImageHeaderMetadata.self, from: metadataURL) {
+            log(.OK, message: "Cache hit: FITS metadata sidecar \(metadataURL.lastPathComponent) for \(targetName)")
+            return metadata
+        }
+
         guard
             let fitsURL = existingLocalProductURL(
                 targetName: targetName, product: product, productType: .Fits),
@@ -194,11 +331,15 @@ extension SwiftMAST {
         }
 
         log(.OK, message: "Cache hit: FITS metadata \(fitsURL.lastPathComponent) for \(targetName)")
-        return parseFITSHeaderSummary(
+        let metadata = parseFITSHeaderSummary(
             data: data,
             sourceURL: fitsURL,
             remoteFileSizeBytes: localFileSize(fitsURL)
         )?.preferredImageMetadata
+        if let metadata {
+            writeJSONSidecar(metadata, to: metadataURL)
+        }
+        return metadata
     }
 
     internal func existingPS1CutoutURL(targetName: String) -> URL? {
@@ -294,6 +435,7 @@ extension SwiftMAST {
             let fileUrl = fitsDirectory.appendingPathComponent(fileName)
 
             try data.write(to: fileUrl)
+            saveCoamResultSidecar(targetName: targetName, product: product)
             print("saveAsset: FITS file saved to \(fileUrl)")
 
             let jpegUrl = imageDirectory.appendingPathComponent(
@@ -302,6 +444,12 @@ extension SwiftMAST {
 
             // Store the FITS metadata
             self.appendFitsData(target: targetName, fitsData: fitsData)
+            self.saveFITSMetadataSidecars(
+                targetName: targetName,
+                product: product,
+                fitsData: fitsData,
+                fitsURL: fileUrl
+            )
 
             // If JPEG conversion succeeded, use the JPEG URL; otherwise use the FITS file URL
             let resultUrl = fitsData.url ?? fileUrl
@@ -407,6 +555,7 @@ extension SwiftMAST {
             }
 
             try FileManager.default.moveItem(at: tempUrl, to: saveUrl)
+            saveCoamResultSidecar(targetName: targetName, product: product)
 
             // Add the fits or jpeg data to the target
             if productType == .Fits {
@@ -419,6 +568,12 @@ extension SwiftMAST {
 
                 // Store the FITS metadata
                 self.appendFitsData(target: targetName, fitsData: fitsData)
+                self.saveFITSMetadataSidecars(
+                    targetName: targetName,
+                    product: product,
+                    fitsData: fitsData,
+                    fitsURL: saveUrl
+                )
 
                 // Return the JPEG URL if conversion succeeded, otherwise return the FITS file URL
                 let resultUrl = fitsData.url ?? saveUrl
@@ -877,8 +1032,18 @@ extension SwiftMAST {
             maxByteCount: maxByteCount,
             fetchMode: fetchMode,
             session: session,
-            completion: completion
-        )
+        ) { metadata in
+            if let metadata {
+                self.writeJSONSidecar(
+                    metadata,
+                    to: self.fitsImageMetadataSidecarURL(
+                        targetName: targetName,
+                        product: coamResult
+                    )
+                )
+            }
+            completion(metadata)
+        }
     }
 
     internal func streamPreferredFITSImageHeaderMetadata(

@@ -2323,6 +2323,77 @@ final class SwiftMASTTests: XCTestCase {
         }
 
         wait(for: [expectation], timeout: 2.0)
+
+        let sidecarURL = mast.coamResultSidecarURL(targetName: targetName, product: product)
+        XCTAssertTrue(FileManager.default.fileExists(atPath: sidecarURL.path))
+        XCTAssertTrue(sidecarURL.path.hasSuffix("F606W/coam-result.json"))
+        let cachedCoam = try JSONDecoder().decode(
+            CoamResult.self,
+            from: Data(contentsOf: sidecarURL)
+        )
+        XCTAssertEqual(cachedCoam.obs_id, product.obs_id)
+        XCTAssertEqual(cachedCoam.filters, product.filters)
+    }
+
+    func testFITSMetadataSidecarsAreWrittenInsideFitFolder() throws {
+        let mast = SwiftMAST()
+        let targetName = "Metadata Sidecars \(UUID().uuidString)"
+        let product = makeCoamResult(
+            dataURL: "mast:JWST/product/test.fits",
+            obs_id: "jw-sidecar",
+            filters: "F770W",
+            obs_collection: "JWST"
+        )
+        defer { removeMASTTargetFolder(targetName, mast: mast) }
+
+        let metadata: [String: QValue] = [
+            "NAXIS": QValue(value: "2"),
+            "NAXIS1": QValue(value: "64"),
+            "NAXIS2": QValue(value: "32"),
+            "FILTER": QValue(value: "F770W"),
+        ]
+        let structured = FITSMetadata(
+            fileIdentifier: mast.productFileName(
+                target: targetName,
+                product: product,
+                productType: .Fits
+            ),
+            metadata: metadata
+        )
+        let fitsURL = mast.localProductURL(
+            targetName: targetName,
+            product: product,
+            productType: .Fits
+        )
+
+        mast.saveFITSMetadataSidecars(
+            targetName: targetName,
+            product: product,
+            fitsData: FitsData(metadata: metadata, url: nil, structuredMetadata: structured),
+            fitsURL: fitsURL
+        )
+
+        let rawURL = mast.fitsRawMetadataSidecarURL(targetName: targetName, product: product)
+        let structuredURL = mast.fitsStructuredMetadataSidecarURL(
+            targetName: targetName,
+            product: product
+        )
+
+        XCTAssertTrue(rawURL.path.contains("/F770W/fit/"))
+        XCTAssertTrue(structuredURL.path.contains("/F770W/fit/"))
+        XCTAssertTrue(FileManager.default.fileExists(atPath: rawURL.path))
+        XCTAssertTrue(FileManager.default.fileExists(atPath: structuredURL.path))
+
+        let decodedRaw = try JSONDecoder().decode(
+            [String: QValue].self,
+            from: Data(contentsOf: rawURL)
+        )
+        let decodedStructured = try JSONDecoder().decode(
+            FITSMetadata.self,
+            from: Data(contentsOf: structuredURL)
+        )
+        XCTAssertEqual(String(describing: decodedRaw["FILTER"]?.value ?? ""), "F770W")
+        XCTAssertEqual(decodedStructured.fileIdentifier, structured.fileIdentifier)
     }
 
     func testFetchHeaderSizesUsesPersistentCacheBeforeNetwork() throws {
