@@ -81,7 +81,7 @@ extension SwiftMAST {
     /// Reconstruct observation groups from products available in SwiftMAST's local cache.
     ///
     /// The scanner reads the standard product cache layout:
-    /// `MAST/<target>/<mission>/<observation>/<filter>/fit|image`.
+    /// `MAST/<target>/<mission>/<observation>/<filter>/fit|image|preview`.
     /// It attaches sidecar JSON when available, including `coam-result.json`,
     /// raw/structured FITS metadata, preferred image metadata, and normalized WCS data.
     public func getLocalObservationGroups(
@@ -216,9 +216,14 @@ extension SwiftMAST {
             ObservationProductContentType.image.rawValue,
             isDirectory: true
         )
+        let previewFolder = filterFolder.appendingPathComponent(
+            ObservationProductContentType.preview.rawValue,
+            isDirectory: true
+        )
 
         let fitFileURL = firstLocalFile(in: fitFolder, extensions: ["fits", "fit"])
         let imageFileURL = firstLocalFile(in: imageFolder, extensions: ["jpg", "jpeg", "png"])
+        let previewImageFileURL = firstLocalFile(in: previewFolder, extensions: ["jpg", "jpeg", "png"])
         let coamResult = readJSONSidecar(
             CoamResult.self,
             from: filterFolder.appendingPathComponent("coam-result.json")
@@ -240,6 +245,7 @@ extension SwiftMAST {
 
         guard fitFileURL != nil
             || imageFileURL != nil
+            || previewImageFileURL != nil
             || coamResult != nil
             || rawMetadata != nil
             || metadata != nil
@@ -252,6 +258,7 @@ extension SwiftMAST {
             filterName: coamResult?.filters.nilIfEmpty ?? filterFolder.lastPathComponent,
             fitFileURL: fitFileURL,
             imageFileURL: imageFileURL,
+            previewImageFileURL: previewImageFileURL,
             coamResult: coamResult,
             rawMetadata: rawMetadata,
             metadata: metadata,
@@ -370,7 +377,7 @@ extension SwiftMAST {
         product: CoamResult,
         productType: ProductType
     ) -> URL {
-        let contentType: ObservationProductContentType = productType == .Fits ? .fit : .image
+        let contentType: ObservationProductContentType = productType == .Fits ? .fit : .preview
         return productStorageFolder(target: targetName, product: product, contentType: contentType)
             .appendingPathComponent(
                 productFileName(target: targetName, product: product, productType: productType))
@@ -748,12 +755,18 @@ extension SwiftMAST {
         }
     }
 
-    /** Saves jpg/png only
+    /** Saves COAM jpegURL/preview image only.
+
+     Direct JPEG products are kept separate from FITS-rendered images so the
+     cache can preserve both the server-provided preview and the local render.
      no fits data
      */
     func saveImageFile(
         target: String, collection: String, filter: String, observationId: String? = nil,
-        productType: ProductType = .Jpeg, url: URL? = nil, data: Data? = nil
+        productType: ProductType = .Jpeg,
+        contentType: ObservationProductContentType = .image,
+        url: URL? = nil,
+        data: Data? = nil
     ) -> URL? {
         print("saveImageFile: \(target)_\(collection)_\(filter).\(productType.id)")
 
@@ -762,7 +775,7 @@ extension SwiftMAST {
             mission: collection,
             observationId: observationId ?? "unknown-observation",
             filter: filter,
-            contentType: .image
+            contentType: contentType
         )
 
         let safeTarget = storageSafePathComponent(target, fallback: "unknown-target")
@@ -805,7 +818,7 @@ extension SwiftMAST {
     ) {
         print("saveTempUrlToFile: \(targetName)")
 
-        let contentType: ObservationProductContentType = productType == .Fits ? .fit : .image
+        let contentType: ObservationProductContentType = productType == .Fits ? .fit : .preview
         let MASTDirectory = productStorageFolder(
             target: targetName, product: product, contentType: contentType)
         let imageDirectory = productStorageFolder(

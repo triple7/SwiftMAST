@@ -470,7 +470,7 @@ extension SwiftMAST {
                                 target: targetName,
                                 collection: product.observationMission?.rawValue ?? product.obs_collection,
                                 filter: product.filters, observationId: product.obs_id,
-                                productType: productType, data: data)
+                                productType: productType, contentType: .preview, data: data)
                             if let url = url {
                                 self.saveCoamResultSidecar(targetName: targetName, product: product)
                                 fitsData.append(FitsData(metadata: [:], url: url))

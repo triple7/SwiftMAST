@@ -2269,6 +2269,8 @@ final class SwiftMASTTests: XCTestCase {
             target: "NGC 628", product: product, contentType: .fit)
         let imageFolder = mast.productStorageFolder(
             target: "NGC 628", product: product, contentType: .image)
+        let previewFolder = mast.productStorageFolder(
+            target: "NGC 628", product: product, contentType: .preview)
 
         XCTAssertTrue(
             fitFolder.path.hasSuffix(
@@ -2277,6 +2279,10 @@ final class SwiftMASTTests: XCTestCase {
         XCTAssertTrue(
             imageFolder.path.hasSuffix(
                 "MAST/NGC_628/JWST/jw02666-o007_t004_miri_f1000w/F1000W-F770W/image"
+            ))
+        XCTAssertTrue(
+            previewFolder.path.hasSuffix(
+                "MAST/NGC_628/JWST/jw02666-o007_t004_miri_f1000w/F1000W-F770W/preview"
             ))
         XCTAssertEqual(
             mast.productFileName(target: "NGC 628", product: product, productType: .Fits),
@@ -2429,6 +2435,7 @@ final class SwiftMASTTests: XCTestCase {
                 product: product,
                 productType: .Jpeg
             )
+            let renderedImageURL = mast.localConvertedImageURL(targetName: targetName, product: product)
             try FileManager.default.createDirectory(
                 at: fitsURL.deletingLastPathComponent(),
                 withIntermediateDirectories: true
@@ -2437,8 +2444,13 @@ final class SwiftMASTTests: XCTestCase {
                 at: imageURL.deletingLastPathComponent(),
                 withIntermediateDirectories: true
             )
+            try FileManager.default.createDirectory(
+                at: renderedImageURL.deletingLastPathComponent(),
+                withIntermediateDirectories: true
+            )
             try Data([0x46, 0x49, 0x54, 0x53]).write(to: fitsURL)
             try Data([0xff, 0xd8, 0xff]).write(to: imageURL)
+            try Data([0xff, 0xd8, 0x00]).write(to: renderedImageURL)
 
             let rawMetadata: [String: QValue] = [
                 "NAXIS": QValue(value: "2"),
@@ -2485,6 +2497,7 @@ final class SwiftMASTTests: XCTestCase {
         let first = try XCTUnwrap(group.filters.first)
         XCTAssertNotNil(first.fitFileURL)
         XCTAssertNotNil(first.imageFileURL)
+        XCTAssertNotNil(first.previewImageFileURL)
         XCTAssertEqual(first.coamResult?.obs_id, f606w.obs_id)
         XCTAssertEqual(String(describing: first.rawMetadata?["FILTER"]?.value ?? ""), "F606W")
         XCTAssertEqual(first.metadata?.fileIdentifier, first.fitFileURL?.lastPathComponent)

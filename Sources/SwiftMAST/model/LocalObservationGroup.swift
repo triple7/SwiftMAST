@@ -13,6 +13,7 @@ public struct LocalObservationFilterProduct: Codable {
     public let filterName: String
     public let fitFileURL: URL?
     public let imageFileURL: URL?
+    public let previewImageFileURL: URL?
     public let coamResult: CoamResult?
     public let rawMetadata: [String: QValue]?
     public let metadata: FITSMetadata?
@@ -23,6 +24,7 @@ public struct LocalObservationFilterProduct: Codable {
         filterName: String,
         fitFileURL: URL?,
         imageFileURL: URL?,
+        previewImageFileURL: URL? = nil,
         coamResult: CoamResult?,
         rawMetadata: [String: QValue]?,
         metadata: FITSMetadata?,
@@ -32,6 +34,7 @@ public struct LocalObservationFilterProduct: Codable {
         self.filterName = filterName
         self.fitFileURL = fitFileURL
         self.imageFileURL = imageFileURL
+        self.previewImageFileURL = previewImageFileURL
         self.coamResult = coamResult
         self.rawMetadata = rawMetadata
         self.metadata = metadata

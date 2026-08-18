@@ -165,6 +165,7 @@ public struct ObservationFilterColor: Codable, Hashable {
 public enum ObservationProductContentType: String, Codable, CaseIterable, Identifiable {
     case fit
     case image
+    case preview
 
     public var id: String { rawValue }
 }
