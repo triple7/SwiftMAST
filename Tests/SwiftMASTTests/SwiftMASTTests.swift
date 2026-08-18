@@ -2493,6 +2493,48 @@ final class SwiftMASTTests: XCTestCase {
         XCTAssertEqual(first.wcs?.referenceCoordinate.ra ?? 0, 24.0, accuracy: 1e-12)
     }
 
+    func testDeleteCachedMASTDataRemovesOnlyRequestedTarget() throws {
+        let mast = SwiftMAST()
+        let targetName = "Delete Target \(UUID().uuidString)"
+        let otherTargetName = "Keep Target \(UUID().uuidString)"
+        defer {
+            try? mast.deleteCachedMASTData(targetName: targetName)
+            try? mast.deleteCachedMASTData(targetName: otherTargetName)
+        }
+
+        let product = makeCoamResult(
+            obs_id: "hst_delete_01_wfc3_f606w",
+            filters: "F606W",
+            obs_collection: "HST"
+        )
+        let deletedURL = mast.localProductURL(
+            targetName: targetName,
+            product: product,
+            productType: .Jpeg
+        )
+        let keptURL = mast.localProductURL(
+            targetName: otherTargetName,
+            product: product,
+            productType: .Jpeg
+        )
+
+        try FileManager.default.createDirectory(
+            at: deletedURL.deletingLastPathComponent(),
+            withIntermediateDirectories: true
+        )
+        try FileManager.default.createDirectory(
+            at: keptURL.deletingLastPathComponent(),
+            withIntermediateDirectories: true
+        )
+        try Data([1]).write(to: deletedURL)
+        try Data([2]).write(to: keptURL)
+
+        try mast.deleteCachedMASTData(targetName: targetName)
+
+        XCTAssertFalse(FileManager.default.fileExists(atPath: deletedURL.path))
+        XCTAssertTrue(FileManager.default.fileExists(atPath: keptURL.path))
+    }
+
     func testFetchHeaderSizesUsesPersistentCacheBeforeNetwork() throws {
         let mast = SwiftMAST()
         removeProductFileSizeCache(mast)

@@ -163,6 +163,45 @@ extension SwiftMAST {
         }
     }
 
+    /// Delete locally cached MAST products saved under SwiftMAST's `MAST` folder.
+    ///
+    /// Pass a target name to delete only that target's local cache. Omit
+    /// `targetName` to delete the entire local MAST cache folder. This also
+    /// clears matching in-memory target assets and FITS metadata.
+    public func deleteCachedMASTData(targetName: String? = nil) throws {
+        let cacheURL: URL
+        if let targetName {
+            cacheURL = mastStorageRootURL().appendingPathComponent(
+                storageSafePathComponent(targetName, fallback: "unknown-target"),
+                isDirectory: true
+            )
+        } else {
+            cacheURL = mastStorageRootURL()
+        }
+
+        if FileManager.default.fileExists(atPath: cacheURL.path) {
+            try FileManager.default.removeItem(at: cacheURL)
+        }
+
+        if let targetName {
+            targetAssets.removeValue(forKey: targetName)
+            fitsMetadataStore.removeValue(forKey: targetName)
+            log(
+                .OK,
+                message: "Deleted cached MAST data for \(targetName)",
+                metadata: ["event": "localMASTCacheDeleted", "targetName": targetName]
+            )
+        } else {
+            targetAssets.removeAll()
+            fitsMetadataStore.removeAll()
+            log(
+                .OK,
+                message: "Deleted cached MAST data",
+                metadata: ["event": "localMASTCacheDeleted"]
+            )
+        }
+    }
+
     private func localObservationFilterProduct(
         targetFolder: URL,
         missionFolder: URL,
