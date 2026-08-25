@@ -16,14 +16,28 @@ import UniformTypeIdentifiers
 extension SwiftMAST {
 
     func saveCGImageToUrl(image: CGImage, toURL: URL, dim: Int = 1) -> URL {
-        // Create an image destination using the provided URL
-
-        let destination = CGImageDestinationCreateWithURL(
-            toURL as CFURL, UTType.jpeg.identifier as CFString, dim, nil)!
+        let destinationType = imageDestinationTypeIdentifier(for: toURL)
+        guard
+            let destination = CGImageDestinationCreateWithURL(
+                toURL as CFURL, destinationType, dim, nil)
+        else {
+            return toURL
+        }
         CGImageDestinationAddImage(destination, image, nil)
 
         CGImageDestinationFinalize(destination)
         return toURL
+    }
+
+    private func imageDestinationTypeIdentifier(for url: URL) -> CFString {
+        switch url.pathExtension.lowercased() {
+        case "jpg", "jpeg":
+            return UTType.jpeg.identifier as CFString
+        case "png", "":
+            return UTType.png.identifier as CFString
+        default:
+            return UTType.png.identifier as CFString
+        }
     }
 
     private func getFitsMetaData(fits: FitsFile) -> [String: QValue] {
@@ -43,9 +57,9 @@ extension SwiftMAST {
         return metadata
     }
 
-    internal func convertFitsToJpeg(url: URL, writeToUrl: URL) -> FitsData {
+    internal func convertFitsToPNG(url: URL, writeToUrl: URL) -> FitsData {
 
-        guard let fits = readFITSFileSafely(at: url, context: "convertFitsToJpeg") else {
+        guard let fits = readFITSFileSafely(at: url, context: "convertFitsToPNG") else {
             return FitsData(metadata: [:], url: nil)
         }
         let metadata = getFitsMetaData(fits: fits)
@@ -77,7 +91,7 @@ extension SwiftMAST {
             naxisValue >= 2 && naxis1Value > 0 && naxis2Value > 0 && primeHasData
 
         print(
-            "convertFitsToJpeg: Primary HDU - NAXIS=\(naxisValue), NAXIS1=\(naxis1Value), NAXIS2=\(naxis2Value), primeHasData=\(primeHasData)"
+            "convertFitsToPNG: Primary HDU - NAXIS=\(naxisValue), NAXIS1=\(naxis1Value), NAXIS2=\(naxis2Value), primeHasData=\(primeHasData)"
         )
 
         // Try to decode from primary HDU first if it has image data
@@ -95,13 +109,13 @@ extension SwiftMAST {
                         structuredMetadata: structuredMetadata)
                 }
             } catch {
-                print("convertFitsToJpeg: Failed to decode primary HDU image: \(error)")
+                print("convertFitsToPNG: Failed to decode primary HDU image: \(error)")
             }
         }
 
         // If primary HDU has no image data or decoding failed, try extension HDUs
         // Look for ImageHDU extensions which contain actual image data
-        print("convertFitsToJpeg: Checking \(fits.HDUs.count) extension HDUs for image data")
+        print("convertFitsToPNG: Checking \(fits.HDUs.count) extension HDUs for image data")
 
         for (index, hdu) in fits.HDUs.enumerated() {
             // Check if this is an ImageHDU (not a table)
@@ -112,7 +126,7 @@ extension SwiftMAST {
                 let extHasData = imageHDU.dataUnit?.count ?? 0 > 0
 
                 print(
-                    "convertFitsToJpeg: Extension[\(index)] ImageHDU - NAXIS=\(extNaxis), NAXIS1=\(extNaxis1), NAXIS2=\(extNaxis2), hasData=\(extHasData)"
+                    "convertFitsToPNG: Extension[\(index)] ImageHDU - NAXIS=\(extNaxis), NAXIS1=\(extNaxis1), NAXIS2=\(extNaxis2), hasData=\(extHasData)"
                 )
 
                 if extNaxis >= 2 && extNaxis1 > 0 && extNaxis2 > 0 && extHasData {
@@ -124,13 +138,13 @@ extension SwiftMAST {
                         } else {
                             image = try imageHDU.decode(GrayscaleDecoder.self, ())
                         }
-                        print("convertFitsToJpeg: Successfully decoded Extension[\(index)]")
+                        print("convertFitsToPNG: Successfully decoded Extension[\(index)]")
                         return FitsData(
                             metadata: metadata,
                             url: saveCGImageToUrl(image: image, toURL: writeToUrl),
                             structuredMetadata: structuredMetadata)
                     } catch {
-                        print("convertFitsToJpeg: Failed to decode Extension[\(index)]: \(error)")
+                        print("convertFitsToPNG: Failed to decode Extension[\(index)]: \(error)")
                         // Continue to try next extension
                     }
                 }
@@ -138,7 +152,7 @@ extension SwiftMAST {
         }
 
         // No renderable image data found in any HDU
-        print("convertFitsToJpeg: No renderable image data found in primary or extension HDUs")
+        print("convertFitsToPNG: No renderable image data found in primary or extension HDUs")
         return FitsData(metadata: metadata, url: nil, structuredMetadata: structuredMetadata)
     }
 
@@ -1377,7 +1391,7 @@ extension SwiftMAST {
     }
 
     /// Extract science products from a local FITS file.
-    /// Each image HDU becomes a `ScienceProduct` with the image saved as JPEG
+    /// Each image HDU becomes a `ScienceProduct` with the image saved as PNG
     /// and structured ``FITSHeaderUnit`` headers.
     /// - Parameters:
     ///   - fitsUrl: Local URL of the FITS file
@@ -1405,7 +1419,7 @@ extension SwiftMAST {
             let naxis = headerInt("NAXIS", in: primaryHeaders)
             let naxis3 = headerInt("NAXIS3", in: primaryHeaders)
             let name = "\(baseName)_primary"
-            let jpegUrl = outputDirectory.appendingPathComponent("\(name).jpg")
+            let pngURL = outputDirectory.appendingPathComponent("\(name).png")
 
             do {
                 let image: CGImage
@@ -1414,7 +1428,7 @@ extension SwiftMAST {
                 } else {
                     image = try fits.prime.decode(GrayscaleDecoder.self, ())
                 }
-                let savedUrl = saveCGImageToUrl(image: image, toURL: jpegUrl)
+                let savedUrl = saveCGImageToUrl(image: image, toURL: pngURL)
                 products.append(
                     ScienceProduct(
                         name: name,
@@ -1446,7 +1460,7 @@ extension SwiftMAST {
             let extName = headerValue("EXTNAME", in: hduHeaders)?.rawString ?? ""
             let suffix = extName.isEmpty ? "ext\(index)" : extName
             let name = "\(baseName)_\(suffix)"
-            let jpegUrl = outputDirectory.appendingPathComponent("\(name).jpg")
+            let pngURL = outputDirectory.appendingPathComponent("\(name).png")
             let mergedHeaders = mergeHeaderUnits(primary: primaryHeaders, hdu: hduHeaders)
 
             do {
@@ -1456,7 +1470,7 @@ extension SwiftMAST {
                 } else {
                     image = try imageHDU.decode(GrayscaleDecoder.self, ())
                 }
-                let savedUrl = saveCGImageToUrl(image: image, toURL: jpegUrl)
+                let savedUrl = saveCGImageToUrl(image: image, toURL: pngURL)
                 products.append(
                     ScienceProduct(
                         name: name,

@@ -1,3 +1,4 @@
+import CoreGraphics
 import FITS
 import SwiftQValue
 import XCTest
@@ -1094,6 +1095,7 @@ final class SwiftMASTTests: XCTestCase {
                 product.sourceFileLocation, fitsUrl, "Source should point to the FITS file")
             XCTAssertEqual(product.coamResult.obs_id, "obs-1", "CoamResult should be attached")
             XCTAssertFalse(product.headers.isEmpty, "Headers should not be empty")
+            XCTAssertEqual(product.imageLocation?.pathExtension, "png")
 
             // Verify structured headers have descriptions
             let bitpixHeader = product.header(forKeyword: "BITPIX")
@@ -1138,6 +1140,7 @@ final class SwiftMASTTests: XCTestCase {
             XCTAssertFalse(product.name.isEmpty)
             XCTAssertEqual(product.sourceFileLocation, fitsUrl)
             XCTAssertFalse(product.headers.isEmpty)
+            XCTAssertEqual(product.imageLocation?.pathExtension, "png")
             // Verify keyword lookups work
             XCTAssertNotNil(product.header(forKeyword: "NAXIS"))
             print("  Product: \(product.name)")
@@ -1175,6 +1178,7 @@ final class SwiftMASTTests: XCTestCase {
         // Check that image HDU products have merged headers (primary + individual)
         for product in products {
             XCTAssertFalse(product.headers.isEmpty)
+            XCTAssertEqual(product.imageLocation?.pathExtension, "png")
             // Products from extension HDUs should have XTENSION in their headers
             // (from the merged individual headers)
             print("  Product: \(product.name)")
@@ -2436,6 +2440,7 @@ final class SwiftMASTTests: XCTestCase {
                 productType: .Jpeg
             )
             let renderedImageURL = mast.localConvertedImageURL(targetName: targetName, product: product)
+            XCTAssertEqual(renderedImageURL.pathExtension, "png")
             try FileManager.default.createDirectory(
                 at: fitsURL.deletingLastPathComponent(),
                 withIntermediateDirectories: true
@@ -2450,7 +2455,7 @@ final class SwiftMASTTests: XCTestCase {
             )
             try Data([0x46, 0x49, 0x54, 0x53]).write(to: fitsURL)
             try Data([0xff, 0xd8, 0xff]).write(to: imageURL)
-            try Data([0xff, 0xd8, 0x00]).write(to: renderedImageURL)
+            try Data([0x89, 0x50, 0x4e, 0x47]).write(to: renderedImageURL)
 
             let rawMetadata: [String: QValue] = [
                 "NAXIS": QValue(value: "2"),
@@ -2504,6 +2509,48 @@ final class SwiftMASTTests: XCTestCase {
         XCTAssertEqual(first.wcs?.width, 64)
         XCTAssertEqual(first.wcs?.height, 32)
         XCTAssertEqual(first.wcs?.referenceCoordinate.ra ?? 0, 24.0, accuracy: 1e-12)
+    }
+
+    func testSaveCGImageToUrlWritesPNGForPNGExtension() throws {
+        let mast = SwiftMAST()
+        let outputURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString)
+            .appendingPathExtension("png")
+        defer { try? FileManager.default.removeItem(at: outputURL) }
+
+        let colorSpace = CGColorSpaceCreateDeviceRGB()
+        guard
+            let context = CGContext(
+                data: nil,
+                width: 1,
+                height: 1,
+                bitsPerComponent: 8,
+                bytesPerRow: 4,
+                space: colorSpace,
+                bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
+            )
+        else {
+            XCTFail("Unable to create test image context")
+            return
+        }
+
+        context.setFillColor(CGColor(red: 1, green: 0, blue: 0, alpha: 0.5))
+        context.fill(CGRect(x: 0, y: 0, width: 1, height: 1))
+
+        guard let image = context.makeImage() else {
+            XCTFail("Unable to create test image")
+            return
+        }
+
+        let savedURL = mast.saveCGImageToUrl(image: image, toURL: outputURL)
+        let data = try Data(contentsOf: savedURL)
+        let signature: [UInt8] = data.withUnsafeBytes { rawBuffer in
+            let bytes = rawBuffer.bindMemory(to: UInt8.self)
+            return Array(bytes[0..<8])
+        }
+
+        XCTAssertEqual(savedURL.pathExtension, "png")
+        XCTAssertEqual(signature, [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])
     }
 
     func testDeleteCachedMASTDataRemovesOnlyRequestedTarget() throws {

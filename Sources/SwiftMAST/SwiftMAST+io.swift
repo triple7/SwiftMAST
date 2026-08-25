@@ -228,7 +228,7 @@ extension SwiftMAST {
         productStorageFolder(target: targetName, product: product, contentType: .image)
             .appendingPathComponent(
                 productFileName(target: targetName, product: product, productType: .Fits)
-                    .replacingOccurrences(of: ".fits", with: ".jpg"))
+                    .replacingOccurrences(of: ".fits", with: ".png"))
     }
 
     internal func productFilterStorageFolder(targetName: String, product: CoamResult) -> URL {
@@ -373,24 +373,24 @@ extension SwiftMAST {
         fitsURL: URL
     ) -> FitsData {
         saveCoamResultSidecar(targetName: targetName, product: product)
-        let jpegURL = localConvertedImageURL(targetName: targetName, product: product)
-        if FileManager.default.fileExists(atPath: jpegURL.path),
-           (localFileSize(jpegURL) ?? 0) > 0,
+        let pngURL = localConvertedImageURL(targetName: targetName, product: product)
+        if FileManager.default.fileExists(atPath: pngURL.path),
+           (localFileSize(pngURL) ?? 0) > 0,
            let cachedData = cachedFITSDataSidecars(
                targetName: targetName,
                product: product,
-               resultURL: jpegURL
+               resultURL: pngURL
            ) {
             appendFitsData(target: targetName, fitsData: cachedData)
             return cachedData
         }
 
         try? FileManager.default.createDirectory(
-            at: jpegURL.deletingLastPathComponent(),
+            at: pngURL.deletingLastPathComponent(),
             withIntermediateDirectories: true,
             attributes: nil
         )
-        let fitsData = convertFitsToJpeg(url: fitsURL, writeToUrl: jpegURL)
+        let fitsData = convertFitsToPNG(url: fitsURL, writeToUrl: pngURL)
         appendFitsData(target: targetName, fitsData: fitsData)
         saveFITSMetadataSidecars(
             targetName: targetName,
@@ -557,9 +557,9 @@ extension SwiftMAST {
             saveCoamResultSidecar(targetName: targetName, product: product)
             print("saveAsset: FITS file saved to \(fileUrl)")
 
-            let jpegUrl = imageDirectory.appendingPathComponent(
-                fileName.replacingOccurrences(of: ".fits", with: ".jpg"))
-            let fitsData = convertFitsToJpeg(url: fileUrl, writeToUrl: jpegUrl)
+            let pngURL = imageDirectory.appendingPathComponent(
+                fileName.replacingOccurrences(of: ".fits", with: ".png"))
+            let fitsData = convertFitsToPNG(url: fileUrl, writeToUrl: pngURL)
 
             // Store the FITS metadata
             self.appendFitsData(target: targetName, fitsData: fitsData)
@@ -570,16 +570,16 @@ extension SwiftMAST {
                 fitsURL: fileUrl
             )
 
-            // If JPEG conversion succeeded, use the JPEG URL; otherwise use the FITS file URL
+            // If PNG conversion succeeded, use the PNG URL; otherwise use the FITS file URL
             let resultUrl = fitsData.url ?? fileUrl
             let resultFitsData = FitsData(
                 metadata: fitsData.metadata, url: resultUrl,
                 structuredMetadata: fitsData.structuredMetadata)
 
             if fitsData.url != nil {
-                print("saveAsset: JPEG image saved to \(jpegUrl)")
+                print("saveAsset: PNG image saved to \(pngURL)")
             } else {
-                print("saveAsset: JPEG conversion failed, returning FITS URL instead")
+                print("saveAsset: PNG conversion failed, returning FITS URL instead")
             }
 
             DispatchQueue.main.async {
@@ -686,10 +686,10 @@ extension SwiftMAST {
             if productType == .Fits {
                 print("saveTempUrlToFile: FITS file saved to \(saveUrl)")
 
-                // Convert FITS to JPEG for viewing
-                let jpegUrl = imageDirectory.appendingPathComponent(
-                    fileExtension.replacingOccurrences(of: ".fits", with: ".jpg"))
-                let fitsData = convertFitsToJpeg(url: saveUrl, writeToUrl: jpegUrl)
+                // Convert FITS to PNG for viewing
+                let pngURL = imageDirectory.appendingPathComponent(
+                    fileExtension.replacingOccurrences(of: ".fits", with: ".png"))
+                let fitsData = convertFitsToPNG(url: saveUrl, writeToUrl: pngURL)
 
                 // Store the FITS metadata
                 self.appendFitsData(target: targetName, fitsData: fitsData)
@@ -700,13 +700,13 @@ extension SwiftMAST {
                     fitsURL: saveUrl
                 )
 
-                // Return the JPEG URL if conversion succeeded, otherwise return the FITS file URL
+                // Return the PNG URL if conversion succeeded, otherwise return the FITS file URL
                 let resultUrl = fitsData.url ?? saveUrl
 
                 if fitsData.url != nil {
-                    print("saveTempUrlToFile: JPEG image saved to \(jpegUrl)")
+                    print("saveTempUrlToFile: PNG image saved to \(pngURL)")
                 } else {
-                    print("saveTempUrlToFile: JPEG conversion failed, returning FITS URL instead")
+                    print("saveTempUrlToFile: PNG conversion failed, returning FITS URL instead")
                 }
 
                 DispatchQueue.main.async {
