@@ -205,6 +205,7 @@ public struct CoamResult: Codable, Comparable, Hashable, CustomStringConvertible
     public var dataURLSizeBytes: Int64? = nil
     public var jpegURLSizeBytes: Int64? = nil
     public var fitsImageHeaderMetadata: FITSImageHeaderMetadata? = nil
+    public var localResources: CoamLocalResources? = nil
 
     public var preferredDownloadSizeBytes: Int64? {
         dataURLSizeBytes ?? jpegURLSizeBytes
@@ -297,7 +298,8 @@ extension CoamResult {
         wavelength_region: String,
         dataURLSizeBytes: Int64? = nil,
         jpegURLSizeBytes: Int64? = nil,
-        fitsImageHeaderMetadata: FITSImageHeaderMetadata? = nil
+        fitsImageHeaderMetadata: FITSImageHeaderMetadata? = nil,
+        localResources: CoamLocalResources? = nil
     ) {
         self.calib_level = calib_level
         self.dataRights = dataRights
@@ -337,107 +339,46 @@ extension CoamResult {
         self.dataURLSizeBytes = dataURLSizeBytes
         self.jpegURLSizeBytes = jpegURLSizeBytes
         self.fitsImageHeaderMetadata = fitsImageHeaderMetadata
+        self.localResources = localResources
     }
 
     public init(data: [QValue]) {
-        self.calib_level = data[0].value as! Int
-        self.dataRights = data[1].value as! String
-        self.dataURL = data[2].value as! String
-        self.dataproduct_type = data[3].value as! String
-        if let distance = data[4].value as? Int {
-            self.distance = distance
-        } else if let distance = data[4].value as? Float {
-            self.distance = Int(distance)
-        } else {
-            self.distance = 0
-        }
-        if let em_max = data[5].value as? Int {
-            self.em_max = em_max
-        } else if let em_max = data[5].value as? Float {
-            self.em_max = Int(em_max)
-        } else {
-            self.em_max = 0
-        }
-        if let em_min = data[6].value as? Int {
-            self.em_min = em_min
-        } else if let em_min = data[6].value as? Float {
-            self.em_min = Int(em_min)
-        } else {
-            self.em_min = 0
-        }
-        self.filters = data[7].value as! String
-        self.instrument_name = data[8].value as! String
-        self.intentType = data[9].value as! String
-        self.jpegURL = data[10].value as! String
-        if let mtFlag = data[11].value as? Bool {
-            self.mtFlag = mtFlag
-        } else {
-            self.mtFlag = false
-        }
-        if let objID = data[10].value as? Int {
-            self.objID = objID
-        } else {
-            self.objID = 0
-        }
-        self.obs_collection = data[13].value as! String
-        self.obs_id = data[14].value as! String
-        self.obs_title = data[15].value as! String
-        if let obsid = data[16].value as? Int {
-            self.obsid = obsid
-        } else {
-            self.obsid = 0
-        }
-        self.project = data[17].value as! String
-        self.proposal_id = data[18].value as! String
-        self.proposal_pi = data[19].value as! String
-        self.proposal_type = data[20].value as! String
-        self.provenance_name = data[21].value as! String
-        self.s_dec = data[22]
-        self.s_ra = data[23]
-        self.s_region = data[24].value as! String
-        self.s_region_area = SpaceRegionArea.squareDegrees(from: self.s_region)
-        if let sequence_number = data[25].value as? Int {
-            self.sequence_number = sequence_number
-        } else {
-            self.sequence_number = 0
-        }
-        if let srcDen = data[26].value as? Int {
-            self.srcDen = srcDen
-        } else {
-            self.srcDen = 0
-        }
-        if let t_exptime = data[27].value as? Float {
-            self.t_exptime = t_exptime
-        } else if let t_exptime = data[27].value as? Int {
-            self.t_exptime = Float(t_exptime)
-        } else {
-            self.t_exptime = 0
-        }
-        if let t_max = data[28].value as? Float {
-            self.t_max = t_max
-        } else if let t_max = data[28].value as? Int {
-            self.t_max = Float(t_max)
-        } else {
-            self.t_max = 0
-        }
-        if let t_min = data[29].value as? Float {
-            self.t_min = t_min
-        } else if let t_min = data[29].value as? Int {
-            self.t_min = Float(t_min)
-        } else {
-            self.t_min = 0
-        }
-        if let t_obs_release = data[30].value as? Float {
-            self.t_obs_release = t_obs_release
-        } else if let t_obs_release = data[30].value as? Int {
-            self.t_obs_release = Float(t_obs_release)
-        } else {
-            self.t_obs_release = 0
-        }
-        self.target_classification = data[31].value as! String
-        self.target_name = data[32].value as! String
-        self.wavelength_region = data[33].value as! String
-        self.fitsImageHeaderMetadata = nil
+        self.init(
+            calib_level: Self.intValue(data, at: 0),
+            dataRights: Self.stringValue(data, at: 1),
+            dataURL: Self.stringValue(data, at: 2),
+            dataproduct_type: Self.stringValue(data, at: 3),
+            distance: Self.intValue(data, at: 4),
+            em_max: Self.intValue(data, at: 5),
+            em_min: Self.intValue(data, at: 6),
+            filters: Self.stringValue(data, at: 7),
+            instrument_name: Self.stringValue(data, at: 8),
+            intentType: Self.stringValue(data, at: 9),
+            jpegURL: Self.stringValue(data, at: 10),
+            mtFlag: Self.boolValue(data, at: 11),
+            objID: Self.intValue(data, at: 12),
+            obs_collection: Self.stringValue(data, at: 13),
+            obs_id: Self.stringValue(data, at: 14),
+            obs_title: Self.stringValue(data, at: 15),
+            obsid: Self.intValue(data, at: 16),
+            project: Self.stringValue(data, at: 17),
+            proposal_id: Self.stringValue(data, at: 18),
+            proposal_pi: Self.stringValue(data, at: 19),
+            proposal_type: Self.stringValue(data, at: 20),
+            provenance_name: Self.stringValue(data, at: 21),
+            s_dec: Self.qValue(data, at: 22),
+            s_ra: Self.qValue(data, at: 23),
+            s_region: Self.stringValue(data, at: 24),
+            sequence_number: Self.intValue(data, at: 25),
+            srcDen: Self.intValue(data, at: 26),
+            t_exptime: Self.floatValue(data, at: 27),
+            t_max: Self.floatValue(data, at: 28),
+            t_min: Self.floatValue(data, at: 29),
+            t_obs_release: Self.floatValue(data, at: 30),
+            target_classification: Self.stringValue(data, at: 31),
+            target_name: Self.stringValue(data, at: 32),
+            wavelength_region: Self.stringValue(data, at: 33)
+        )
     }
 
     public func withFileSizes(dataURLSizeBytes: Int64?, jpegURLSizeBytes: Int64?) -> CoamResult {
@@ -456,6 +397,46 @@ extension CoamResult {
     private static func byteCountDescription(_ byteCount: Int64?) -> String? {
         guard let byteCount else { return nil }
         return ByteCountFormatter.string(fromByteCount: byteCount, countStyle: .file)
+    }
+
+    private static func qValue(_ data: [QValue], at index: Int) -> QValue {
+        guard data.indices.contains(index) else { return QValue(value: "") }
+        return data[index]
+    }
+
+    private static func stringValue(_ data: [QValue], at index: Int) -> String {
+        let value = qValue(data, at: index).value
+        if let string = value as? String { return string }
+        return String(describing: value)
+    }
+
+    private static func intValue(_ data: [QValue], at index: Int) -> Int {
+        let value = qValue(data, at: index).value
+        if let int = value as? Int { return int }
+        if let int64 = value as? Int64 { return Int(int64) }
+        if let float = value as? Float { return Int(float) }
+        if let double = value as? Double { return Int(double) }
+        if let string = value as? String { return Int(string) ?? 0 }
+        return 0
+    }
+
+    private static func floatValue(_ data: [QValue], at index: Int) -> Float {
+        let value = qValue(data, at: index).value
+        if let float = value as? Float { return float }
+        if let double = value as? Double { return Float(double) }
+        if let int = value as? Int { return Float(int) }
+        if let string = value as? String { return Float(string) ?? 0 }
+        return 0
+    }
+
+    private static func boolValue(_ data: [QValue], at index: Int) -> Bool {
+        let value = qValue(data, at: index).value
+        if let bool = value as? Bool { return bool }
+        if let int = value as? Int { return int != 0 }
+        if let string = value as? String {
+            return ["true", "1", "yes"].contains(string.lowercased())
+        }
+        return false
     }
 
 }

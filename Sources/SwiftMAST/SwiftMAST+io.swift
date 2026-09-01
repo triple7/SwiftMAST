@@ -158,6 +158,32 @@ extension SwiftMAST {
         }
     }
 
+    /// Return every product discovered in the local MAST cache as a canonical
+    /// ``CoamResult`` enriched with its local files and FITS metadata.
+    ///
+    /// Products without a `coam-result.json` sidecar are reconstructed from the
+    /// cache layout and available FITS metadata.
+    public func getLocalCoamResults(
+        targetName: String? = nil,
+        sortOrder: ObservationProductSortOrder = .filter
+    ) -> [CoamResult] {
+        getLocalObservationGroups(targetName: targetName, sortOrder: sortOrder)
+            .flatMap(\.filters)
+            .compactMap(\.coamResult)
+    }
+
+    /// Reconstruct local cache contents using the same observation-group model
+    /// returned by remote MAST searches.
+    public func getCachedObservationGroups(
+        targetName: String? = nil,
+        sortOrder: ObservationProductSortOrder = .filter
+    ) -> [ObservationGroup] {
+        buildObservationGroups(
+            from: getLocalCoamResults(targetName: targetName, sortOrder: sortOrder),
+            sortOrder: sortOrder
+        )
+    }
+
     /// Delete locally cached MAST products saved under SwiftMAST's `MAST` folder.
     ///
     /// Pass a target name to delete only that target's local cache. Omit
@@ -747,15 +773,14 @@ extension SwiftMAST {
         let fitFileURL = firstLocalFile(in: fitFolder, extensions: ["fits", "fit"])
         let imageFileURL = firstLocalFile(in: imageFolder, extensions: ["jpg", "jpeg", "png"])
         let previewImageFileURL = firstLocalFile(in: previewFolder, extensions: ["jpg", "jpeg", "png"])
-        let coamResult = readJSONSidecar(
-            CoamResult.self,
-            from: filterFolder.appendingPathComponent("coam-result.json")
-        )
-        let rawMetadata = firstLocalFile(in: fitFolder, suffix: ".raw-metadata.json")
+        let rawMetadataURL = firstLocalFile(in: fitFolder, suffix: ".raw-metadata.json")
+        let structuredMetadataURL = firstLocalFile(in: fitFolder, suffix: ".metadata.json")
+        let imageMetadataURL = firstLocalFile(in: fitFolder, suffix: ".image-metadata.json")
+        let rawMetadata = rawMetadataURL
             .flatMap { readJSONSidecar([String: QValue].self, from: $0) }
-        let metadata = firstLocalFile(in: fitFolder, suffix: ".metadata.json")
+        let metadata = structuredMetadataURL
             .flatMap { readJSONSidecar(FITSMetadata.self, from: $0) }
-        let imageMetadata = firstLocalFile(in: fitFolder, suffix: ".image-metadata.json")
+        let imageMetadata = imageMetadataURL
             .flatMap { readJSONSidecar(FITSImageHeaderMetadata.self, from: $0) }
         let parsedImageMetadata = imageMetadata ?? fitFileURL.flatMap {
             localFITSImageHeaderMetadata(from: $0)
@@ -766,10 +791,34 @@ extension SwiftMAST {
             rawMetadata: rawMetadata
         )
 
+        let resources = CoamLocalResources(
+            fitsPath: fitFileURL?.path,
+            imagePath: imageFileURL?.path,
+            previewImagePath: previewImageFileURL?.path,
+            rawMetadataPath: rawMetadataURL?.path,
+            structuredMetadataPath: structuredMetadataURL?.path,
+            imageMetadataPath: imageMetadataURL?.path
+        )
+        let sidecarURL = filterFolder.appendingPathComponent("coam-result.json")
+        let storedCoamResult = readJSONSidecar(CoamResult.self, from: sidecarURL)
+        let resolvedImageMetadata = parsedImageMetadata ?? storedCoamResult?.fitsImageHeaderMetadata
+        let coamResult = (storedCoamResult ?? CoamResult(
+            localTargetName: targetFolder.lastPathComponent,
+            mission: missionFolder.lastPathComponent,
+            observationID: observationFolder.lastPathComponent,
+            filter: filterFolder.lastPathComponent,
+            instrument: metadata?.instrument ?? "",
+            localResources: resources,
+            rawMetadata: rawMetadata,
+            fitsImageHeaderMetadata: resolvedImageMetadata
+        ))
+        .withFITSImageHeaderMetadata(resolvedImageMetadata)
+        .withLocalResources(resources)
+
         guard fitFileURL != nil
             || imageFileURL != nil
             || previewImageFileURL != nil
-            || coamResult != nil
+            || storedCoamResult != nil
             || rawMetadata != nil
             || metadata != nil
             || parsedImageMetadata != nil
@@ -778,7 +827,7 @@ extension SwiftMAST {
         }
 
         return LocalObservationFilterProduct(
-            filterName: coamResult?.filters.nilIfEmpty ?? filterFolder.lastPathComponent,
+            filterName: coamResult.filters.nilIfEmpty ?? filterFolder.lastPathComponent,
             fitFileURL: fitFileURL,
             imageFileURL: imageFileURL,
             previewImageFileURL: previewImageFileURL,
