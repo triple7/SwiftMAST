@@ -1,0 +1,527 @@
+flowchart LR
+    subgraph group0["CoamLocalResources"]
+        direction TB
+        fn0["init(fitsPath: String?, imagePath: String?, previewImagePath: String?, rawMetadataPath: String?, structuredMetadataPath: String?, imageMetadataPath: String?, cachedAt: Date?) → Void"]
+    end
+    subgraph group1["CoamResult"]
+        direction TB
+        fn1["&lt;(lhs: CoamResult, rhs: CoamResult) → Bool"]
+        fn2["==(lhs: CoamResult, rhs: CoamResult) → Bool"]
+        fn3["hash(into: inout Hasher) → Void"]
+        fn4["init(calib_level: Int, dataRights: String, dataURL: String, dataproduct_type: String, distance: Int, em_max: Int, em_min: Int, filters: String, instrument_name: String, intentType: String, jpegURL: String, mtFlag: Bool, objID: Int, obs_collection: String, obs_id: String, obs_title: String, obsid: Int, project: String, proposal_id: String, proposal_pi: String, proposal_type: String, provenance_name: String, s_dec: QValue, s_ra: QValue, s_region: String, sequence_number: Int, srcDen: Int, t_exptime: Float, t_max: Float, t_min: Float, t_obs_release: Float, target_classification: String, target_name: String, wavelength_region: String, dataURLSizeBytes: Int64?, jpegURLSizeBytes: Int64?, fitsImageHeaderMetadata: FITSImageHeaderMetadata?, localResources: CoamLocalResources?) → Void"]
+        fn5["init(data: [QValue]) → Void"]
+        fn6["init(localTargetName: String, mission: String, observationID: String, filter: String, instrument: String, dataProductType: String, localResources: CoamLocalResources, rawMetadata: [String: QValue]?, fitsImageHeaderMetadata: FITSImageHeaderMetadata?) → Void"]
+        fn7["matchesObservationFilterBands(_: [String]) → Bool"]
+        fn8["withFITSImageHeaderMetadata(_: FITSImageHeaderMetadata?) → CoamResult"]
+        fn9["withFileSizes(dataURLSizeBytes: Int64?, jpegURLSizeBytes: Int64?) → CoamResult"]
+        fn10["withLocalResources(_: CoamLocalResources?) → CoamResult"]
+    end
+    subgraph group2["Coordinate"]
+        direction TB
+        fn11["init(ra: Double, dec: Double) → Void"]
+    end
+    subgraph group3["FITSHDURoleClassifier"]
+        direction TB
+        fn12["classify(headers: [FITSHeaderUnit], sourceFilename: String?) → FITSHDURole"]
+    end
+    subgraph group4["FITSHeaderKeywords"]
+        direction TB
+        fn13["categoricalOptions(for: String) → [CategoricalOption]?"]
+        fn14["category(for: String) → HeaderKeywordCategory"]
+        fn15["description(for: String) → String"]
+        fn16["isCategorical(keyword: String) → Bool"]
+        fn17["valueDescription(for: String, value: FITSHeaderValue) → String?"]
+    end
+    subgraph group5["FITSHeaderValue"]
+        direction TB
+        fn18["encode(to: Encoder) → Void"]
+        fn19["init(from: Decoder) → Void"]
+    end
+    subgraph group6["FITSImageHeaderMetadata"]
+        direction TB
+        fn20["init(sourceURL: URL, bytesFetched: Int, remoteFileSizeBytes: Int64?, hdu: FITSHeaderHDUSummary) → Void"]
+    end
+    subgraph group7["FITSMetadata"]
+        direction TB
+        fn21["init(fileIdentifier: String, metadata: [String: QValue]) → Void"]
+    end
+    subgraph group8["FITSObservationProduct"]
+        direction TB
+        fn22["weightPlane(matching: FITSImagePlane) → FITSImagePlane?"]
+    end
+    subgraph group9["FITSRaDesys"]
+        direction TB
+        fn23["init(fitsValue: String) → Void"]
+    end
+    subgraph group10["FITSTimeSys"]
+        direction TB
+        fn24["init(fitsValue: String) → Void"]
+    end
+    subgraph group11["FITSWCS"]
+        direction TB
+        fn25["cornerWorldCoordinates(width: Int, height: Int) → [FITSWorldCoordinate]"]
+        fn26["init(crpix1: Double?, crpix2: Double?, crval1: Double?, crval2: Double?, ctype1: String?, ctype2: String?, cd1_1: Double?, cd1_2: Double?, cd2_1: Double?, cd2_2: Double?, cdelt1: Double?, cdelt2: Double?, pc1_1: Double?, pc1_2: Double?, pc2_1: Double?, pc2_2: Double?) → Void"]
+        fn27["init(headers: [FITSHeaderUnit]) → Void"]
+        fn28["isApproximatelyEqual(to: FITSWCS, tolerance: Double) → Bool"]
+        fn29["pixelCoordinate(ra: Double, dec: Double) → FITSPixelCoordinate?"]
+        fn30["worldCoordinate(x: Double, y: Double) → FITSWorldCoordinate"]
+    end
+    subgraph group12["FITSWCSData"]
+        direction TB
+        fn31["init(wcs: FITSWCS, width: Int?, height: Int?) → Void"]
+        fn32["wcsData(from: FITSHeaderHDUSummary) → FITSWCSData?"]
+        fn33["wcsData(from: FITSImageHeaderMetadata) → FITSWCSData?"]
+        fn34["wcsData(from: FITSMetadata) → FITSWCSData?"]
+        fn35["wcsData(from: ScienceProduct) → FITSWCSData?"]
+        fn36["wcsData(from: [FITSHeaderUnit], width: Int?, height: Int?) → FITSWCSData?"]
+        fn37["wcsData(from: [String: QValue]) → FITSWCSData?"]
+    end
+    subgraph group13["FITSXtension"]
+        direction TB
+        fn38["init(fitsValue: String) → Void"]
+    end
+    subgraph group14["Global"]
+        direction TB
+        fn39["compareJWSTFilters(_: String, _: String) → Bool"]
+        fn40["compareJWSTProducts(_: CoamResult, _: CoamResult, by: JWSTProductSortOrder) → Bool"]
+        fn41["compareObservationFilters(_: String, _: String) → Bool"]
+        fn42["compareObservationProducts(_: CoamResult, _: CoamResult, by: ObservationProductSortOrder) → Bool"]
+        fn43["hstObservationGroupKey(_: String) → String"]
+        fn44["jwstEffectiveTime(_: CoamResult) → Float"]
+        fn45["jwstFilterWavelength(_: String) → Int"]
+        fn46["jwstObservationGroupKey(_: String) → String"]
+        fn47["observationEffectiveTime(_: CoamResult) → Float"]
+        fn48["observationFilterWavelength(_: String) → Int"]
+        fn49["observationGroupKey(_: CoamResult) → String"]
+    end
+    subgraph group15["HSTFilter"]
+        direction TB
+        fn50["parseFilters(_: String) → [HSTFilter]"]
+    end
+    subgraph group16["HSTFilterMetadata"]
+        direction TB
+        fn51["init(scienceUse: String, pivotWavelengthAngstroms: Double, bandwidthAngstroms: Double?, cumulativeThroughputWidthAngstroms: Double?, peakSystemThroughput: Double, filterType: HSTFilterType) → Void"]
+    end
+    subgraph group17["ImageryFilterOptions"]
+        direction TB
+        fn52["init(wavelengthRegions: [String]?, collections: [String]?, instruments: [String]?, filterBands: [String]?, calibLevels: [String], dataProductTypes: [String], intentType: String, dataRights: String) → Void"]
+        fn53["toMASTFilters() → [MASTJsonFilter]"]
+    end
+    subgraph group18["JWSTFilter"]
+        direction TB
+        fn54["parseFilters(_: String) → [JWSTFilter]"]
+    end
+    subgraph group19["JWSTFilterMetadata"]
+        direction TB
+        fn55["init(instruments: [String], pivotWavelength: Double, bandwidth: Double, filterType: JWSTFilterType, wavelengthRegime: String, scienceUse: String) → Void"]
+    end
+    subgraph group20["LocalObservationFilterProduct"]
+        direction TB
+        fn56["init(filterName: String, fitFileURL: URL?, imageFileURL: URL?, previewImageFileURL: URL?, coamResult: CoamResult?, rawMetadata: [String: QValue]?, metadata: FITSMetadata?, imageMetadata: FITSImageHeaderMetadata?, wcs: FITSWCSData?) → Void"]
+    end
+    subgraph group21["LocalObservationGroup"]
+        direction TB
+        fn57["init(targetName: String, mission: String, observationKey: String, instrument: String, filters: [LocalObservationFilterProduct]) → Void"]
+    end
+    subgraph group22["LogSubscriber"]
+        direction TB
+        fn58["init(id: String, callback: @escaping LogSubscriberCallback) → Void"]
+    end
+    subgraph group23["LookupSearchResult"]
+        direction TB
+        fn59["init(from: Decoder) → Void"]
+    end
+    subgraph group24["MASTApiParameter"]
+        direction TB
+        fn60["defaultGeneralParameters() → [MAP: Any]"]
+    end
+    subgraph group25["MASTJson"]
+        direction TB
+        fn61["previewImage(waveBand: String) → [MASTJsonFilter]"]
+        fn62["scienceImageFilters() → [MASTJsonFilter]"]
+        fn63["setCrossmatchinput(coordinates: [[String: Float]]) → Void"]
+        fn64["setFilterParameter(param: MAP, value: Any) → Void"]
+        fn65["setFilterParameters(params: [MASTJsonFilter]) → Void"]
+        fn66["setGeneralParameter(param: MAP, value: Any) → Void"]
+        fn67["setGeneralParameters(params: [MAP: Any]) → Void"]
+        fn68["setParameter(param: MAP, value: Any) → Void"]
+        fn69["setParameters(params: [MAP: Any]) → Void"]
+    end
+    subgraph group26["MASTJsonFilter"]
+        direction TB
+        fn70["init(paramName: String, values: QObject, separator: String?, freeText: String?) → Void"]
+    end
+    subgraph group27["MASTJsonParams"]
+        direction TB
+        fn71["addFilter(paramName: String, values: QObject, separator: String?) → Void"]
+        fn72["init(params: [MAP: Any]) → Void"]
+        fn73["setParameter(parameter: MAP, value: Any) → Void"]
+    end
+    subgraph group28["MASTJsonPayload"]
+        direction TB
+        fn74["init(from: Decoder) → Void"]
+    end
+    subgraph group29["MASTRequest"]
+        direction TB
+        fn75["getURL(dataSet: MASTDataSet) → URL"]
+        fn76["init(ra: Float, dec: Float, radius: Float, searchType: MASTSearchType) → Void"]
+        fn77["init(searchType: MASTSearchType) → Void"]
+        fn78["init(target: String, searchType: MASTSearchType) → Void"]
+    end
+    subgraph group30["MASTService"]
+        direction TB
+        fn79["jsonData(json: MASTJson) → Data"]
+        fn80["serviceRequest(requestType: ServiceRequest) → MASTJson"]
+    end
+    subgraph group31["MASTServiceRequest"]
+        direction TB
+        fn81["parameters() → MAJP"]
+        fn82["returnType() → String?"]
+    end
+    subgraph group32["MASTSyslog"]
+        direction TB
+        fn83["init(log: MASTError, message: String, durationSeconds: TimeInterval?, metadata: [String: String]) → Void"]
+    end
+    subgraph group33["MASTTable"]
+        direction TB
+        fn84["getBoolValues(for: String) → [Bool]"]
+        fn85["getCoamResults() → [CoamResult]"]
+        fn86["getFields() → [String]"]
+        fn87["getFloatValues(for: String) → [Float]"]
+        fn88["getIntValues(for: String) → [Int]"]
+        fn89["getNameLookupResults() → [NameLookupJson]"]
+        fn90["getRows(filters: [ResultField]) → [ResultField: [QValue]]"]
+        fn91["getRows(for: String, with: String) → [QValue]"]
+        fn92["getRows(for: [String]) → [[QValue]]"]
+        fn93["getStringValues(for: String) → [String]"]
+        fn94["getUniqueInt(for: String) → [Float]"]
+        fn95["getUniqueInt(for: String) → [Int]"]
+        fn96["getUniqueString(for: String) → [String]"]
+        fn97["getUniqueValues(for: String) → [QValue]"]
+        fn98["getValues(for: String) → [QValue]"]
+        fn99["init() → Void"]
+        fn100["init(fields: [String], values: [[QValue]]) → Void"]
+        fn101["parser(_: XMLParser, didEndElement: String, namespaceURI: String?, qualifiedName: String?) → Void"]
+        fn102["parser(_: XMLParser, didStartElement: String, namespaceURI: String?, qualifiedName: String?, attributes: [String : String]) → Void"]
+        fn103["parser(_: XMLParser, foundCharacters: String) → Void"]
+        fn104["parserDidEndDocument(_: XMLParser) → Void"]
+        fn105["parserDidStartDocument(_: XMLParser) → Void"]
+        fn106["populateTable() → Void"]
+    end
+    subgraph group34["MASTTapParameter"]
+        direction TB
+        fn107["getPredicate() → String"]
+        fn108["init(variable: String, operation: MASTOperator, value: String) → Void"]
+        fn109["setPostOperator(postOperator: MASTOperator) → Void"]
+    end
+    subgraph group35["MASTTapRequest"]
+        direction TB
+        fn110["getBaseUrl() → URL"]
+        fn111["getSelectQuery() → String"]
+        fn112["getUrl(_: String?) → URL"]
+        fn113["init(format: APIReturnType, endpoint: MASTTapEndpoint) → Void"]
+        fn114["init(table: MASTTap, fields: [String], parameters: [MASTTapParameter], format: APIReturnType, endpoint: MASTTapEndpoint) → Void"]
+    end
+    subgraph group36["MASTTapRequestBody"]
+        direction TB
+        fn115["init(query: String) → Void"]
+    end
+    subgraph group37["NameLookupJson"]
+        direction TB
+        fn116["init(data: [QValue], fields: [String]) → Void"]
+    end
+    subgraph group38["ObservationFilterColor"]
+        direction TB
+        fn117["init(filterName: String, mission: String, colorName: String, hexColor: String) → Void"]
+    end
+    subgraph group39["PS1Request"]
+        direction TB
+        fn118["init(ra: Float, dec: Float, size: Int, filters: PS1Filter, format: PS1FileType, imageTypes: [PS1ImageType]) → Void"]
+    end
+    subgraph group40["ScienceProduct"]
+        direction TB
+        fn119["header(forKeyword: String) → FITSHeaderUnit?"]
+        fn120["headers(forKeyword: String) → [FITSHeaderUnit]"]
+    end
+    subgraph group41["SpaceRegion"]
+        direction TB
+        fn121["contains(_: Coordinate) → Bool"]
+        fn122["contains(region: SpaceRegion) → Bool"]
+        fn123["init(_: String) → Void"]
+        fn124["init(shapes: [Shape]) → Void"]
+        fn125["intersects(_: SpaceRegion) → Bool"]
+        fn126["matches(candidate: SpaceRegion, candidateCenter: Coordinate?, mode: SpaceRegionContainmentMode) → Bool"]
+    end
+    subgraph group42["String"]
+        direction TB
+        fn127["replaceAll(of: String, with: String, options: NSRegularExpression.Options) → String"]
+        fn128["replaceFirst(of: String, with: String) → String"]
+    end
+    subgraph group43["SwiftMAST"]
+        direction TB
+        fn129["appendFitsData(target: String, fitsData: FitsData) → Void"]
+        fn130["appendFitsMetadata(target: String, metadata: FITSMetadata) → Void"]
+        fn131["cacheDataProducts(targetName: String, service: Service, products: [CoamResult], productType: ProductType, token: String?, completion: @escaping ([CoamResult]) -&gt; Void) → Void"]
+        fn132["clearLogSubscribers() → Void"]
+        fn133["clearQueryCache() → Void"]
+        fn134["deleteCachedMASTData(targetName: String?) → Void"]
+        fn135["disableFileLogging() → Void"]
+        fn136["downloadImagery(targetName: String, productType: ProductType, filterOptions: ImageryFilterOptions, pageSize: Int, page: Int, token: String?, completion: @escaping ([URL]) -&gt; Void) → Void"]
+        fn137["downloadPS1Cutouts(targetName: String, urls: [URL], colored: Bool, completion: @escaping ([URL]) -&gt; Void) → Void"]
+        fn138["downloadPreview(targetName: String, pageSize: Int, token: String?, completion: @escaping (URL?) -&gt; Void) → Void"]
+        fn139["enableFileLogging(to: URL?) → URL?"]
+        fn140["enrichWithLocalCache(_: [CoamResult], targetName: String) → [CoamResult]"]
+        fn141["extractFITSObservationProduct(fitsUrl: URL, coamResult: CoamResult) → FITSObservationProduct?"]
+        fn142["extractScienceProducts(targetName: String, coamResult: CoamResult, token: String?, completion: @escaping ([ScienceProduct]) -&gt; Void) → Void"]
+        fn143["fetchFITSHeaderSummary(from: String, initialByteCount: Int, maxByteCount: Int, session: URLSession, completion: @escaping (FITSHeaderSummary?) -&gt; Void) → Void"]
+        fn144["fetchFITSHeaderSummary(from: URL, initialByteCount: Int, maxByteCount: Int, session: URLSession, completion: @escaping (FITSHeaderSummary?) -&gt; Void) → Void"]
+        fn145["fetchPreferredFITSImageHeaderMetadata(for: CoamResult, initialByteCount: Int, maxByteCount: Int, fetchMode: FITSImageMetadataFetchMode, session: URLSession, completion: @escaping (FITSImageHeaderMetadata?) -&gt; Void) → Void"]
+        fn146["fetchPreferredFITSImageHeaderMetadata(for: CoamResult, targetName: String, initialByteCount: Int, maxByteCount: Int, fetchMode: FITSImageMetadataFetchMode, session: URLSession, completion: @escaping (FITSImageHeaderMetadata?) -&gt; Void) → Void"]
+        fn147["fetchPreferredFITSImageHeaderMetadata(from: String, initialByteCount: Int, maxByteCount: Int, fetchMode: FITSImageMetadataFetchMode, session: URLSession, completion: @escaping (FITSImageHeaderMetadata?) -&gt; Void) → Void"]
+        fn148["fetchPreferredFITSImageHeaderMetadata(from: URL, initialByteCount: Int, maxByteCount: Int, fetchMode: FITSImageMetadataFetchMode, session: URLSession, completion: @escaping (FITSImageHeaderMetadata?) -&gt; Void) → Void"]
+        fn149["getCachedObservationGroups(targetName: String?, sortOrder: ObservationProductSortOrder) → [ObservationGroup]"]
+        fn150["getConeSearch(targetId: String, ra: Float, dec: Float, radius: Float, preview: Bool, pageSize: Int, result: @escaping ([CoamResult]) -&gt; Void) → Void"]
+        fn151["getDataproducts(targetName: String, service: Service, products: [CoamResult], productType: ProductType, token: String?, completion: @escaping ([FitsData]) -&gt; Void) → Void"]
+        fn152["getDirectDataproducts(targetName: String, service: Service, products: [CoamResult], productType: ProductType, token: String?, completion: @escaping ([URL]) -&gt; Void) → Void"]
+        fn153["getDiscDetection(target: String, ra: Float, dec: Float, radius: Float, completion: @escaping ([CoamResult]) -&gt; Void) → Void"]
+        fn154["getFilteredConeSearch(ra: Float, dec: Float, radius: Float, filters: [ResultField], filterParams: [MASTJsonFilter]?, result: @escaping ([ResultField: [String]]) -&gt; Void) → Void"]
+        fn155["getFitsMetadata(forUrl: URL) → FITSMetadata?"]
+        fn156["getFitsMetadata(target: String) → [FITSMetadata]?"]
+        fn157["getFitsMetadata(target: String, forUrl: URL) → FITSMetadata?"]
+        fn158["getFitsMetadata(target: String, forUrls: [URL]) → [URL: FITSMetadata]"]
+        fn159["getGaiaCrossmatch(ra: Float, dec: Float, radius: Float, result: @escaping ([[Float]]) -&gt; Void) → Void"]
+        fn160["getJWSTFilteredProducts(targetName: String, instruments: [String]?, calibLevels: [String], pageSize: Int, result: @escaping ([String: CoamResult]) -&gt; Void) → Void"]
+        fn161["getJWSTFilteredProducts(targetName: String, ra: Float, dec: Float, radius: Float, instruments: [String]?, calibLevels: [String], pageSize: Int, result: @escaping ([String: CoamResult]) -&gt; Void) → Void"]
+        fn162["getJWSTObservationGroups(targetName: String, instruments: [String]?, filterBands: [String]?, calibLevels: [String], pageSize: Int, limit: Int?, sortOrder: JWSTProductSortOrder, result: @escaping ([JWSTObservationGroup]) -&gt; Void) → Void"]
+        fn163["getJWSTObservationGroups(targetName: String, ra: Float, dec: Float, radius: Float, instruments: [String]?, filterBands: [String]?, calibLevels: [String], pageSize: Int, limit: Int?, sortOrder: JWSTProductSortOrder, result: @escaping ([JWSTObservationGroup]) -&gt; Void) → Void"]
+        fn164["getJWSTScienceProducts(targetName: String, instruments: [String]?, calibLevels: [String], pageSize: Int, token: String?, result: @escaping ([String: [ScienceProduct]]) -&gt; Void) → Void"]
+        fn165["getJWSTScienceProducts(targetName: String, ra: Float, dec: Float, radius: Float, instruments: [String]?, calibLevels: [String], pageSize: Int, token: String?, result: @escaping ([String: [ScienceProduct]]) -&gt; Void) → Void"]
+        fn166["getLocalCoamResults(targetName: String?, sortOrder: ObservationProductSortOrder) → [CoamResult]"]
+        fn167["getLocalObservationGroups(targetName: String?, sortOrder: ObservationProductSortOrder) → [LocalObservationGroup]"]
+        fn168["getMASTPreviewImage(targetName: String, ra: Float, dec: Float, radius: Float, pageSize: Int, token: String?, result: @escaping (URL) -&gt; Void) → Void"]
+        fn169["getMissionsList(result: @escaping ([String]) -&gt; Void) → Void"]
+        fn170["getNedResolver(target: String, completion: @escaping (NedResult?) -&gt; Void) → Void"]
+        fn171["getObservationGroups(targetName: String, mission: ObservationMission, instruments: [String]?, filterBands: [String]?, calibLevels: [String]?, dataProductTypes: [String]?, pageSize: Int, limit: Int?, sortOrder: ObservationProductSortOrder, result: @escaping ([ObservationGroup]) -&gt; Void) → Void"]
+        fn172["getObservationGroups(targetName: String, missions: [ObservationMission], instruments: [String]?, filterBands: [String]?, calibLevels: [String]?, dataProductTypes: [String]?, pageSize: Int, limit: Int?, sortOrder: ObservationProductSortOrder, result: @escaping ([ObservationGroup]) -&gt; Void) → Void"]
+        fn173["getObservationGroups(targetName: String, ra: Float, dec: Float, radius: Float, mission: ObservationMission, instruments: [String]?, filterBands: [String]?, calibLevels: [String]?, dataProductTypes: [String]?, pageSize: Int, limit: Int?, sortOrder: ObservationProductSortOrder, result: @escaping ([ObservationGroup]) -&gt; Void) → Void"]
+        fn174["getObservationGroups(targetName: String, ra: Float, dec: Float, radius: Float, missions: [ObservationMission], instruments: [String]?, filterBands: [String]?, calibLevels: [String]?, dataProductTypes: [String]?, pageSize: Int, limit: Int?, sortOrder: ObservationProductSortOrder, result: @escaping ([ObservationGroup]) -&gt; Void) → Void"]
+        fn175["getObservationGroups(targetName: String, spaceRegion: String, containment: SpaceRegionContainmentMode, mission: ObservationMission, instruments: [String]?, filterBands: [String]?, calibLevels: [String]?, dataProductTypes: [String]?, pageSize: Int, limit: Int?, sortOrder: ObservationProductSortOrder, result: @escaping ([ObservationGroup]) -&gt; Void) → Void"]
+        fn176["getObservationGroups(targetName: String, spaceRegion: String, containment: SpaceRegionContainmentMode, missions: [ObservationMission], instruments: [String]?, filterBands: [String]?, calibLevels: [String]?, dataProductTypes: [String]?, pageSize: Int, limit: Int?, sortOrder: ObservationProductSortOrder, result: @escaping ([ObservationGroup]) -&gt; Void) → Void"]
+        fn177["getObservationGroupsUsingTAP(targetName: String, missions: [ObservationMission], instruments: [String]?, filterBands: [String]?, calibLevels: [String]?, dataProductTypes: [String]?, pageSize: Int, limit: Int?, sortOrder: ObservationProductSortOrder, includeFITSImageHeaderMetadata: Bool, result: @escaping ([ObservationGroup]) -&gt; Void) → Void"]
+        fn178["getObservationGroupsUsingTAP(targetName: String, ra: Float, dec: Float, radius: Float, missions: [ObservationMission], instruments: [String]?, filterBands: [String]?, calibLevels: [String]?, dataProductTypes: [String]?, pageSize: Int, limit: Int?, sortOrder: ObservationProductSortOrder, includeFITSImageHeaderMetadata: Bool, result: @escaping ([ObservationGroup]) -&gt; Void) → Void"]
+        fn179["getObservationGroupsUsingTAP(targetName: String, spaceRegion: String, containment: SpaceRegionContainmentMode, missions: [ObservationMission], instruments: [String]?, filterBands: [String]?, calibLevels: [String]?, dataProductTypes: [String]?, pageSize: Int, limit: Int?, sortOrder: ObservationProductSortOrder, includeFITSImageHeaderMetadata: Bool, result: @escaping ([ObservationGroup]) -&gt; Void) → Void"]
+        fn180["getPS1ImageList(targetName: String, ra: Float, dec: Float, imageSize: Int, completion: @escaping (MASTTable?) -&gt; Void) → Void"]
+        fn181["getPS1ImagePreview(targetName: String, imageSize: Int, downloadUrl: @escaping ([URL]) -&gt; Void) → Void"]
+        fn182["getScienceImageProductUrl(targetName: String, result: CoamResult, productType: ProductType, token: String?, completion: @escaping (URL?) -&gt; Void) → Void"]
+        fn183["getScienceImageProducts(targetName: String, ra: Float, dec: Float, radius: Float, productType: ProductType, filterOptions: ImageryFilterOptions, pageSize: Int, page: Int, token: String?, result: @escaping ([URL]) -&gt; Void) → Void"]
+        fn184["getScienceImageQueryResults(targetName: String, filterOptions: ImageryFilterOptions, pageSize: Int, page: Int, result: @escaping ([CoamResult]) -&gt; Void) → Void"]
+        fn185["getScienceImageQueryResults(targetName: String, ra: Float, dec: Float, radius: Float, filterOptions: ImageryFilterOptions, pageSize: Int, page: Int, result: @escaping ([CoamResult]) -&gt; Void) → Void"]
+        fn186["getScienceImageQueryResults(targetName: String, spaceRegion: String, containment: SpaceRegionContainmentMode, filterOptions: ImageryFilterOptions, pageSize: Int, page: Int, result: @escaping ([CoamResult]) -&gt; Void) → Void"]
+        fn187["getTIC(completion: @escaping (MASTTAPResponse) -&gt; Void) → Void"]
+        fn188["getTICBYRaDec(ra1: Double, ra2: Double, dec1: Double, dec2: Double, completion: @escaping (MASTTAPResponse) -&gt; Void) → Void"]
+        fn189["getTICByHipList(hips: [Int], completion: @escaping (MASTTAPResponse) -&gt; Void) → Void"]
+        fn190["getTableByConeSearch(ra: Float, dec: Float, radius: Float, mission: MASTDataSet, _: @escaping (Bool) -&gt; Void) → Void"]
+        fn191["getTableByMission(target: String, mission: MASTDataSet, _: @escaping (Bool) -&gt; Void) → Void"]
+        fn192["getTargetCompositeCandidates(targetName: String?, ra: Double?, dec: Double?, radiusDegrees: Double, missions: [ObservationMission], filters: [String]?, columns: ObservationTAPColumnProfile, productKinds: [ObservationTAPProductKind], pageSize: Int, maxProductsPerFilter: Int?, headerFetchPolicy: ObservationFITSHeaderFetchPolicy, result: @escaping ([ObservationGroup]) -&gt; Void) → Void"]
+        fn193["init() → Void"]
+        fn194["log(_: MASTError, message: String, durationSeconds: TimeInterval?, metadata: [String: String]) → Void"]
+        fn195["lookupTargetByName(targetName: String, result: @escaping ([NameLookupJson]) -&gt; Void) → Void"]
+        fn196["lookupTargetCoordinates(targetName: String, result: @escaping (TargetCoordinates?) -&gt; Void) → Void"]
+        fn197["networkTimelineNotes() → [String]"]
+        fn198["networkTimelineText() → String"]
+        fn199["networkTransactionRows() → [[String: String]]"]
+        fn200["printFitsMetadata(target: String) → Void"]
+        fn201["queryMASTTap(selectQuery: String?, table: MASTTap, fields: [String], parameters: [MASTTapParameter], format: APIReturnType, token: String?, endpoint: MASTTapEndpoint, closure: @escaping (MASTTAPResponse) -&gt; Void) → Void"]
+        fn202["queryMast(service: Service, params: MASTJson, returnType: APIReturnType, _: @escaping (Bool) -&gt; Void) → Void"]
+        fn203["queryPS1(ps1Request: PS1Request, _: @escaping (Bool) -&gt; Void) → Void"]
+        fn204["requestProductBundle(service: Service, coamResults: [CoamResult], _: @escaping (Bool, [URL]) -&gt; Void) → Void"]
+        fn205["resetNetworkTimeline() → Void"]
+        fn206["resetQueryCache() → Void"]
+        fn207["setPreviewImage(target: String, url: URL) → Void"]
+        fn208["setTargetAssets(target: String, targetInfo: NameLookupJson) → Void"]
+        fn209["setTargetId(targetId: String) → Void"]
+        fn210["subscribeToLogs(id: String, callback: @escaping LogSubscriberCallback) → String"]
+        fn211["unsubscribeFromLogs(id: String) → Void"]
+    end
+    subgraph group44["TargetAsset"]
+        direction TB
+        fn212["setAssets(assets: [CoamResult]) → Void"]
+        fn213["setFitsData(fitsData: FitsData) → Void"]
+        fn214["setPreview(url: URL) → Void"]
+    end
+    fn20 --> fn25
+    fn25 --> fn30
+    fn31 --> fn25
+    fn65 --> fn69
+    fn67 --> fn66
+    fn79 --> fn18
+    fn80 --> fn81
+    fn80 --> fn82
+    fn84 --> fn98
+    fn87 --> fn98
+    fn88 --> fn98
+    fn91 --> fn98
+    fn92 --> fn98
+    fn93 --> fn98
+    fn94 --> fn97
+    fn95 --> fn97
+    fn96 --> fn97
+    fn97 --> fn98
+    fn104 --> fn106
+    fn111 --> fn107
+    fn112 --> fn111
+    fn126 --> fn125
+    fn129 --> fn130
+    fn129 --> fn213
+    fn131 --> fn140
+    fn131 --> fn151
+    fn131 --> fn152
+    fn133 --> fn206
+    fn134 --> fn194
+    fn136 --> fn183
+    fn136 --> fn194
+    fn136 --> fn196
+    fn137 --> fn194
+    fn138 --> fn89
+    fn138 --> fn168
+    fn138 --> fn195
+    fn138 --> fn208
+    fn138 --> fn209
+    fn140 --> fn8
+    fn140 --> fn10
+    fn140 --> fn166
+    fn142 --> fn151
+    fn142 --> fn152
+    fn142 --> fn194
+    fn146 --> fn194
+    fn149 --> fn166
+    fn150 --> fn60
+    fn150 --> fn66
+    fn150 --> fn67
+    fn150 --> fn69
+    fn150 --> fn80
+    fn150 --> fn85
+    fn150 --> fn202
+    fn150 --> fn209
+    fn151 --> fn194
+    fn152 --> fn194
+    fn153 --> fn60
+    fn153 --> fn67
+    fn153 --> fn69
+    fn153 --> fn80
+    fn153 --> fn85
+    fn153 --> fn202
+    fn153 --> fn209
+    fn154 --> fn69
+    fn154 --> fn80
+    fn154 --> fn202
+    fn159 --> fn63
+    fn159 --> fn69
+    fn159 --> fn80
+    fn159 --> fn98
+    fn159 --> fn202
+    fn160 --> fn194
+    fn160 --> fn196
+    fn161 --> fn53
+    fn161 --> fn60
+    fn161 --> fn65
+    fn161 --> fn67
+    fn161 --> fn69
+    fn161 --> fn80
+    fn161 --> fn85
+    fn161 --> fn194
+    fn161 --> fn202
+    fn161 --> fn209
+    fn161 --> fn212
+    fn164 --> fn142
+    fn164 --> fn194
+    fn165 --> fn142
+    fn165 --> fn194
+    fn166 --> fn167
+    fn168 --> fn150
+    fn168 --> fn151
+    fn168 --> fn152
+    fn169 --> fn80
+    fn169 --> fn98
+    fn169 --> fn202
+    fn169 --> fn209
+    fn170 --> fn194
+    fn172 --> fn194
+    fn172 --> fn196
+    fn174 --> fn7
+    fn174 --> fn53
+    fn174 --> fn60
+    fn174 --> fn65
+    fn174 --> fn67
+    fn174 --> fn69
+    fn174 --> fn80
+    fn174 --> fn85
+    fn174 --> fn194
+    fn174 --> fn202
+    fn174 --> fn209
+    fn176 --> fn126
+    fn176 --> fn194
+    fn177 --> fn194
+    fn177 --> fn196
+    fn179 --> fn126
+    fn179 --> fn194
+    fn180 --> fn203
+    fn181 --> fn89
+    fn181 --> fn93
+    fn181 --> fn137
+    fn181 --> fn180
+    fn181 --> fn195
+    fn181 --> fn208
+    fn181 --> fn209
+    fn182 --> fn151
+    fn182 --> fn152
+    fn183 --> fn151
+    fn183 --> fn152
+    fn183 --> fn194
+    fn184 --> fn196
+    fn185 --> fn53
+    fn185 --> fn60
+    fn185 --> fn65
+    fn185 --> fn67
+    fn185 --> fn69
+    fn185 --> fn80
+    fn185 --> fn85
+    fn185 --> fn96
+    fn185 --> fn194
+    fn185 --> fn202
+    fn185 --> fn209
+    fn186 --> fn126
+    fn186 --> fn194
+    fn187 --> fn201
+    fn188 --> fn201
+    fn189 --> fn201
+    fn190 --> fn75
+    fn190 --> fn194
+    fn191 --> fn75
+    fn191 --> fn194
+    fn192 --> fn194
+    fn192 --> fn196
+    fn196 --> fn89
+    fn196 --> fn194
+    fn196 --> fn195
+    fn196 --> fn208
+    fn196 --> fn209
+    fn198 --> fn197
+    fn201 --> fn110
+    fn201 --> fn111
+    fn201 --> fn194
+    fn202 --> fn79
+    fn202 --> fn194
+    fn204 --> fn18
+    fn204 --> fn194
+    fn206 --> fn194
+    fn207 --> fn214
+    fn39 --> fn41
+    fn40 --> fn42
+    fn41 --> fn48
+    fn42 --> fn47
+    fn42 --> fn48
+    fn44 --> fn47
+    fn45 --> fn48
+    fn49 --> fn43
+    fn49 --> fn46

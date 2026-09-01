@@ -23,6 +23,9 @@ let package = Package(
         .executable(
             name: "FITSCoreDemo",
             targets: ["FITSCoreDemo"]),
+        .executable(
+            name: "swiftmast-function-graph",
+            targets: ["SwiftMASTFunctionGraphTool"]),
     ],
     dependencies: [
         .package(url: "https://github.com/triple7/SwiftQValue", branch: "main"),
@@ -60,8 +63,16 @@ let package = Package(
                 .product(name: "FITSKit", package: "fitskit")
             ],
             path: "Sources/FITSCoreDemo"),
+        .target(
+            name: "SwiftMASTFunctionGraphCore"),
+        .executableTarget(
+            name: "SwiftMASTFunctionGraphTool",
+            dependencies: ["SwiftMASTFunctionGraphCore"]),
         .testTarget(
             name: "SwiftMASTTests",
             dependencies: ["SwiftMAST"]),
+        .testTarget(
+            name: "SwiftMASTFunctionGraphCoreTests",
+            dependencies: ["SwiftMASTFunctionGraphCore"]),
     ]
 )

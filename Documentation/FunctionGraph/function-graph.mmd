@@ -1,0 +1,61 @@
+flowchart LR
+
+    subgraph pipeline["MAST Request Lifecycle"]
+        direction LR
+        stage0["Target or service input<br/>Target / coordinates / service"]
+        stage1["Resolve target<br/>RA / Dec / radius"]
+        stage2["Build request<br/>MASTJson / TAP / URLRequest"]
+        stage3["Execute query<br/>Data / file URL"]
+        stage4["Parse response<br/>MASTTable / metadata"]
+        stage5["Enrich or download<br/>Sizes / FITS headers / local files"]
+        stage6["Typed result<br/>CoamResult / ObservationGroup / ScienceProduct"]
+        stage0 --> stage1
+        stage1 --> stage2
+        stage2 --> stage3
+        stage3 --> stage4
+        stage4 --> stage5
+        stage5 --> stage6
+    end
+
+    subgraph api["Public API by Owner Type"]
+        direction TB
+        owner0["CoamResult<br/>10 public functions"]
+        owner1["FITSHeaderValue<br/>2 public functions"]
+        owner2["FITSImageHeaderMetadata<br/>1 public function"]
+        owner3["FITSWCS<br/>6 public functions"]
+        owner4["FITSWCSData<br/>7 public functions"]
+        owner5["ImageryFilterOptions<br/>2 public functions"]
+        owner6["MASTApiParameter<br/>1 public function"]
+        owner7["MASTJson<br/>9 public functions"]
+        owner8["MASTRequest<br/>4 public functions"]
+        owner9["MASTService<br/>2 public functions"]
+        owner10["MASTServiceRequest<br/>2 public functions"]
+        owner11["MASTTable<br/>23 public functions"]
+        owner12["MASTTapParameter<br/>3 public functions"]
+        owner13["MASTTapRequest<br/>5 public functions"]
+        owner14["SpaceRegion<br/>6 public functions"]
+        owner15["SwiftMAST<br/>83 public functions"]
+        owner16["TargetAsset<br/>3 public functions"]
+        ownerOther["Other API types<br/>28 types · 46 functions"]
+    end
+    owner2 -->|1 calls| owner3
+    owner4 -->|1 calls| owner3
+    owner9 -->|1 calls| owner1
+    owner9 -->|2 calls| owner10
+    owner13 -->|1 calls| owner12
+    owner15 -->|3 calls| owner0
+    owner15 -->|1 calls| owner1
+    owner15 -->|3 calls| owner5
+    owner15 -->|5 calls| owner6
+    owner15 -->|17 calls| owner7
+    owner15 -->|2 calls| owner8
+    owner15 -->|9 calls| owner9
+    owner15 -->|12 calls| owner11
+    owner15 -->|2 calls| owner13
+    owner15 -->|3 calls| owner14
+    owner15 -->|3 calls| owner16
+
+    classDef stage fill:#12352f,stroke:#62e6b0,color:#edf3ff
+    classDef owner fill:#152b4e,stroke:#72a7ff,color:#edf3ff
+    class stage0,stage1,stage2,stage3,stage4,stage5,stage6 stage
+    class owner0,owner1,owner10,owner11,owner12,owner13,owner14,owner15,owner16,owner2,owner3,owner4,owner5,owner6,owner7,owner8,owner9,ownerOther owner

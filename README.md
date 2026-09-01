@@ -1,5 +1,21 @@
 # SwiftMAST
 
+## Function graph
+
+SwiftMAST includes a generated graph of public functions, arguments, recursive
+output structures, inferred calls, and the archive-request lifecycle. Use the
+[interactive SVG graph](Documentation/FunctionGraph/index.html), the
+[canonical JSON](Documentation/FunctionGraph/function-graph.json), the ordered
+[Mermaid overview](Documentation/FunctionGraph/function-graph.mmd), or the
+[detailed Mermaid call graph](Documentation/FunctionGraph/function-graph-detail.mmd).
+
+```bash
+swift run swiftmast-function-graph
+python3 -m http.server 8080 --directory Documentation/FunctionGraph
+```
+
+Then open `http://localhost:8080`.
+
 Swift wrapper for the [MAST](https://archive.stsci.edu/vo/mast_services.html#GET) archive of astronomical data 
 
 This package is used for the [AstreOS](https://astreos.space) platform developed by Yuma Antoine Decaux.
