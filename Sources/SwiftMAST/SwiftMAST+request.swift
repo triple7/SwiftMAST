@@ -621,6 +621,48 @@ extension SwiftMAST {
         }
     }
 
+    /// Cache MAST products and return their canonical CAOM records enriched
+    /// with the local files and metadata created by the download pipeline.
+    ///
+    /// Both MAST URI products and direct HTTP products are supported. Existing
+    /// cache entries are reused by the underlying download methods.
+    public func cacheDataProducts(
+        targetName: String,
+        service: Service = .Download_file,
+        products: [CoamResult],
+        productType: ProductType,
+        token: String?,
+        completion: @escaping ([CoamResult]) -> Void
+    ) {
+        let productsWithDownloadURL = products.filter {
+            !(productType == .Fits ? $0.dataURL : $0.jpegURL).isEmpty
+        }
+        let directProducts = productsWithDownloadURL.filter {
+            (productType == .Fits ? $0.dataURL : $0.jpegURL).contains("http")
+        }
+        let mastProducts = productsWithDownloadURL.filter {
+            !(productType == .Fits ? $0.dataURL : $0.jpegURL).contains("http")
+        }
+
+        getDataproducts(
+            targetName: targetName,
+            service: service,
+            products: mastProducts,
+            productType: productType,
+            token: token
+        ) { _ in
+            self.getDirectDataproducts(
+                targetName: targetName,
+                service: service,
+                products: directProducts,
+                productType: productType,
+                token: token
+            ) { _ in
+                completion(self.enrichWithLocalCache(products, targetName: targetName))
+            }
+        }
+    }
+
     /** Get the fits cutout from PS1, get the color jpeg and save all
      metadata files from all filters
      */

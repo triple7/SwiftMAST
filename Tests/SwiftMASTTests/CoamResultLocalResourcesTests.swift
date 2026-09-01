@@ -89,4 +89,48 @@ final class CoamResultLocalResourcesTests: XCTestCase {
         XCTAssertEqual(result.localImageURL, imageURL)
         XCTAssertEqual(mast.getCachedObservationGroups(targetName: targetName).count, 1)
     }
+
+    func testCacheDataProductsReturnsLocallyEnrichedCoamResults() throws {
+        let mast = SwiftMAST()
+        let targetName = "CoamCache\(UUID().uuidString)"
+        let targetFolder = mast.mastStorageRootURL()
+            .appendingPathComponent(targetName, isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: targetFolder) }
+
+        var row = (0..<34).map { _ in QValue(value: "") }
+        row[7] = QValue(value: "F606W")
+        row[8] = QValue(value: "ACS/WFC")
+        row[10] = QValue(value: "https://example.invalid/not-requested.jpg")
+        row[13] = QValue(value: "HST")
+        row[14] = QValue(value: "obs-cache-coam")
+        row[32] = QValue(value: targetName)
+        let product = CoamResult(data: row)
+
+        let cachedURL = mast.localProductURL(
+            targetName: targetName,
+            product: product,
+            productType: .Jpeg
+        )
+        try FileManager.default.createDirectory(
+            at: cachedURL.deletingLastPathComponent(),
+            withIntermediateDirectories: true
+        )
+        try Data([0xff, 0xd8, 0xff, 0xd9]).write(to: cachedURL)
+
+        let expectation = expectation(description: "Canonical cache result returns")
+        mast.cacheDataProducts(
+            targetName: targetName,
+            products: [product],
+            productType: .Jpeg,
+            token: nil
+        ) { products in
+            XCTAssertEqual(products.count, 1)
+            XCTAssertEqual(products.first?.productIdentifier, product.productIdentifier)
+            XCTAssertEqual(products.first?.localPreviewImageURL, cachedURL)
+            XCTAssertEqual(products.first?.jpegURL, product.jpegURL)
+            expectation.fulfill()
+        }
+
+        wait(for: [expectation], timeout: 2)
+    }
 }

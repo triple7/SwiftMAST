@@ -184,6 +184,34 @@ extension SwiftMAST {
         )
     }
 
+    /// Attach locally cached files and metadata to remote or previously stored
+    /// products while preserving their original CAOM fields.
+    ///
+    /// Results are matched using ``CoamResult/productIdentifier``. Products that
+    /// have not been cached are returned unchanged, which makes this suitable for
+    /// progressively enriching a query result as downloads complete.
+    public func enrichWithLocalCache(
+        _ products: [CoamResult],
+        targetName: String
+    ) -> [CoamResult] {
+        let cachedProducts = getLocalCoamResults(targetName: targetName)
+        let cachedByIdentifier = cachedProducts.reduce(into: [String: CoamResult]()) {
+            cache, product in
+            cache[product.productIdentifier] = product
+        }
+
+        return products.map { product in
+            guard let cached = cachedByIdentifier[product.productIdentifier] else {
+                return product
+            }
+            return product
+                .withFITSImageHeaderMetadata(
+                    cached.fitsImageHeaderMetadata ?? product.fitsImageHeaderMetadata
+                )
+                .withLocalResources(cached.localResources)
+        }
+    }
+
     /// Delete locally cached MAST products saved under SwiftMAST's `MAST` folder.
     ///
     /// Pass a target name to delete only that target's local cache. Omit
