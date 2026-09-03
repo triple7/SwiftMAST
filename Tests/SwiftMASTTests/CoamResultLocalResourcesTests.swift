@@ -133,4 +133,80 @@ final class CoamResultLocalResourcesTests: XCTestCase {
 
         wait(for: [expectation], timeout: 2)
     }
+
+    func testCoamResultOwnsFilterIdentityAndImageMappingKeys() {
+        let product = CoamResult(
+            localTargetName: "NGC 628",
+            mission: "JWST",
+            observationID: "jw02107-o039_t018_miri_f770w",
+            filter: "F770W; CLEAR",
+            localResources: CoamLocalResources(imagePath: "/tmp/F770W image.png")
+        )
+
+        XCTAssertEqual(product.primaryFilterName, "F770W")
+        XCTAssertEqual(product.primaryFilterColor?.filterName, "F770W")
+        XCTAssertEqual(product.imageMappingKey, product.productIdentifier)
+        XCTAssertFalse(product.imageFileSafeKey.contains(" "))
+        XCTAssertFalse(product.imageFileSafeKey.contains(":"))
+        XCTAssertTrue(product.isRenderableScienceImage())
+    }
+
+    func testObservationImageAssignmentsAreIndexedByProductKeyAndWavelength() {
+        let longWave = CoamResult(
+            localTargetName: "NGC 628",
+            mission: "JWST",
+            observationID: "jw-test-f1000w",
+            filter: "F1000W",
+            localResources: CoamLocalResources(imagePath: "/tmp/F1000W.png")
+        )
+        let shortWave = CoamResult(
+            localTargetName: "NGC 628",
+            mission: "JWST",
+            observationID: "jw-test-f200w",
+            filter: "F200W",
+            localResources: CoamLocalResources(imagePath: "/tmp/F200W.png")
+        )
+
+        let assignments = [longWave, shortWave].observationImageAssignments()
+
+        XCTAssertEqual(assignments.count, 2)
+        XCTAssertEqual(assignments[shortWave.imageMappingKey]?.paletteIndex, 0)
+        XCTAssertEqual(assignments[longWave.imageMappingKey]?.paletteIndex, 1)
+        XCTAssertEqual(assignments[shortWave.imageMappingKey]?.paletteCount, 2)
+    }
+
+    func testRenderableScienceProductsFiltersDetectionAndSegmentation() {
+        let science = CoamResult(
+            localTargetName: "Target",
+            mission: "JWST",
+            observationID: "science",
+            filter: "F770W",
+            localResources: CoamLocalResources(imagePath: "/tmp/science.png")
+        )
+        let detection = CoamResult(
+            localTargetName: "Target",
+            mission: "JWST",
+            observationID: "detection",
+            filter: "DETECTION",
+            localResources: CoamLocalResources(imagePath: "/tmp/detection.png")
+        )
+        let segmentation = CoamResult(
+            localTargetName: "Target",
+            mission: "JWST",
+            observationID: "segmentation",
+            filter: "F770W",
+            localResources: CoamLocalResources(imagePath: "/tmp/source_segm.png")
+        )
+
+        XCTAssertEqual(
+            [science, detection, segmentation].renderableScienceImages().map(\.obs_id),
+            ["science"]
+        )
+        XCTAssertEqual(
+            [science, detection, segmentation]
+                .renderableScienceImages(includeSegmentationProducts: true)
+                .map(\.obs_id),
+            ["science", "segmentation"]
+        )
+    }
 }
