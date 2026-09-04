@@ -8,7 +8,10 @@
 import Foundation
 import SwiftQValue
 
-/// A locally cached product for one observation filter.
+/// Compatibility projection exposing decoded cache sidecars for one product.
+///
+/// `CoamResult` is the canonical product model. New processing pipelines should
+/// use its `localResources` and FITS metadata instead of retaining this value.
 public struct LocalObservationFilterProduct: Codable {
     public let filterName: String
     public let fitFileURL: URL?
@@ -43,7 +46,10 @@ public struct LocalObservationFilterProduct: Codable {
     }
 }
 
-/// Observation group reconstructed from locally cached FITS/image products.
+/// Compatibility projection of locally cached products grouped by observation.
+///
+/// `ObservationGroup` is the canonical grouping of `[CoamResult]`. This type is
+/// retained for source compatibility with callers that inspect decoded sidecars.
 public struct LocalObservationGroup: Codable, CustomStringConvertible {
     public let targetName: String
     public let mission: String

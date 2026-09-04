@@ -73,16 +73,17 @@ extension SwiftMAST {
         )
     }
 
-    /// Reconstruct observation groups from products available in SwiftMAST's local cache.
+    /// Return every product discovered in the local MAST cache as a canonical
+    /// ``CoamResult`` enriched with its local files and FITS metadata.
     ///
-    /// The scanner reads the standard product cache layout:
+    /// The scanner reads the standard product cache layout directly:
     /// `MAST/<target>/<mission>/<observation>/<filter>/fit|image|preview`.
-    /// It attaches sidecar JSON when available, including `coam-result.json`,
-    /// raw/structured FITS metadata, preferred image metadata, and normalized WCS data.
-    public func getLocalObservationGroups(
+    /// Products without a `coam-result.json` sidecar are reconstructed from the
+    /// cache layout and available FITS metadata.
+    public func getLocalCoamResults(
         targetName: String? = nil,
         sortOrder: ObservationProductSortOrder = .filter
-    ) -> [LocalObservationGroup] {
+    ) -> [CoamResult] {
         let root = mastStorageRootURL()
         guard FileManager.default.fileExists(atPath: root.path) else { return [] }
 
@@ -97,14 +98,13 @@ extension SwiftMAST {
             targetFolders = directoryChildren(of: root)
         }
 
-        var grouped = [GroupIdentity: [LocalObservationFilterProduct]]()
+        var results: [CoamResult] = []
 
         for targetFolder in targetFolders {
-            let target = targetFolder.lastPathComponent
             for missionFolder in directoryChildren(of: targetFolder) {
                 for observationFolder in directoryChildren(of: missionFolder) {
                     for filterFolder in directoryChildren(of: observationFolder) {
-                        guard let localProduct = localObservationFilterProduct(
+                        guard let product = localCoamResult(
                             targetFolder: targetFolder,
                             missionFolder: missionFolder,
                             observationFolder: observationFolder,
@@ -112,57 +112,29 @@ extension SwiftMAST {
                         ) else {
                             continue
                         }
-
-                        let coam = localProduct.coamResult
-                        let mission = coam?.observationMission?.rawValue
-                            ?? coam?.obs_collection
-                            ?? missionFolder.lastPathComponent
-                        let observationKey = coam.map(observationGroupKey)
-                            ?? observationFolder.lastPathComponent
-                        let instrument = coam?.instrument_name ?? ""
-                        let identity = GroupIdentity(
-                            targetName: coam?.target_name.nilIfEmpty ?? target,
-                            mission: mission,
-                            observationKey: observationKey,
-                            instrument: instrument
-                        )
-                        grouped[identity, default: []].append(localProduct)
+                        results.append(product)
                     }
                 }
             }
         }
 
-        return grouped.map { identity, products in
-            LocalObservationGroup(
-                targetName: identity.targetName,
-                mission: identity.mission,
-                observationKey: identity.observationKey,
-                instrument: identity.instrument,
-                filters: sortedLocalObservationFilters(products, sortOrder: sortOrder)
-            )
-        }
-        .sorted {
-            if !($0.targetName == $1.targetName) { return $0.targetName < $1.targetName }
-            if !($0.mission == $1.mission) { return $0.mission < $1.mission }
-            if !($0.observationKey == $1.observationKey) {
-                return $0.observationKey < $1.observationKey
-            }
-            return $0.instrument < $1.instrument
-        }
+        return sortedLocalCoamResults(results, sortOrder: sortOrder)
     }
 
-    /// Return every product discovered in the local MAST cache as a canonical
-    /// ``CoamResult`` enriched with its local files and FITS metadata.
+    /// Compatibility view of locally cached products grouped by observation.
     ///
-    /// Products without a `coam-result.json` sidecar are reconstructed from the
-    /// cache layout and available FITS metadata.
-    public func getLocalCoamResults(
+    /// New code should use ``getLocalCoamResults(targetName:sortOrder:)`` and
+    /// derive ``ObservationGroup`` values only when grouping is required. This
+    /// adapter is intentionally built from canonical `CoamResult` values and is
+    /// not part of the cache-scanning path.
+    public func getLocalObservationGroups(
         targetName: String? = nil,
         sortOrder: ObservationProductSortOrder = .filter
-    ) -> [CoamResult] {
-        getLocalObservationGroups(targetName: targetName, sortOrder: sortOrder)
-            .flatMap(\.filters)
-            .compactMap(\.coamResult)
+    ) -> [LocalObservationGroup] {
+        buildLocalObservationGroups(
+            from: getLocalCoamResults(targetName: targetName, sortOrder: sortOrder),
+            sortOrder: sortOrder
+        )
     }
 
     /// Reconstruct local cache contents using the same observation-group model
@@ -772,12 +744,12 @@ extension SwiftMAST {
         }
     }
 
-    private func localObservationFilterProduct(
+    private func localCoamResult(
         targetFolder: URL,
         missionFolder: URL,
         observationFolder: URL,
         filterFolder: URL
-    ) -> LocalObservationFilterProduct? {
+    ) -> CoamResult? {
         let fitFolder = filterFolder.appendingPathComponent(
             ObservationProductContentType.fit.rawValue,
             isDirectory: true
@@ -806,12 +778,6 @@ extension SwiftMAST {
         let parsedImageMetadata = imageMetadata ?? fitFileURL.flatMap {
             localFITSImageHeaderMetadata(from: $0)
         }
-        let wcs = localWCSData(
-            imageMetadata: parsedImageMetadata,
-            metadata: metadata,
-            rawMetadata: rawMetadata
-        )
-
         let resources = CoamLocalResources(
             fitsPath: fitFileURL?.path,
             imagePath: imageFileURL?.path,
@@ -847,17 +813,7 @@ extension SwiftMAST {
             return nil
         }
 
-        return LocalObservationFilterProduct(
-            filterName: coamResult.filters.nilIfEmpty ?? filterFolder.lastPathComponent,
-            fitFileURL: fitFileURL,
-            imageFileURL: imageFileURL,
-            previewImageFileURL: previewImageFileURL,
-            coamResult: coamResult,
-            rawMetadata: rawMetadata,
-            metadata: metadata,
-            imageMetadata: parsedImageMetadata,
-            wcs: wcs
-        )
+        return coamResult
     }
 
     private func localWCSData(
@@ -886,26 +842,112 @@ extension SwiftMAST {
         )?.preferredImageMetadata
     }
 
-    private func sortedLocalObservationFilters(
-        _ products: [LocalObservationFilterProduct],
+    private func sortedLocalCoamResults(
+        _ products: [CoamResult],
         sortOrder: ObservationProductSortOrder
-    ) -> [LocalObservationFilterProduct] {
+    ) -> [CoamResult] {
         products.sorted { lhs, rhs in
-            switch sortOrder {
-            case .filter:
-                let leftWavelength = observationFilterWavelength(lhs.filterName)
-                let rightWavelength = observationFilterWavelength(rhs.filterName)
-                if !(leftWavelength == rightWavelength) {
-                    return leftWavelength < rightWavelength
-                }
-                return lhs.filterName < rhs.filterName
-            case .time:
-                let leftTime = lhs.coamResult.map(observationEffectiveTime) ?? 0
-                let rightTime = rhs.coamResult.map(observationEffectiveTime) ?? 0
-                if !(leftTime == rightTime) { return leftTime < rightTime }
-                return compareObservationFilters(lhs.filterName, rhs.filterName)
+            let leftIdentity = GroupIdentity(
+                targetName: lhs.target_name,
+                mission: lhs.observationMission?.rawValue ?? lhs.obs_collection.uppercased(),
+                observationKey: observationGroupKey(lhs),
+                instrument: lhs.instrument_name
+            )
+            let rightIdentity = GroupIdentity(
+                targetName: rhs.target_name,
+                mission: rhs.observationMission?.rawValue ?? rhs.obs_collection.uppercased(),
+                observationKey: observationGroupKey(rhs),
+                instrument: rhs.instrument_name
+            )
+            if leftIdentity.targetName != rightIdentity.targetName {
+                return leftIdentity.targetName < rightIdentity.targetName
             }
+            if leftIdentity.mission != rightIdentity.mission {
+                return leftIdentity.mission < rightIdentity.mission
+            }
+            if leftIdentity.observationKey != rightIdentity.observationKey {
+                return leftIdentity.observationKey < rightIdentity.observationKey
+            }
+            if leftIdentity.instrument != rightIdentity.instrument {
+                return leftIdentity.instrument < rightIdentity.instrument
+            }
+            if compareObservationProducts(lhs, rhs, by: sortOrder) {
+                return true
+            }
+            if compareObservationProducts(rhs, lhs, by: sortOrder) {
+                return false
+            }
+            return lhs.productIdentifier < rhs.productIdentifier
         }
+    }
+
+    private func buildLocalObservationGroups(
+        from results: [CoamResult],
+        sortOrder: ObservationProductSortOrder
+    ) -> [LocalObservationGroup] {
+        var grouped = [GroupIdentity: [CoamResult]]()
+        for product in results {
+            let identity = GroupIdentity(
+                targetName: product.target_name,
+                mission: product.observationMission?.rawValue
+                    ?? product.obs_collection.uppercased(),
+                observationKey: observationGroupKey(product),
+                instrument: product.instrument_name
+            )
+            grouped[identity, default: []].append(product)
+        }
+
+        return grouped.map { identity, products in
+            LocalObservationGroup(
+                targetName: identity.targetName,
+                mission: identity.mission,
+                observationKey: identity.observationKey,
+                instrument: identity.instrument,
+                filters: products
+                    .sorted { compareObservationProducts($0, $1, by: sortOrder) }
+                    .map(localObservationFilterProduct)
+            )
+        }
+        .sorted {
+            if $0.targetName != $1.targetName { return $0.targetName < $1.targetName }
+            if $0.mission != $1.mission { return $0.mission < $1.mission }
+            if $0.observationKey != $1.observationKey {
+                return $0.observationKey < $1.observationKey
+            }
+            return $0.instrument < $1.instrument
+        }
+    }
+
+    private func localObservationFilterProduct(
+        from product: CoamResult
+    ) -> LocalObservationFilterProduct {
+        let resources = product.localResources
+        let rawMetadata = resources?.rawMetadataURL.flatMap {
+            readJSONSidecar([String: QValue].self, from: $0)
+        }
+        let metadata = resources?.structuredMetadataURL.flatMap {
+            readJSONSidecar(FITSMetadata.self, from: $0)
+        }
+        let imageMetadata = product.fitsImageHeaderMetadata
+            ?? resources?.imageMetadataURL.flatMap {
+                readJSONSidecar(FITSImageHeaderMetadata.self, from: $0)
+            }
+
+        return LocalObservationFilterProduct(
+            filterName: product.filters,
+            fitFileURL: resources?.fitsURL,
+            imageFileURL: resources?.imageURL,
+            previewImageFileURL: resources?.previewImageURL,
+            coamResult: product,
+            rawMetadata: rawMetadata,
+            metadata: metadata,
+            imageMetadata: imageMetadata,
+            wcs: localWCSData(
+                imageMetadata: imageMetadata,
+                metadata: metadata,
+                rawMetadata: rawMetadata
+            )
+        )
     }
 
     private func directoryChildren(of url: URL) -> [URL] {

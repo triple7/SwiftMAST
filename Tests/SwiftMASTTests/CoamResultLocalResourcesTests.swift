@@ -87,7 +87,11 @@ final class CoamResultLocalResourcesTests: XCTestCase {
         XCTAssertEqual(result.obs_id, "jw-local-observation")
         XCTAssertEqual(result.filters, "F770W")
         XCTAssertEqual(result.localImageURL, imageURL)
-        XCTAssertEqual(mast.getCachedObservationGroups(targetName: targetName).count, 1)
+        let groups = mast.getCachedObservationGroups(targetName: targetName)
+        let groupedProduct = try XCTUnwrap(groups.first?.products.first)
+        XCTAssertEqual(groups.count, 1)
+        XCTAssertEqual(groupedProduct.productIdentifier, result.productIdentifier)
+        XCTAssertEqual(groupedProduct.localImageURL, imageURL)
     }
 
     func testCacheDataProductsReturnsLocallyEnrichedCoamResults() throws {
