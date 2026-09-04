@@ -97,13 +97,6 @@ extension SwiftMAST {
             targetFolders = directoryChildren(of: root)
         }
 
-        struct GroupIdentity: Hashable {
-            let targetName: String
-            let mission: String
-            let observationKey: String
-            let instrument: String
-        }
-
         var grouped = [GroupIdentity: [LocalObservationFilterProduct]]()
 
         for targetFolder in targetFolders {

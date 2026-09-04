@@ -2844,12 +2844,6 @@ extension SwiftMAST {
         from results: [CoamResult],
         sortOrder: ObservationProductSortOrder = .filter
     ) -> [ObservationGroup] {
-        struct GroupIdentity: Hashable {
-            let mission: String
-            let observationKey: String
-            let instrument: String
-        }
-
         // Mission and instrument are part of the identity so unrelated
         // collections cannot be merged when they happen to reuse an obs_id.
         var grouped = [GroupIdentity: [CoamResult]]()
