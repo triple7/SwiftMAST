@@ -7,6 +7,19 @@
 
 import Foundation
 
+/// Controls how locally renderable science products are selected by WCS capability.
+public enum ObservationProductWCSPolicy: Equatable, Sendable {
+    /// Return only products whose local metadata can provide a WCS.
+    case required
+
+    /// Prefer WCS products when at least `minimumCount` are available; otherwise
+    /// retain all locally renderable science products.
+    case preferred(minimumCount: Int)
+
+    /// Do not consider WCS capability during product selection.
+    case ignored
+}
+
 /// Primitive rendering metadata that lets image packages consume a CAOM product
 /// without importing SwiftMAST-specific filter enums.
 public struct ObservationImageAssignment: Codable, Equatable, Hashable {
@@ -166,5 +179,37 @@ extension ObservationGroup {
         products.renderableScienceImages(
             includeSegmentationProducts: includeSegmentationProducts
         )
+    }
+
+    /// Select locally renderable science products using a reusable WCS policy.
+    ///
+    /// Product order is preserved. The maximum is applied after WCS selection so
+    /// callers receive up to the requested number of products from the selected
+    /// candidate set.
+    public func selectedScienceProducts(
+        maximumCount: Int,
+        includeSegmentationProducts: Bool = false,
+        wcsPolicy: ObservationProductWCSPolicy = .ignored
+    ) -> [CoamResult] {
+        guard maximumCount > 0 else { return [] }
+
+        let renderable = renderableScienceProducts(
+            includeSegmentationProducts: includeSegmentationProducts
+        )
+        let wcsCapable = renderable.filter(\.hasWCS)
+        let selected: [CoamResult]
+
+        switch wcsPolicy {
+        case .required:
+            selected = wcsCapable
+        case let .preferred(minimumCount):
+            selected = wcsCapable.count >= max(1, minimumCount)
+                ? wcsCapable
+                : renderable
+        case .ignored:
+            selected = renderable
+        }
+
+        return Array(selected.prefix(maximumCount))
     }
 }

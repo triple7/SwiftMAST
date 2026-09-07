@@ -213,4 +213,71 @@ final class CoamResultLocalResourcesTests: XCTestCase {
             ["science", "segmentation"]
         )
     }
+
+    func testObservationGroupSelectsScienceProductsUsingWCSPolicyAndLimit() {
+        let wcsOne = makeLocalProduct(
+            observationID: "wcs-one",
+            filter: "F200W",
+            fitsPath: "/tmp/wcs-one.fits"
+        )
+        let rasterOnly = makeLocalProduct(
+            observationID: "raster-only",
+            filter: "F444W",
+            imagePath: "/tmp/raster-only.png"
+        )
+        let wcsTwo = makeLocalProduct(
+            observationID: "wcs-two",
+            filter: "F770W",
+            fitsPath: "/tmp/wcs-two.fits"
+        )
+        let group = ObservationGroup(
+            mission: "JWST",
+            observationKey: "jw-test",
+            instrument: "NIRCAM",
+            products: [wcsOne, rasterOnly, wcsTwo]
+        )
+
+        XCTAssertEqual(
+            group.selectedScienceProducts(
+                maximumCount: 10,
+                wcsPolicy: .required
+            ).map(\.obs_id),
+            ["wcs-one", "wcs-two"]
+        )
+        XCTAssertEqual(
+            group.selectedScienceProducts(
+                maximumCount: 1,
+                wcsPolicy: .preferred(minimumCount: 2)
+            ).map(\.obs_id),
+            ["wcs-one"]
+        )
+        XCTAssertEqual(
+            group.selectedScienceProducts(
+                maximumCount: 10,
+                wcsPolicy: .preferred(minimumCount: 3)
+            ).map(\.obs_id),
+            ["wcs-one", "raster-only", "wcs-two"]
+        )
+        XCTAssertTrue(
+            group.selectedScienceProducts(maximumCount: 0).isEmpty
+        )
+    }
+
+    private func makeLocalProduct(
+        observationID: String,
+        filter: String,
+        fitsPath: String? = nil,
+        imagePath: String? = nil
+    ) -> CoamResult {
+        CoamResult(
+            localTargetName: "Target",
+            mission: "JWST",
+            observationID: observationID,
+            filter: filter,
+            localResources: CoamLocalResources(
+                fitsPath: fitsPath,
+                imagePath: imagePath
+            )
+        )
+    }
 }
