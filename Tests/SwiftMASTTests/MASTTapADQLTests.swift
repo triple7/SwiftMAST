@@ -27,14 +27,33 @@ final class MASTTapADQLTests: XCTestCase {
 
         XCTAssertTrue(query.contains("SELECT TOP 25"))
         XCTAssertTrue(query.contains("o.obsid"))
+        XCTAssertTrue(query.contains("o.em_min"))
+        XCTAssertTrue(query.contains("o.em_max"))
+        XCTAssertTrue(query.contains("o.wavelength_region"))
+        XCTAssertTrue(query.contains("o.t_exptime"))
+        XCTAssertTrue(query.contains("o.t_min"))
+        XCTAssertTrue(query.contains("o.t_max"))
+        XCTAssertTrue(query.contains("o.project"))
+        XCTAssertTrue(query.contains("o.provenance_name"))
+        XCTAssertTrue(query.contains("p.posdimension1"))
+        XCTAssertTrue(query.contains("p.posdimension2"))
+        XCTAssertTrue(query.contains("p.possamplesize"))
         XCTAssertTrue(query.contains("COALESCE(a.datauri, o.dataurl)"))
+        XCTAssertTrue(query.contains("COALESCE(p.previewuri, o.jpegurl)"))
         XCTAssertTrue(query.contains("a.productfilename"))
+        XCTAssertTrue(query.contains("a.contenttype"))
         XCTAssertTrue(query.contains("a.contentlength"))
         XCTAssertTrue(query.contains("%_i2d.fits"))
         XCTAssertTrue(query.contains("%_drz.fits"))
         XCTAssertTrue(query.contains("%_drc.fits"))
         XCTAssertTrue(query.contains("UPPER(o.filters) LIKE '%F200W%'"))
         XCTAssertFalse(query.contains("o.proposal_pi"))
+        XCTAssertFalse(query.contains("o.obs_title"))
+        XCTAssertFalse(query.contains("o.mtflag"))
+        XCTAssertFalse(query.contains("o.srcden"))
+        XCTAssertFalse(query.contains("o.target_classification"))
+        XCTAssertFalse(query.contains("p.posresolution"))
+        XCTAssertFalse(query.contains("p.posboundsstcs"))
         XCTAssertFalse(query.contains("SELECT TOP 25\n                o.calib_level"))
     }
 
@@ -53,6 +72,40 @@ final class MASTTapADQLTests: XCTestCase {
         )
 
         XCTAssertEqual(shortlisted.map(\.obs_id), ["small-f200w", "small-f356w"])
+    }
+
+    func testTargetCompositeTAPRowMapsSelectedColumnsInProjectionOrder() throws {
+        let row = [
+            "101", "jw-observation", "JWST", "NIRCAM/IMAGE", "NGC 628", "F200W",
+            "3", "IMAGE", "science", "PUBLIC", "24.174", "15.783",
+            "POLYGON ICRS 24.1 15.7 24.2 15.7 24.2 15.8 24.1 15.8", "1234.5",
+            "60000.25", "60000.75", "1700", "2300", "Infrared", "2739", "JWST", "CALJWST",
+            "4096", "2048", "0.031", "mast:JWST/product/example_i2d.fits",
+            "mast:JWST/product/example_i2d.jpg", "example_i2d.fits",
+            "application/fits", "73400320",
+        ].map(QValue.init(value:))
+
+        let result = try XCTUnwrap(
+            SwiftMAST().coamResultFromTargetCompositeTAPRow(row)
+        )
+
+        XCTAssertEqual(result.obsid, 101)
+        XCTAssertEqual(result.obs_id, "jw-observation")
+        XCTAssertEqual(result.t_exptime, 1234.5, accuracy: 0.0001)
+        XCTAssertEqual(result.t_min, 60_000.25, accuracy: 0.0001)
+        XCTAssertEqual(result.t_max, 60_000.75, accuracy: 0.0001)
+        XCTAssertEqual(result.em_min, 1700)
+        XCTAssertEqual(result.em_max, 2300)
+        XCTAssertEqual(result.proposal_id, "2739")
+        XCTAssertEqual(result.project, "JWST")
+        XCTAssertEqual(result.provenance_name, "CALJWST")
+        XCTAssertEqual(result.jpegURL, "mast:JWST/product/example_i2d.jpg")
+        XCTAssertEqual(result.productFilename, "example_i2d.fits")
+        XCTAssertEqual(result.artifactContentType, "application/fits")
+        XCTAssertEqual(result.positionDimension1, 4096)
+        XCTAssertEqual(result.positionDimension2, 2048)
+        XCTAssertEqual(result.positionSampleSize ?? 0, 0.031, accuracy: 0.0001)
+        XCTAssertEqual(result.dataURLSizeBytes, 73_400_320)
     }
 
     func testMASTTapAcceptsDirectADQLSelectQuery() {

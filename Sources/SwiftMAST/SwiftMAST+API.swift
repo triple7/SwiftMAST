@@ -2536,10 +2536,21 @@ extension SwiftMAST {
                 o.s_dec,
                 o.s_region,
                 o.t_exptime,
+                o.t_min,
+                o.t_max,
+                o.em_min,
+                o.em_max,
+                o.wavelength_region,
                 o.proposal_id,
-                o.obs_title,
+                o.project,
+                o.provenance_name,
+                p.posdimension1,
+                p.posdimension2,
+                p.possamplesize,
                 COALESCE(a.datauri, o.dataurl),
+                COALESCE(p.previewuri, o.jpegurl),
                 a.productfilename,
+                a.contenttype,
                 a.contentlength
             """
         }
@@ -2614,45 +2625,50 @@ extension SwiftMAST {
         )
     }
 
-    private func coamResultFromTargetCompositeTAPRow(_ row: [QValue]) -> CoamResult? {
-        guard row.count >= 19 else { return nil }
+    internal func coamResultFromTargetCompositeTAPRow(_ row: [QValue]) -> CoamResult? {
+        guard row.count >= 30 else { return nil }
         return CoamResult(
             calib_level: row[6].intValue ?? 0,
             dataRights: row[9].stringValue,
-            dataURL: row[16].stringValue,
+            dataURL: row[25].stringValue,
             dataproduct_type: row[7].stringValue.uppercased(),
             distance: 0,
-            em_max: 0,
-            em_min: 0,
+            em_max: Int(row[17].floatValue ?? 0),
+            em_min: Int(row[16].floatValue ?? 0),
             filters: row[5].stringValue,
             instrument_name: row[3].stringValue,
             intentType: row[8].stringValue,
-            jpegURL: "",
+            jpegURL: row[26].stringValue,
             mtFlag: false,
             objID: 0,
             obs_collection: row[2].stringValue,
             obs_id: row[1].stringValue,
-            obs_title: row[15].stringValue,
+            obs_title: "",
             obsid: row[0].intValue ?? 0,
-            project: "",
-            proposal_id: row[14].stringValue,
+            project: row[20].stringValue,
+            proposal_id: row[19].stringValue,
             proposal_pi: "",
             proposal_type: "",
-            provenance_name: "",
+            provenance_name: row[21].stringValue,
             s_dec: row[11],
             s_ra: row[10],
             s_region: row[12].stringValue,
             sequence_number: 0,
             srcDen: 0,
             t_exptime: row[13].floatValue ?? 0,
-            t_max: 0,
-            t_min: 0,
+            t_max: row[15].floatValue ?? 0,
+            t_min: row[14].floatValue ?? 0,
             t_obs_release: 0,
             target_classification: "",
             target_name: row[4].stringValue,
-            wavelength_region: "",
-            dataURLSizeBytes: row[18].int64Value,
-            jpegURLSizeBytes: nil
+            wavelength_region: row[18].stringValue,
+            dataURLSizeBytes: row[29].int64Value,
+            jpegURLSizeBytes: nil,
+            productFilename: row[27].stringValue,
+            artifactContentType: row[28].stringValue,
+            positionDimension1: row[22].intValue,
+            positionDimension2: row[23].intValue,
+            positionSampleSize: row[24].floatValue.map(Double.init)
         )
     }
 

@@ -60,6 +60,42 @@ final class CoamResultLocalResourcesTests: XCTestCase {
         XCTAssertTrue(decoded.isLocallyRenderable)
     }
 
+    func testCoamResultDecodesLegacyJSONWithoutOptionalTAPMetadata() throws {
+        let original = CoamResult(
+            localTargetName: "NGC 628",
+            mission: "JWST",
+            observationID: "jw-legacy-cache",
+            filter: "F200W",
+            localResources: CoamLocalResources()
+        )
+        var object = try XCTUnwrap(
+            JSONSerialization.jsonObject(with: JSONEncoder().encode(original))
+                as? [String: Any]
+        )
+        for key in [
+            "productFilename",
+            "artifactContentType",
+            "positionDimension1",
+            "positionDimension2",
+            "positionSampleSize",
+        ] {
+            object.removeValue(forKey: key)
+        }
+
+        let decoded = try JSONDecoder().decode(
+            CoamResult.self,
+            from: JSONSerialization.data(withJSONObject: object)
+        )
+
+        XCTAssertEqual(decoded.obs_id, "jw-legacy-cache")
+        XCTAssertEqual(decoded.filters, "F200W")
+        XCTAssertNil(decoded.productFilename)
+        XCTAssertNil(decoded.artifactContentType)
+        XCTAssertNil(decoded.positionDimension1)
+        XCTAssertNil(decoded.positionDimension2)
+        XCTAssertNil(decoded.positionSampleSize)
+    }
+
     func testLocalCacheWithoutSidecarProducesCanonicalCoamResult() throws {
         let mast = SwiftMAST()
         let targetName = "LocalCanonical\(UUID().uuidString)"

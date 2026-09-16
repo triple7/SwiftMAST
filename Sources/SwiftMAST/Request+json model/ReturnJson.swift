@@ -202,6 +202,16 @@ public struct CoamResult: Codable, Comparable, Hashable, CustomStringConvertible
     public let target_classification: String
     public let target_name: String
     public let wavelength_region: String
+    /// Artifact filename returned by CAOM TAP, when that query profile selects it.
+    public let productFilename: String?
+    /// MIME type reported for the selected CAOM artifact.
+    public let artifactContentType: String?
+    /// Optional image width reported by the CAOM plane (`posdimension1`).
+    public let positionDimension1: Int?
+    /// Optional image height reported by the CAOM plane (`posdimension2`).
+    public let positionDimension2: Int?
+    /// Optional median pixel scale reported by the CAOM plane (`possamplesize`).
+    public let positionSampleSize: Double?
     public var dataURLSizeBytes: Int64? = nil
     public var jpegURLSizeBytes: Int64? = nil
     public var fitsImageHeaderMetadata: FITSImageHeaderMetadata? = nil
@@ -299,7 +309,12 @@ extension CoamResult {
         dataURLSizeBytes: Int64? = nil,
         jpegURLSizeBytes: Int64? = nil,
         fitsImageHeaderMetadata: FITSImageHeaderMetadata? = nil,
-        localResources: CoamLocalResources? = nil
+        localResources: CoamLocalResources? = nil,
+        productFilename: String? = nil,
+        artifactContentType: String? = nil,
+        positionDimension1: Int? = nil,
+        positionDimension2: Int? = nil,
+        positionSampleSize: Double? = nil
     ) {
         self.calib_level = calib_level
         self.dataRights = dataRights
@@ -336,6 +351,11 @@ extension CoamResult {
         self.target_classification = target_classification
         self.target_name = target_name
         self.wavelength_region = wavelength_region
+        self.productFilename = productFilename
+        self.artifactContentType = artifactContentType
+        self.positionDimension1 = positionDimension1
+        self.positionDimension2 = positionDimension2
+        self.positionSampleSize = positionSampleSize
         self.dataURLSizeBytes = dataURLSizeBytes
         self.jpegURLSizeBytes = jpegURLSizeBytes
         self.fitsImageHeaderMetadata = fitsImageHeaderMetadata
