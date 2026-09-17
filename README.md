@@ -198,8 +198,12 @@ greedy step, cumulative coverage, distinct filters, and total selected bytes.
 
 ### Requests-only Python research script
 
-The standalone Python version performs the same metadata-only selection without
-loading SwiftMAST, downloading FITS products, or reading FITS headers:
+`greedy_mast_tap_selection.py` is the single requests-only tool for schema inspection,
+raw TAP research, and optional metadata-only greedy product selection. It does not load
+SwiftMAST, download FITS products, or read FITS headers. With `--select-products`, it prepares
+each mission response separately, retains the mission/instrument/observation hierarchy,
+and uses observation-group heaps plus spatial-cell and filter indexes to update only
+candidates affected by the last selection:
 
 ```bash
 .venv/bin/python Sources/scripts/greedy_mast_tap_selection.py \
@@ -207,28 +211,31 @@ loading SwiftMAST, downloading FITS products, or reading FITS headers:
   --missions JWST,HST,HLA \
   --balanced-missions \
   --limit 100 \
-  --max-products 5 \
+  --select-products \
+  --max-products 20 \
   --max-mb 70 \
-  --log-level INFO \
-  --log-file greedy-science-product.log \
-  --output greedy-science-product-report.json
+  --max-total-mb 500 \
+  --log-file mast-science-product.log \
+  --output hierarchical-science-product-report.json
 ```
 
-`--limit` controls the number of TAP candidate rows, matching the earlier TAP
-research script. `--max-products` controls how many products the greedy algorithm
-may select. The output includes both the ordered products and their observation
-groups.
+Without `--select-products`, `greedy_mast_tap_selection.py` provides query-only output.
+With it enabled, the report gains a `selection` object containing ordered products,
+observation groups, exclusions, selection steps, and heap/index operation metrics. The
+selector does not repeatedly scan every remaining candidate.
 
-Mission queries run sequentially by default (`--workers 1`) because the synchronous
-MAST TAP service may return HTTP 500 under transient load. HTTP 429 and 5xx responses
-are retried five times with exponential backoff. If one mission still fails, successful
-mission results are retained and the error is written to `mission_query_errors`; add
-`--require-all-missions` when partial results are not acceptable.
+`--limit` controls the number of TAP candidate rows and `--max-products` controls the
+maximum selected products. Mission queries run sequentially by default (`--workers 1`)
+because the synchronous MAST TAP service may return HTTP 500 under transient load.
+HTTP 429 and 5xx responses are retried five times with exponential backoff. If one
+balanced mission query still fails, successful results are retained and the error is
+written to `query_errors`; add `--require-all-missions` when partial results are not
+acceptable.
 
-Logs are timestamped and written to stderr, keeping stdout available for JSON. Use
-`--log-level DEBUG` for HTTP and retry diagnostics, or `--log-file PATH` to retain a
-copy of the target-resolution, mission-query, candidate-filtering, greedy-step, and
-completion events.
+The script logs progress and elapsed times to the terminal at `INFO` level by default.
+Use `--log-level DEBUG` for HTTP details, `--log-level WARNING` for quieter output, or
+`--log-file PATH` to retain a copy. Logs use stderr, so JSON written to stdout remains
+machine-readable.
 
 ## Science Product Extraction
 

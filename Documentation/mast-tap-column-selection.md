@@ -11,7 +11,7 @@ reject an otherwise valid product.
 The projection is kept in two places:
 
 - Swift: `caomObservationGroupsTAPQuery(..., columnProfile: .targetCompositeSelection)`
-- Python: `APPLICATION_COLUMNS` in `Sources/scripts/query_mast_tap.py`
+- Python: `APPLICATION_COLUMNS` in `Sources/scripts/greedy_mast_tap_selection.py`
 
 ### Selected columns
 
@@ -61,7 +61,7 @@ empirical check, not a schema guarantee.
 ## Query and inspect 100 rows
 
 ```bash
-.venv/bin/python Sources/scripts/query_mast_tap.py \
+.venv/bin/python Sources/scripts/greedy_mast_tap_selection.py \
   --target "NGC 628" \
   --missions JWST,HST,HLA \
   --balanced-missions \
@@ -78,7 +78,7 @@ because the final ordering groups rows by collection.
 To inspect every field exposed by the three joined tables:
 
 ```bash
-.venv/bin/python Sources/scripts/query_mast_tap.py --schema \
+.venv/bin/python Sources/scripts/greedy_mast_tap_selection.py --schema \
   --output mast-caom-tap-schema.json
 ```
 

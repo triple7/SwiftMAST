@@ -1,39 +1,59 @@
 #!/usr/bin/env python3
-"""Select science FITS products and observation groups with a greedy TAP search.
+"""Query MAST CAOM TAP and greedily select useful science-image products.
 
-This is a requests-only research implementation of SwiftMAST's greedy selector.
-It resolves a target, queries CAOM TAP metadata, rejects incomplete or oversized
-products, and selects products that add sky coverage and filter variety for the
-least download cost. It does not download FITS files or read FITS headers.
+The initial query is metadata-only: it does not download FITS headers or FITS
+pixels. It returns the product URI, archive metadata, sky footprint, dimensions,
+pixel scale, and estimated file size needed for preliminary selection/ranking.
+
+Flow:
+    1. Resolve --target, unless explicit --ra/--dec coordinates are supplied.
+    2. Build and submit one TAP query, or one query per mission when
+       --balanced-missions is enabled.
+    3. Convert TAP array rows into named Python dictionaries.
+    4. When --select-products is enabled, prepare each mission independently,
+       group candidates by observation, and run hierarchical incremental greedy
+       selection using coverage/filter indexes and priority heaps.
+    5. Emit the original query rows plus availability statistics and, when
+       requested, the ordered product and observation-group selection.
+
+The selector is metadata-only. A selected product can later become an AOSImage,
+and the selected products in one observation group can become an AOSImageStack.
 
 Dependency:
     python3 -m pip install requests
 
-Example matching the TAP-column research command:
-    .venv/bin/python Sources/scripts/greedy_mast_tap_selection.py \
-      --target "NGC 628" \
-      --missions JWST,HST,HLA \
-      --balanced-missions \
-      --limit 100 \
-      --max-products 5 \
-      --max-mb 70 \
-      --output greedy-science-product-report.json
+Examples:
+    python3 Sources/scripts/greedy_mast_tap_selection.py --target "NGC 628" --limit 10
+
+    python3 Sources/scripts/greedy_mast_tap_selection.py \
+        --ra 24.174 --dec 15.783 --radius 0.1 \
+        --missions JWST,HST,HLA --balanced-missions --limit 100 \
+        --output demo-mast-selected-columns-query.txt
+
+    python3 Sources/scripts/greedy_mast_tap_selection.py \
+        --target "NGC 628" --missions JWST,HST,HLA \
+        --balanced-missions --limit 100 --select-products \
+        --max-products 20 --max-total-mb 500 \
+        --output hierarchical-science-product-report.json
+
+    python3 Sources/scripts/greedy_mast_tap_selection.py --schema
 """
 
 from __future__ import annotations
 
 import argparse
+import heapq
 import json
 import logging
 import math
 import re
 import sys
 import time
-from collections import Counter
+from collections import Counter, defaultdict
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from dataclasses import asdict, dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Iterable
+from typing import Any
 
 import requests
 from requests.adapters import HTTPAdapter
@@ -43,51 +63,58 @@ from urllib3.util.retry import Retry
 MAST_TAP_URL = "https://mast.stsci.edu/vo-tap/api/v0.1/caom/sync"
 MAST_API_URL = "https://mast.stsci.edu/api/v0/invoke"
 DEFAULT_MISSIONS = ("JWST", "HST", "HLA")
+TAP_TABLES = ("dbo.obspointing", "dbo.caomplane", "dbo.caomartifact")
 MIB = 1_048_576
-LOGGER = logging.getLogger("swiftmast.greedy_tap")
-
-# These are the metadata fields used by the selector. No FITS header request is
-# made. s_region_area is intentionally absent because it is computed locally.
-APPLICATION_COLUMNS = (
-    "o.obsid AS obsid",
-    "o.obs_id AS obs_id",
-    "o.obs_collection AS obs_collection",
-    "o.instrument_name AS instrument_name",
-    "o.target_name AS target_name",
-    "o.filters AS filters",
-    "o.calib_level AS calib_level",
-    "o.dataproduct_type AS dataproduct_type",
-    "o.intenttype AS intenttype",
-    "o.datarights AS datarights",
-    "o.s_ra AS s_ra",
-    "o.s_dec AS s_dec",
-    "o.s_region AS s_region",
-    "o.t_exptime AS t_exptime",
-    "o.t_min AS t_min",
-    "o.t_max AS t_max",
-    "o.em_min AS em_min",
-    "o.em_max AS em_max",
-    "o.wavelength_region AS wavelength_region",
-    "o.proposal_id AS proposal_id",
-    "o.project AS project",
-    "o.provenance_name AS provenance_name",
-    "p.posdimension1 AS posdimension1",
-    "p.posdimension2 AS posdimension2",
-    "p.possamplesize AS possamplesize",
-    "COALESCE(a.datauri, o.dataurl) AS datauri",
-    "COALESCE(p.previewuri, o.jpegurl) AS previewuri",
-    "a.productfilename AS productfilename",
-    "a.contenttype AS contenttype",
-    "a.contentlength AS contentlength",
-)
-
 IGNORED_FILTERS = {"", "CLEAR", "DETECTION", "N/A", "NA", "NONE", "UNKNOWN", "WHITE"}
 FILTER_TOKEN = re.compile(r"^(?:FQ?|G)\d{2,4}[A-Z0-9]*$")
+LOGGER = logging.getLogger("swiftmast.greedy_mast_tap")
 
+# Keep this projection aligned with SwiftMAST's `.targetCompositeSelection`
+# profile. Required selection fields are followed by useful optional plane
+# metadata; the latter is allowed to be null and must never reject a product.
+APPLICATION_COLUMNS = (
+    "o.obsid",
+    "o.obs_id",
+    "o.obs_collection",
+    "o.instrument_name",
+    "o.target_name",
+    "o.filters",
+    "o.calib_level",
+    "o.dataproduct_type",
+    "o.intenttype",
+    "o.datarights",
+    "o.s_ra",
+    "o.s_dec",
+    "o.s_region",
+    "o.t_exptime",
+    "o.t_min",
+    "o.t_max",
+    "o.em_min",
+    "o.em_max",
+    "o.wavelength_region",
+    "o.proposal_id",
+    "o.project",
+    "o.provenance_name",
+    "p.posdimension1",
+    "p.posdimension2",
+    "p.possamplesize",
+    "COALESCE(a.datauri, o.dataurl) AS datauri",
+    "COALESCE(p.previewuri, o.jpegurl) AS previewuri",
+    "a.productfilename",
+    "a.contenttype",
+    "a.contentlength",
+)
+
+
+# ---------------------------------------------------------------------------
+# Selection configuration and in-memory state
+# ---------------------------------------------------------------------------
 
 @dataclass(frozen=True)
 class SelectionOptions:
-    max_products: int = 5
+    """Controls the optional hierarchical science-product selector."""
+
+    max_products: int = 20
     max_product_bytes: int = 70 * MIB
     max_total_bytes: int | None = None
     target_coverage: float = 0.80
@@ -100,26 +127,68 @@ class SelectionOptions:
 
 @dataclass(frozen=True)
 class CoverageGrid:
+    """Fixed target samples used to approximate the union of sky footprints."""
+
     points: tuple[tuple[float, float], ...]
     target_area_square_degrees: float
 
-    def fraction(self, cells: set[int]) -> float:
-        return min(len(cells) / len(self.points), 1.0) if self.points else 0.0
+    def fraction_for_count(self, count: int) -> float:
+        """Convert a covered-cell count into a target coverage fraction."""
+
+        return min(count / len(self.points), 1.0) if self.points else 0.0
 
 
-@dataclass(frozen=True)
-class Candidate:
+@dataclass
+class CandidateState:
+    """Cached mutable score state for one eligible science FITS product."""
+
     product: dict[str, Any]
     identity: str
-    instrument_branch: str
+    mission: str
+    instrument: str
     observation_key: str
     filters: frozenset[str]
-    file_size_bytes: int
     covered_cells: frozenset[int]
+    file_size_bytes: int
+    uncovered_cell_count: int
+    unseen_filter_count: int
+    score: float = 0.0
+    version: int = 0
+    active: bool = True
 
+    @property
+    def group_id(self) -> tuple[str, str, str]:
+        """Identify the mission/instrument/observation group containing the product."""
+
+        return self.mission, self.instrument, self.observation_key
+
+
+@dataclass
+class PreparedBranch:
+    """One mission branch prepared before branches are combined for selection."""
+
+    mission: str
+    candidates: list[CandidateState]
+    observation_groups: dict[tuple[str, str, str], list[CandidateState]]
+    exclusions: list[dict[str, Any]]
+    fetched_count: int
+
+
+@dataclass
+class ObservationGroupQueue:
+    """Priority queue for the active products belonging to one observation."""
+
+    group_id: tuple[str, str, str]
+    candidate_heap: list[tuple[Any, ...]] = field(default_factory=list)
+    version: int = 0
+
+
+# ---------------------------------------------------------------------------
+# Logging, HTTP, target resolution, and TAP requests
+# ---------------------------------------------------------------------------
 
 def configure_logging(level: str, log_file: Path | None) -> None:
-    """Configure timestamped stderr logging and an optional duplicate log file."""
+    """Log to the terminal by default and optionally duplicate logs to a file."""
 
     handlers: list[logging.Handler] = [logging.StreamHandler(sys.stderr)]
     if log_file is not None:
@@ -134,6 +203,8 @@ def configure_logging(level: str, log_file: Path | None) -> None:
 
 
 def requests_session(retries: int) -> requests.Session:
+    """Create a retrying MAST session for rate limits and transient server errors."""
+
     retry = Retry(
         total=retries,
         connect=retries,
@@ -150,7 +221,7 @@ def requests_session(retries: int) -> requests.Session:
     session.headers.update(
         {
             "Accept": "application/json",
-            "User-Agent": "SwiftMAST-greedy-TAP-research/1.0",
+            "User-Agent": "SwiftMAST-TAP-query/2.0",
         }
     )
     return session
@@ -160,14 +231,27 @@ def post_form_json(
     url: str,
     values: dict[str, str],
     timeout: float,
-    retries: int,
+    retries: int = 5,
 ) -> dict[str, Any]:
-    LOGGER.debug("HTTP POST started url=%s timeout_seconds=%s retries=%s", url, timeout, retries)
+    """POST form-encoded values and decode a JSON response."""
+
     started = time.monotonic()
+    LOGGER.debug(
+        "HTTP POST started url=%s timeout_seconds=%s retries=%s",
+        url,
+        timeout,
+        retries,
+    )
     with requests_session(retries) as session:
         try:
             response = session.post(url, data=values, timeout=timeout)
         except requests.RequestException as error:
+            LOGGER.error(
+                "HTTP POST failed url=%s elapsed_seconds=%.3f error=%s",
+                url,
+                time.monotonic() - started,
+                error,
+            )
             raise RuntimeError(f"Could not query MAST: {error}") from error
         if response.status_code >= 400:
             detail = " ".join(response.text[:500].split())
@@ -181,44 +265,132 @@ def post_form_json(
             raise RuntimeError(
                 f"MAST returned HTTP {response.status_code} after {retries} retries.{suffix}"
             )
-    LOGGER.debug(
-        "HTTP POST finished url=%s status=%s elapsed_seconds=%.3f response_bytes=%s",
-        url,
-        response.status_code,
-        time.monotonic() - started,
-        len(response.content),
-    )
 
     try:
         decoded = response.json()
     except requests.exceptions.JSONDecodeError as error:
         raise RuntimeError(f"MAST did not return JSON: {response.text[:500]}") from error
+
     if not isinstance(decoded, dict):
         raise RuntimeError("MAST returned an unexpected JSON value")
+    LOGGER.debug(
+        "HTTP POST finished url=%s status=%s elapsed_seconds=%.3f",
+        url,
+        response.status_code,
+        time.monotonic() - started,
+    )
     return decoded
 
 
-def resolve_target(target: str, timeout: float, retries: int) -> tuple[float, float]:
-    LOGGER.info("Target resolution started target=%r", target)
+def query_tap(adql: str, timeout: float = 120, retries: int = 5) -> dict[str, Any]:
+    """Submit an ADQL query to the synchronous MAST CAOM TAP endpoint."""
+
     started = time.monotonic()
-    request = {
+    LOGGER.info("TAP query started timeout_seconds=%s retries=%s", timeout, retries)
+    response = post_form_json(
+        MAST_TAP_URL,
+        {
+            "REQUEST": "doQuery",
+            "LANG": "ADQL",
+            "QUERY": adql,
+            # MAST uses this parameter name for its JSON representation.
+            "responseformat": "json",
+        },
+        timeout,
+        retries,
+    )
+
+    # Successful MAST JSON responses contain `info` and `data`. TAP errors may
+    # instead be returned as a different JSON object.
+    if not isinstance(response.get("info"), list) or not isinstance(response.get("data"), list):
+        raise RuntimeError(f"Unexpected TAP response: {json.dumps(response)[:500]}")
+    LOGGER.info(
+        "TAP query finished rows=%s elapsed_seconds=%.3f",
+        len(response["data"]),
+        time.monotonic() - started,
+    )
+    return response
+
+
+def execute_tap_queries(
+    jobs: list[tuple[str, str]],
+    *,
+    timeout: float,
+    retries: int,
+    workers: int,
+    require_all: bool,
+) -> tuple[list[tuple[str, dict[str, Any], str]], dict[str, str]]:
+    """Execute labeled TAP queries with bounded concurrency and partial recovery."""
+
+    responses: dict[str, tuple[dict[str, Any], str]] = {}
+    failures: dict[str, str] = {}
+    worker_count = min(max(workers, 1), max(len(jobs), 1), 4)
+
+    def execute(label: str, adql: str) -> dict[str, Any]:
+        LOGGER.info("TAP branch query started branch=%s", label)
+        started = time.monotonic()
+        response = query_tap(adql, timeout=timeout, retries=retries)
+        LOGGER.info(
+            "TAP branch query finished branch=%s rows=%s elapsed_seconds=%.3f",
+            label,
+            len(response.get("data", [])),
+            time.monotonic() - started,
+        )
+        return response
+
+    with ThreadPoolExecutor(max_workers=worker_count) as executor:
+        futures = {
+            executor.submit(execute, label, adql): (label, adql)
+            for label, adql in jobs
+        }
+        for future in as_completed(futures):
+            label, adql = futures[future]
+            try:
+                responses[label] = future.result(), adql
+            except RuntimeError as error:
+                failures[label] = str(error)
+                LOGGER.warning("TAP branch query failed branch=%s error=%s", label, error)
+
+    if failures and require_all:
+        detail = "; ".join(f"{label}: {message}" for label, message in sorted(failures.items()))
+        raise RuntimeError(f"One or more required TAP queries failed: {detail}")
+    if not responses:
+        detail = "; ".join(f"{label}: {message}" for label, message in sorted(failures.items()))
+        raise RuntimeError(f"All TAP queries failed: {detail}")
+
+    ordered = [
+        (label, responses[label][0], responses[label][1])
+        for label, _ in jobs
+        if label in responses
+    ]
+    return ordered, failures
+
+
+def resolve_target(target: str, timeout: float = 30, retries: int = 5) -> tuple[float, float]:
+    """Resolve a target name through Mast.Name.Lookup."""
+
+    started = time.monotonic()
+    LOGGER.info("Target resolution started target=%r", target)
+    mast_request = {
         "service": "Mast.Name.Lookup",
         "params": {"input": target, "format": "json"},
         "format": "json",
     }
     response = post_form_json(
         MAST_API_URL,
-        {"request": json.dumps(request, separators=(",", ":"))},
+        {"request": json.dumps(mast_request, separators=(",", ":"))},
         timeout,
         retries,
     )
     coordinates = response.get("resolvedCoordinate")
     if not isinstance(coordinates, list) or not coordinates:
         raise RuntimeError(f"MAST could not resolve target {target!r}")
+
+    first = coordinates[0]
     try:
-        position = float(coordinates[0]["ra"]), float(coordinates[0]["decl"])
+        position = float(first["ra"]), float(first["decl"])
     except (KeyError, TypeError, ValueError) as error:
-        raise RuntimeError(f"Invalid target-resolution response: {coordinates[0]!r}") from error
+        raise RuntimeError(f"Invalid target-resolution response: {first!r}") from error
     LOGGER.info(
         "Target resolution finished target=%r ra=%.8f dec=%.8f elapsed_seconds=%.3f",
         target,
@@ -229,8 +401,37 @@ def resolve_target(target: str, timeout: float, retries: int) -> tuple[float, fl
     return position
 
 
-def adql_strings(values: Iterable[str]) -> str:
+# ---------------------------------------------------------------------------
+# ADQL construction and TAP response conversion
+# ---------------------------------------------------------------------------
+
+def adql_strings(values: list[str] | tuple[str, ...]) -> str:
+    """Return safely quoted ADQL string literals."""
+
     return ",".join("'" + value.replace("'", "''") + "'" for value in values)
+
+
+def parse_csv_values(raw: str) -> list[str]:
+    """Parse a required comma-separated CLI value and normalize it to uppercase."""
+
+    values = [value.strip().upper() for value in raw.split(",") if value.strip()]
+    if not values:
+        raise ValueError("at least one value is required")
+    return values
+
+
+def parse_column_values(raw: str) -> list[str]:
+    """Parse simple column references accepted by the diagnostic override."""
+
+    columns = [value.strip() for value in raw.split(",") if value.strip()]
+    pattern = re.compile(r"^(?:(?:o|p|a)\.)?(?:\*|[A-Za-z_][A-Za-z0-9_]*)$")
+    invalid = [column for column in columns if pattern.fullmatch(column) is None]
+    if invalid:
+        raise ValueError(
+            "--columns accepts simple names such as o.obs_id,p.posdimension1,a.datauri; "
+            f"invalid: {', '.join(invalid)}"
+        )
+    return columns
 
 
 def build_science_product_query(
@@ -238,21 +439,26 @@ def build_science_product_query(
     ra: float,
     dec: float,
     radius: float,
-    mission: str,
+    missions: list[str],
     filters: list[str],
-    calibration_levels: list[int],
-    product_types: list[str],
     limit: int,
+    calibration_levels: list[int] | None = None,
+    product_types: list[str] | None = None,
+    columns: list[str] | None = None,
 ) -> str:
+    """Build the metadata-only ADQL used for candidate discovery."""
+
+    calibration_levels = calibration_levels or [3, 4]
+    product_types = product_types or ["IMAGE", "CUBE"]
     predicates = [
         "CONTAINS("
         "POINT('ICRS', o.s_ra, o.s_dec), "
         f"CIRCLE('ICRS', {ra:.12g}, {dec:.12g}, {radius:.12g})"
         ") = 1",
-        f"o.obs_collection = '{mission.replace(chr(39), chr(39) * 2)}'",
+        f"o.obs_collection IN ({adql_strings(missions)})",
         "o.datarights = 'PUBLIC'",
         f"o.calib_level IN ({','.join(str(value) for value in calibration_levels)})",
-        f"LOWER(o.dataproduct_type) IN ({adql_strings(value.lower() for value in product_types)})",
+        f"LOWER(o.dataproduct_type) IN ({adql_strings([value.lower() for value in product_types])})",
         "LOWER(a.productfilename) LIKE '%.fits'",
         "("
         "(o.obs_collection = 'JWST' AND LOWER(a.productfilename) LIKE '%_i2d.fits') "
@@ -262,43 +468,40 @@ def build_science_product_query(
         "OR o.obs_collection NOT IN ('JWST','HST','HLA')"
         ")",
     ]
+
     if filters:
-        fragments = [value.replace("'", "''").upper() for value in filters]
-        predicates.append(
-            "(" + " OR ".join(f"UPPER(o.filters) LIKE '%{value}%'" for value in fragments) + ")"
-        )
+        escaped_filters = [value.replace("'", "''") for value in filters]
+        filter_predicates = [f"UPPER(o.filters) LIKE '%{value}%'" for value in escaped_filters]
+        predicates.append("(" + " OR ".join(filter_predicates) + ")")
+
+    select_columns = ",\n        ".join(columns or APPLICATION_COLUMNS)
 
     return (
         f"SELECT TOP {limit}\n"
-        f"    {',\n    '.join(APPLICATION_COLUMNS)}\n"
+        f"    {select_columns}\n"
         "FROM dbo.obspointing AS o\n"
         "JOIN dbo.caomplane AS p ON p.planetid = o.objid\n"
         "JOIN dbo.caomartifact AS a ON a.planetid = p.planetid\n"
         "WHERE "
         + "\n  AND ".join(predicates)
-        + "\nORDER BY o.instrument_name, o.obs_id, o.filters, o.t_min"
+        + "\nORDER BY o.obs_collection, o.instrument_name, o.obs_id, o.filters"
     )
 
 
-def query_tap(adql: str, timeout: float, retries: int) -> dict[str, Any]:
-    response = post_form_json(
-        MAST_TAP_URL,
-        {
-            "REQUEST": "doQuery",
-            "LANG": "ADQL",
-            "QUERY": adql,
-            "responseformat": "json",
-        },
-        timeout,
-        retries,
+def build_schema_query() -> str:
+    """Return the schema query for all tables used by the product query."""
+
+    return (
+        "SELECT table_name,column_name,datatype,unit,description "
+        "FROM TAP_SCHEMA.columns "
+        f"WHERE table_name IN ({adql_strings(TAP_TABLES)})"
     )
-    if not isinstance(response.get("info"), list) or not isinstance(response.get("data"), list):
-        raise RuntimeError(f"Unexpected TAP response: {json.dumps(response)[:500]}")
-    return response
 
 
 def coerce_tap_value(value: Any, datatype: str) -> Any:
-    if value in (None, ""):
+    """Convert a TAP cell to its advertised scalar type when possible."""
+
+    if value is None or value == "":
         return None
     try:
         if datatype in {"int", "integer", "long", "short"}:
@@ -307,53 +510,112 @@ def coerce_tap_value(value: Any, datatype: str) -> Any:
             number = float(value)
             return number if math.isfinite(number) else None
         if datatype == "boolean":
+            if isinstance(value, bool):
+                return value
             normalized = str(value).strip().lower()
             if normalized in {"1", "true", "t"}:
                 return True
             if normalized in {"0", "false", "f"}:
                 return False
     except (TypeError, ValueError):
-        pass
+        return value
     return value
 
 
 def named_rows(response: dict[str, Any]) -> list[dict[str, Any]]:
-    info = response["info"]
-    names = [str(column.get("name", f"column_{index}")).lower() for index, column in enumerate(info)]
-    types = [str(column.get("datatype", column.get("type", ""))).lower() for column in info]
-    rows: list[dict[str, Any]] = []
-    for raw in response["data"]:
-        if not isinstance(raw, list):
+    """Convert MAST's array rows into dictionaries using response `info`."""
+
+    columns = response["info"]
+    names = [str(column.get("name", f"column_{index}")) for index, column in enumerate(columns)]
+    datatypes = [str(column.get("datatype", column.get("type", ""))).lower() for column in columns]
+
+    output: list[dict[str, Any]] = []
+    for raw_row in response["data"]:
+        if not isinstance(raw_row, list):
             continue
-        rows.append(
+        output.append(
             {
-                name: coerce_tap_value(raw[index], types[index]) if index < len(raw) else None
+                name: coerce_tap_value(raw_row[index], datatypes[index])
+                if index < len(raw_row)
+                else None
                 for index, name in enumerate(names)
             }
         )
-    return rows
+    return output
 
 
-def parse_csv(raw: str, *, uppercase: bool = True) -> list[str]:
-    values = [value.strip() for value in raw.split(",") if value.strip()]
-    return [value.upper() for value in values] if uppercase else values
+def column_availability(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Measure non-null availability for every returned TAP field."""
 
+    if not rows:
+        return []
+    keys = sorted({key for row in rows for key in row})
+    total = len(rows)
+    return [
+        {
+            "column": key,
+            "available_rows": sum(row.get(key) not in (None, "") for row in rows),
+            "total_rows": total,
+            "availability_percent": round(
+                sum(row.get(key) not in (None, "") for row in rows) * 100 / total,
+                1,
+            ),
+        }
+        for key in keys
+    ]
+
+
+def mission_summary(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Return row counts and per-column availability for each collection."""
+
+    missions = sorted(
+        {
+            str(row.get("obs_collection"))
+            for row in rows
+            if row.get("obs_collection") not in (None, "")
+        }
+    )
+    summary = []
+    for mission in missions:
+        mission_rows = [
+            row for row in rows if str(row.get("obs_collection")) == mission
+        ]
+        summary.append(
+            {
+                "mission": mission,
+                "row_count": len(mission_rows),
+                "column_availability": column_availability(mission_rows),
+            }
+        )
+    return summary
+
+
+# ---------------------------------------------------------------------------
+# Sky-footprint, filter, and observation-group utilities
+# ---------------------------------------------------------------------------
 
 def wrapped_degrees(value: float) -> float:
+    """Normalize an angular difference to the [-180, 180] degree interval."""
+
     value %= 360.0
-    if value > 180.0:
-        value -= 360.0
-    return value
+    return value - 360.0 if value > 180.0 else value
 
 
 def angular_distance_degrees(lhs: tuple[float, float], rhs: tuple[float, float]) -> float:
+    """Return great-circle distance between two ICRS positions in degrees."""
+
     ra1, dec1 = (math.radians(value) for value in lhs)
     ra2, dec2 = (math.radians(value) for value in rhs)
-    cosine = math.sin(dec1) * math.sin(dec2) + math.cos(dec1) * math.cos(dec2) * math.cos(ra1 - ra2)
+    cosine = (
+        math.sin(dec1) * math.sin(dec2)
+        + math.cos(dec1) * math.cos(dec2) * math.cos(ra1 - ra2)
+    )
     return math.degrees(math.acos(min(1.0, max(-1.0, cosine))))
 
 
 def parse_s_region(value: str) -> tuple[tuple[str, tuple[float, ...]], ...] | None:
+    """Parse the CIRCLE/POLYGON STC-S forms returned by the CAOM query."""
+
     tokens = value.split()
     index = 0
     shapes: list[tuple[str, tuple[float, ...]]] = []
@@ -381,6 +643,8 @@ def parse_s_region(value: str) -> tuple[tuple[str, tuple[float, ...]], ...] | No
 
 
 def polygon_contains(point: tuple[float, float], numbers: tuple[float, ...]) -> bool:
+    """Test a sky point against a small STC-S polygon in a local tangent plane."""
+
     point_ra, point_dec = point
     scale = max(abs(math.cos(math.radians(point_dec))), 0.01)
     vertices = [
@@ -393,7 +657,9 @@ def polygon_contains(point: tuple[float, float], numbers: tuple[float, ...]) -> 
         x_previous, y_previous = vertices[previous]
         crosses = (y_current > 0) != (y_previous > 0)
         if crosses:
-            edge_x = x_current + (x_previous - x_current) * (-y_current) / (y_previous - y_current)
+            edge_x = x_current + (x_previous - x_current) * (-y_current) / (
+                y_previous - y_current
+            )
             if edge_x >= 0:
                 inside = not inside
         previous = current
@@ -404,6 +670,8 @@ def region_contains(
     point: tuple[float, float],
     shapes: tuple[tuple[str, tuple[float, ...]], ...],
 ) -> bool:
+    """Return whether a point is inside any parsed CIRCLE or POLYGON component."""
+
     for shape, numbers in shapes:
         if shape == "CIRCLE":
             if angular_distance_degrees(point, (numbers[0], numbers[1])) <= numbers[2]:
@@ -414,6 +682,8 @@ def region_contains(
 
 
 def make_coverage_grid(ra: float, dec: float, radius: float, dimension: int) -> CoverageGrid:
+    """Sample a target cone with a deterministic grid for coverage estimation."""
+
     dimension = min(max(dimension, 4), 200)
     ra_scale = max(abs(math.cos(math.radians(dec))), 0.01)
     points: list[tuple[float, float]] = []
@@ -433,6 +703,8 @@ def make_coverage_grid(ra: float, dec: float, radius: float, dimension: int) -> 
 
 
 def filter_keys(value: Any) -> frozenset[str]:
+    """Extract useful normalized filter names and remove pseudo-filter labels."""
+
     if not isinstance(value, str):
         return frozenset()
     return frozenset(
@@ -443,6 +715,8 @@ def filter_keys(value: Any) -> frozenset[str]:
 
 
 def observation_group_key(product: dict[str, Any]) -> str:
+    """Derive a stable observation identifier shared by related filter products."""
+
     observation_id = str(product.get("obs_id") or "")
     collection = str(product.get("obs_collection") or "").upper()
     parts = observation_id.split("_")
@@ -458,7 +732,9 @@ def observation_group_key(product: dict[str, Any]) -> str:
     return observation_id
 
 
-def exclusion(product: dict[str, Any], reason: str) -> dict[str, Any]:
+def selection_exclusion(product: dict[str, Any], reason: str) -> dict[str, Any]:
+    """Create a compact audit record for a rejected candidate product."""
+
     return {
         "observation_id": product.get("obs_id"),
         "product_uri": product.get("datauri"),
@@ -466,12 +742,36 @@ def exclusion(product: dict[str, Any], reason: str) -> dict[str, Any]:
     }
 
 
-def prepare_candidates(
+def greedy_candidate_score(
+    candidate: CandidateState,
+    grid: CoverageGrid,
+    options: SelectionOptions,
+) -> float:
+    """Score current marginal coverage and filters per size-adjusted download cost."""
+
+    new_coverage = grid.fraction_for_count(candidate.uncovered_cell_count)
+    benefit = (
+        options.coverage_weight * new_coverage
+        + options.filter_weight * candidate.unseen_filter_count
+    )
+    size_mib = max(candidate.file_size_bytes / MIB, 0.001)
+    size_cost = max(size_mib**options.size_penalty_exponent, 0.000001)
+    return benefit / size_cost
+
+
+# ---------------------------------------------------------------------------
+# Per-mission candidate preparation (performed before global combination)
+# ---------------------------------------------------------------------------
+
+def prepare_mission_branch(
+    mission: str,
     products: list[dict[str, Any]],
     grid: CoverageGrid,
     options: SelectionOptions,
-) -> tuple[list[Candidate], list[dict[str, Any]]]:
-    candidates: list[Candidate] = []
+) -> PreparedBranch:
+    """Validate and index one mission before any mission branches are combined."""
+
+    candidates: list[CandidateState] = []
     exclusions: list[dict[str, Any]] = []
     seen: set[str] = set()
     for product in products:
@@ -481,367 +781,491 @@ def prepare_candidates(
             for key in ("obs_collection", "obs_id", "instrument_name", "filters")
         )
         if identity in seen:
-            exclusions.append(exclusion(product, "duplicate_product"))
+            exclusions.append(selection_exclusion(product, "duplicate_product"))
             continue
         seen.add(identity)
         if not data_uri:
-            exclusions.append(exclusion(product, "missing_download_url"))
+            exclusions.append(selection_exclusion(product, "missing_download_url"))
             continue
         try:
             size = int(product.get("contentlength"))
         except (TypeError, ValueError):
-            exclusions.append(exclusion(product, "missing_file_size"))
+            exclusions.append(selection_exclusion(product, "missing_file_size"))
             continue
         if size <= 0:
-            exclusions.append(exclusion(product, "missing_file_size"))
+            exclusions.append(selection_exclusion(product, "missing_file_size"))
             continue
         if size > options.max_product_bytes:
-            exclusions.append(exclusion(product, "exceeds_product_size_limit"))
+            exclusions.append(selection_exclusion(product, "exceeds_product_size_limit"))
             continue
-        region_text = str(product.get("s_region") or "").strip()
-        if not region_text:
-            exclusions.append(exclusion(product, "missing_footprint"))
-            continue
-        shapes = parse_s_region(region_text)
+        shapes = parse_s_region(str(product.get("s_region") or "").strip())
         if shapes is None:
-            exclusions.append(exclusion(product, "invalid_footprint"))
+            reason = "missing_footprint" if not product.get("s_region") else "invalid_footprint"
+            exclusions.append(selection_exclusion(product, reason))
             continue
         filters = filter_keys(product.get("filters"))
         if not filters:
-            exclusions.append(exclusion(product, "missing_filter"))
+            exclusions.append(selection_exclusion(product, "missing_filter"))
             continue
         instrument = str(product.get("instrument_name") or "").strip().upper()
         if not instrument:
-            exclusions.append(exclusion(product, "missing_instrument"))
+            exclusions.append(selection_exclusion(product, "missing_instrument"))
             continue
         cells = frozenset(
-            index for index, point in enumerate(grid.points) if region_contains(point, shapes)
+            index
+            for index, point in enumerate(grid.points)
+            if region_contains(point, shapes)
         )
-        candidates.append(
-            Candidate(
-                product=product,
-                identity=identity,
-                instrument_branch=instrument,
-                observation_key=observation_group_key(product),
-                filters=filters,
-                file_size_bytes=size,
-                covered_cells=cells,
-            )
+        candidate = CandidateState(
+            product=product,
+            identity=identity,
+            mission=mission,
+            instrument=instrument,
+            observation_key=observation_group_key(product),
+            filters=filters,
+            covered_cells=cells,
+            file_size_bytes=size,
+            uncovered_cell_count=len(cells),
+            unseen_filter_count=len(filters),
         )
+        candidate.score = greedy_candidate_score(candidate, grid, options)
+        candidates.append(candidate)
+    observation_groups: dict[tuple[str, str, str], list[CandidateState]] = defaultdict(list)
+    for candidate in candidates:
+        observation_groups[candidate.group_id].append(candidate)
+    branch = PreparedBranch(
+        mission,
+        candidates,
+        dict(observation_groups),
+        exclusions,
+        len(products),
+    )
     LOGGER.info(
-        "Candidate validation finished fetched=%s eligible=%s excluded=%s exclusion_reasons=%s",
+        "Mission branch prepared mission=%s fetched=%s eligible=%s excluded=%s observation_groups=%s",
+        mission,
         len(products),
         len(candidates),
         len(exclusions),
-        dict(sorted(Counter(value["reason"] for value in exclusions).items())),
-    )
-    return candidates, exclusions
-
-
-def greedy_select(
-    products: list[dict[str, Any]],
-    *,
-    target_name: str,
-    ra: float,
-    dec: float,
-    radius: float,
-    options: SelectionOptions,
-) -> dict[str, Any]:
-    LOGGER.info(
-        "Greedy selection started target=%r candidates=%s max_products=%s max_product_mib=%.2f",
-        target_name,
-        len(products),
-        options.max_products,
-        options.max_product_bytes / MIB,
-    )
-    started = time.monotonic()
-    grid = make_coverage_grid(ra, dec, radius, options.grid_dimension)
-    candidates, exclusions = prepare_candidates(products, grid, options)
-    branch_counts: dict[str, int] = {}
-    for candidate in candidates:
-        branch_counts[candidate.instrument_branch] = branch_counts.get(candidate.instrument_branch, 0) + 1
-
-    remaining = list(candidates)
-    selected: list[Candidate] = []
-    selected_cells: set[int] = set()
-    selected_filters: set[str] = set()
-    total_size = 0
-    steps: list[dict[str, Any]] = []
-    stop_reason = "no_eligible_candidates" if not candidates else "no_additional_benefit"
-    target_coverage = min(max(options.target_coverage, 0.0), 1.0)
-
-    while remaining and len(selected) < options.max_products:
-        covered_fraction = grid.fraction(selected_cells)
-        if covered_fraction >= target_coverage and len(selected_filters) >= options.minimum_filters:
-            stop_reason = "target_satisfied"
-            break
-
-        scored: list[tuple[tuple[Any, ...], Candidate, set[int], set[str], float, float]] = []
-        for candidate in remaining:
-            if options.max_total_bytes is not None and total_size + candidate.file_size_bytes > options.max_total_bytes:
-                continue
-            new_cells = set(candidate.covered_cells) - selected_cells
-            new_filters = set(candidate.filters) - selected_filters
-            new_coverage = grid.fraction(new_cells)
-            benefit = options.coverage_weight * new_coverage + options.filter_weight * len(new_filters)
-            if benefit <= 0:
-                continue
-            size_mib = max(candidate.file_size_bytes / MIB, 0.001)
-            size_cost = max(size_mib**options.size_penalty_exponent, 0.000001)
-            score = benefit / size_cost
-            # min() with this key gives the same deterministic preference as
-            # descending score/coverage/filter gain and ascending size/identity.
-            rank = (
-                -score,
-                -new_coverage,
-                -len(new_filters),
-                candidate.file_size_bytes,
-                candidate.identity,
-            )
-            scored.append((rank, candidate, new_cells, new_filters, new_coverage, score))
-
-        if not scored:
-            stop_reason = "no_additional_benefit"
-            break
-
-        _, candidate, new_cells, new_filters, new_coverage, score = min(scored, key=lambda value: value[0])
-        selected.append(candidate)
-        selected_cells.update(candidate.covered_cells)
-        selected_filters.update(candidate.filters)
-        total_size += candidate.file_size_bytes
-        remaining = [value for value in remaining if value.identity != candidate.identity]
-        steps.append(
-            {
-                "iteration": len(steps) + 1,
-                "instrument_branch": candidate.instrument_branch,
-                "observation_key": candidate.observation_key,
-                "observation_id": candidate.product.get("obs_id"),
-                "filters": sorted(candidate.filters),
-                "file_size_bytes": candidate.file_size_bytes,
-                "new_coverage_fraction": new_coverage,
-                "new_area_square_degrees": new_coverage * grid.target_area_square_degrees,
-                "new_filter_count": len(new_filters),
-                "score": score,
-                "cumulative_coverage_fraction": grid.fraction(selected_cells),
-                "cumulative_filters": sorted(selected_filters),
-                "cumulative_size_bytes": total_size,
-            }
-        )
-        LOGGER.info(
-            "Greedy selection step iteration=%s mission=%s instrument=%r observation_id=%r "
-            "filters=%s score=%.8f new_coverage=%.6f cumulative_coverage=%.6f "
-            "file_mib=%.2f cumulative_mib=%.2f",
-            len(steps),
-            candidate.product.get("obs_collection"),
-            candidate.instrument_branch,
-            candidate.product.get("obs_id"),
-            ",".join(sorted(candidate.filters)),
-            score,
-            new_coverage,
-            grid.fraction(selected_cells),
-            candidate.file_size_bytes / MIB,
-            total_size / MIB,
-        )
-
-    if len(selected) >= options.max_products:
-        stop_reason = (
-            "target_satisfied"
-            if grid.fraction(selected_cells) >= target_coverage
-            and len(selected_filters) >= options.minimum_filters
-            else "maximum_products_reached"
-        )
-
-    selected_products: list[dict[str, Any]] = []
-    for index, candidate in enumerate(selected):
-        product = dict(candidate.product)
-        product["selection_rank"] = index + 1
-        product["observation_key"] = candidate.observation_key
-        selected_products.append(product)
-
-    observation_groups = group_selected_products(selected_products)
-    selection_result = {
-        "target": target_name,
-        "position": {"ra": ra, "dec": dec, "radius_degrees": radius},
-        "candidate_count": len(products),
-        "eligible_candidate_count": len(candidates),
-        "branch_candidate_counts": dict(sorted(branch_counts.items())),
-        "excluded_candidates": exclusions,
-        "steps": steps,
-        "selected_products": selected_products,
-        "observation_groups": observation_groups,
-        "covered_fraction": grid.fraction(selected_cells),
-        "selected_filters": sorted(selected_filters),
-        "total_selected_size_bytes": total_size,
-        "stop_reason": stop_reason,
-    }
-    LOGGER.info(
-        "Greedy selection finished selected_products=%s observation_groups=%s filters=%s "
-        "covered_fraction=%.6f total_mib=%.2f stop_reason=%s elapsed_seconds=%.3f",
-        len(selected_products),
         len(observation_groups),
-        len(selected_filters),
-        selection_result["covered_fraction"],
-        total_size / MIB,
-        stop_reason,
-        time.monotonic() - started,
     )
-    return selection_result
+    return branch
+
+
+def prepare_candidate_branches(
+    response_rows: list[list[dict[str, Any]]],
+    grid: CoverageGrid,
+    options: SelectionOptions,
+) -> list[PreparedBranch]:
+    """Partition every TAP response by mission before creating the global selector."""
+
+    branches: list[PreparedBranch] = []
+    for rows in response_rows:
+        rows_by_mission: dict[str, list[dict[str, Any]]] = defaultdict(list)
+        for product in rows:
+            mission = str(product.get("obs_collection") or "UNKNOWN").upper()
+            rows_by_mission[mission].append(product)
+        for mission, mission_rows in sorted(rows_by_mission.items()):
+            branches.append(prepare_mission_branch(mission, mission_rows, grid, options))
+    return branches
 
 
 def group_selected_products(products: list[dict[str, Any]]) -> list[dict[str, Any]]:
-    groups: dict[tuple[str, str, str], list[dict[str, Any]]] = {}
+    """Restore selected product rows to observation groups for AOSImageStack use."""
+
+    grouped: dict[tuple[str, str, str], list[dict[str, Any]]] = defaultdict(list)
     for product in products:
-        identity = (
+        key = (
             str(product.get("obs_collection") or "").upper(),
+            str(product.get("instrument_name") or "").upper(),
             str(product.get("observation_key") or observation_group_key(product)),
-            str(product.get("instrument_name") or ""),
         )
-        groups.setdefault(identity, []).append(product)
-
-    output = []
-    for (mission, key, instrument), group_products in sorted(groups.items()):
-        output.append(
-            {
-                "mission": mission,
-                "observation_key": key,
-                "instrument": instrument,
-                "product_count": len(group_products),
-                "filters": sorted({value for product in group_products for value in filter_keys(product.get("filters"))}),
-                "total_size_bytes": sum(int(product.get("contentlength") or 0) for product in group_products),
-                "products": group_products,
-            }
-        )
-    return output
-
-
-def mission_limits(missions: list[str], limit: int, balanced: bool) -> list[tuple[str, int]]:
-    if not balanced:
-        return [(mission, limit) for mission in missions]
-    base, remainder = divmod(limit, len(missions))
+        grouped[key].append(product)
     return [
-        (mission, base + (1 if index < remainder else 0))
-        for index, mission in enumerate(missions)
-        if base + (1 if index < remainder else 0) > 0
+        {
+            "mission": mission,
+            "instrument": instrument,
+            "observation_key": observation_key,
+            "product_count": len(group_products),
+            "filters": sorted(
+                {
+                    filter_name
+                    for product in group_products
+                    for filter_name in filter_keys(product.get("filters"))
+                }
+            ),
+            "total_size_bytes": sum(int(product.get("contentlength") or 0) for product in group_products),
+            "products": group_products,
+        }
+        for (mission, instrument, observation_key), group_products in sorted(grouped.items())
     ]
 
 
-def fetch_candidates(
-    *,
-    ra: float,
-    dec: float,
-    radius: float,
-    missions: list[str],
-    filters: list[str],
-    calibration_levels: list[int],
-    product_types: list[str],
-    limit: int,
-    balanced_missions: bool,
-    timeout: float,
-    retries: int,
-    workers: int,
-    require_all_missions: bool,
-    show_query: bool,
-) -> tuple[list[dict[str, Any]], dict[str, str], dict[str, str]]:
-    limits = mission_limits(missions, limit, balanced_missions)
-    queries = {
-        mission: build_science_product_query(
-            ra=ra,
-            dec=dec,
-            radius=radius,
-            mission=mission,
-            filters=filters,
-            calibration_levels=calibration_levels,
-            product_types=product_types,
-            limit=mission_limit,
-        )
-        for mission, mission_limit in limits
-    }
-    if show_query:
-        for mission, query in queries.items():
-            LOGGER.info("ADQL mission=%s\n%s", mission, query)
+# ---------------------------------------------------------------------------
+# Hierarchical incremental greedy selection
+# ---------------------------------------------------------------------------
 
-    LOGGER.info(
-        "TAP candidate fetch started missions=%s mission_limits=%s workers=%s retries=%s timeout_seconds=%s",
-        ",".join(missions),
-        dict(limits),
-        workers,
-        retries,
-        timeout,
-    )
+class HierarchicalIncrementalGreedySelector:
+    """Traverse group heaps and update only graph-adjacent candidates.
 
-    def query_mission(mission: str, query: str) -> dict[str, Any]:
-        LOGGER.info("TAP mission query started mission=%s", mission)
-        started = time.monotonic()
-        response = query_tap(query, timeout, retries)
+    Each observation group owns a product heap. The root heap stores the current
+    best product from every group. Inverted indexes map coverage cells and filters
+    back to candidates, so selecting one product only invalidates candidates that
+    share newly acquired coverage or filters. Versioned heap entries are discarded
+    lazily instead of removing arbitrary entries from Python's heap implementation.
+    """
+
+    def __init__(
+        self,
+        branches: list[PreparedBranch],
+        grid: CoverageGrid,
+        options: SelectionOptions,
+    ) -> None:
+        """Combine prepared branch indexes without flattening observation groups."""
+
+        self.grid = grid
+        self.options = options
+        self.candidates: dict[str, CandidateState] = {}
+        self.groups: dict[tuple[str, str, str], ObservationGroupQueue] = {}
+        self.candidates_by_cell: dict[int, set[str]] = defaultdict(set)
+        self.candidates_by_filter: dict[str, set[str]] = defaultdict(set)
+        self.root_heap: list[tuple[Any, ...]] = []
+        self.exclusions = [value for branch in branches for value in branch.exclusions]
+        self.branch_fetched_counts: Counter[str] = Counter()
+        for branch in branches:
+            self.branch_fetched_counts[branch.mission] += branch.fetched_count
+        self.metrics = {
+            "candidate_score_updates": 0,
+            "coverage_edge_visits": 0,
+            "filter_edge_visits": 0,
+            "candidate_heap_pops": 0,
+            "group_heap_pops": 0,
+            "full_candidate_rescans": 0,
+        }
+
+        for branch in branches:
+            for group_id, branch_candidates in branch.observation_groups.items():
+                for candidate in branch_candidates:
+                    if candidate.identity in self.candidates:
+                        self.exclusions.append(
+                            selection_exclusion(candidate.product, "duplicate_product")
+                        )
+                        continue
+                    self.candidates[candidate.identity] = candidate
+                    group = self.groups.setdefault(group_id, ObservationGroupQueue(group_id))
+                    heapq.heappush(group.candidate_heap, self._candidate_entry(candidate))
+                    for cell in candidate.covered_cells:
+                        self.candidates_by_cell[cell].add(candidate.identity)
+                    for filter_name in candidate.filters:
+                        self.candidates_by_filter[filter_name].add(candidate.identity)
+
+        for group in self.groups.values():
+            self._publish_group(group)
         LOGGER.info(
-            "TAP mission query finished mission=%s rows=%s elapsed_seconds=%.3f",
-            mission,
-            len(response.get("data", [])),
+            "Hierarchical selector initialized branches=%s candidates=%s observation_groups=%s exclusions=%s",
+            len(branches),
+            len(self.candidates),
+            len(self.groups),
+            len(self.exclusions),
+        )
+
+    @staticmethod
+    def _candidate_key(candidate: CandidateState) -> tuple[Any, ...]:
+        """Return deterministic heap ordering: score, gains, size, then identity."""
+
+        return (
+            -candidate.score,
+            -candidate.uncovered_cell_count,
+            -candidate.unseen_filter_count,
+            candidate.file_size_bytes,
+            candidate.identity,
+        )
+
+    def _candidate_entry(self, candidate: CandidateState) -> tuple[Any, ...]:
+        """Attach the candidate version used to recognize stale heap entries."""
+
+        return (*self._candidate_key(candidate), candidate.version)
+
+    def _clean_group(self, group: ObservationGroupQueue) -> CandidateState | None:
+        """Discard stale/inactive entries and return the group's current best product."""
+
+        while group.candidate_heap:
+            entry = group.candidate_heap[0]
+            identity = entry[4]
+            version = entry[5]
+            candidate = self.candidates.get(identity)
+            if candidate is not None and candidate.active and candidate.version == version:
+                return candidate
+            heapq.heappop(group.candidate_heap)
+            self.metrics["candidate_heap_pops"] += 1
+        return None
+
+    def _publish_group(self, group: ObservationGroupQueue) -> None:
+        """Publish a group's current best product to the root traversal heap."""
+
+        group.version += 1
+        best = self._clean_group(group)
+        if best is not None:
+            heapq.heappush(
+                self.root_heap,
+                (*self._candidate_key(best), group.group_id, group.version),
+            )
+
+    def _pop_best_candidate(self) -> CandidateState | None:
+        """Traverse root then group heaps to obtain the globally best product."""
+
+        while self.root_heap:
+            entry = heapq.heappop(self.root_heap)
+            self.metrics["group_heap_pops"] += 1
+            group_id = entry[5]
+            group_version = entry[6]
+            group = self.groups[group_id]
+            if group.version != group_version:
+                continue
+            best = self._clean_group(group)
+            if best is None or self._candidate_key(best) != entry[:5]:
+                self._publish_group(group)
+                continue
+            return best
+        return None
+
+    def _update_affected_candidates(
+        self,
+        selected: CandidateState,
+        new_cells: set[int],
+        new_filters: set[str],
+    ) -> None:
+        """Incrementally rescore neighbors sharing newly covered cells or filters."""
+
+        affected: set[str] = set()
+        for cell in new_cells:
+            identities = self.candidates_by_cell.get(cell, set())
+            self.metrics["coverage_edge_visits"] += len(identities)
+            for identity in identities:
+                candidate = self.candidates[identity]
+                if candidate.active:
+                    candidate.uncovered_cell_count -= 1
+                    affected.add(identity)
+        for filter_name in new_filters:
+            identities = self.candidates_by_filter.get(filter_name, set())
+            self.metrics["filter_edge_visits"] += len(identities)
+            for identity in identities:
+                candidate = self.candidates[identity]
+                if candidate.active:
+                    candidate.unseen_filter_count -= 1
+                    affected.add(identity)
+
+        affected_groups = {selected.group_id}
+        for identity in affected:
+            candidate = self.candidates[identity]
+            candidate.score = greedy_candidate_score(candidate, self.grid, self.options)
+            candidate.version += 1
+            self.metrics["candidate_score_updates"] += 1
+            group = self.groups[candidate.group_id]
+            heapq.heappush(group.candidate_heap, self._candidate_entry(candidate))
+            affected_groups.add(candidate.group_id)
+        for group_id in affected_groups:
+            self._publish_group(self.groups[group_id])
+
+    def select(self) -> dict[str, Any]:
+        """Run greedy selection until coverage/filter goals or limits stop it.
+
+        At every iteration the root/group heaps expose the active product with
+        the highest current marginal-benefit-per-size score. After accepting it,
+        inverted cell/filter indexes identify exactly which neighboring scores
+        became stale. Unrelated candidates are not scanned or recalculated.
+        """
+
+        started = time.monotonic()
+        LOGGER.info(
+            "Hierarchical selection started candidates=%s max_products=%s target_coverage=%.3f minimum_filters=%s",
+            len(self.candidates),
+            self.options.max_products,
+            self.options.target_coverage,
+            self.options.minimum_filters,
+        )
+        selected_candidates: list[CandidateState] = []
+        selected_cells: set[int] = set()
+        selected_filters: set[str] = set()
+        total_size = 0
+        steps: list[dict[str, Any]] = []
+        budget_skipped = 0
+        stop_reason = "no_eligible_candidates" if not self.candidates else "no_additional_benefit"
+
+        # Greedy loop:
+        #   1. Pop the globally best current candidate from the group hierarchy.
+        #   2. Accept it if it fits the remaining byte budget.
+        #   3. Add its new cells and filters to the accumulated target state.
+        #   4. Rescore only candidates connected to those new cells or filters.
+        while len(selected_candidates) < self.options.max_products:
+            if (
+                self.grid.fraction_for_count(len(selected_cells)) >= self.options.target_coverage
+                and len(selected_filters) >= self.options.minimum_filters
+            ):
+                stop_reason = "target_satisfied"
+                break
+
+            candidate = self._pop_best_candidate()
+            if candidate is None or candidate.score <= 0:
+                stop_reason = (
+                    "no_eligible_candidates"
+                    if not self.candidates
+                    else "no_additional_benefit"
+                )
+                break
+            if (
+                self.options.max_total_bytes is not None
+                and total_size + candidate.file_size_bytes > self.options.max_total_bytes
+            ):
+                candidate.active = False
+                candidate.version += 1
+                budget_skipped += 1
+                self._publish_group(self.groups[candidate.group_id])
+                continue
+
+            new_cells = set(candidate.covered_cells) - selected_cells
+            new_filters = set(candidate.filters) - selected_filters
+            selected_candidates.append(candidate)
+            selected_cells.update(new_cells)
+            selected_filters.update(new_filters)
+            total_size += candidate.file_size_bytes
+            candidate.active = False
+            candidate.version += 1
+            steps.append(
+                {
+                    "iteration": len(steps) + 1,
+                    "mission": candidate.mission,
+                    "instrument": candidate.instrument,
+                    "observation_key": candidate.observation_key,
+                    "observation_id": candidate.product.get("obs_id"),
+                    "filters": sorted(candidate.filters),
+                    "file_size_bytes": candidate.file_size_bytes,
+                    "new_coverage_fraction": self.grid.fraction_for_count(len(new_cells)),
+                    "new_filter_count": len(new_filters),
+                    "score": candidate.score,
+                    "cumulative_coverage_fraction": self.grid.fraction_for_count(len(selected_cells)),
+                    "cumulative_filters": sorted(selected_filters),
+                    "cumulative_size_bytes": total_size,
+                }
+            )
+            LOGGER.info(
+                "Selection step iteration=%s mission=%s instrument=%r observation_id=%r "
+                "filters=%s score=%.8f new_coverage=%.6f cumulative_coverage=%.6f "
+                "file_mib=%.2f cumulative_mib=%.2f",
+                len(steps),
+                candidate.mission,
+                candidate.instrument,
+                candidate.product.get("obs_id"),
+                ",".join(sorted(candidate.filters)),
+                candidate.score,
+                self.grid.fraction_for_count(len(new_cells)),
+                self.grid.fraction_for_count(len(selected_cells)),
+                candidate.file_size_bytes / MIB,
+                total_size / MIB,
+            )
+            self._update_affected_candidates(candidate, new_cells, new_filters)
+
+        if len(selected_candidates) >= self.options.max_products:
+            stop_reason = (
+                "target_satisfied"
+                if self.grid.fraction_for_count(len(selected_cells)) >= self.options.target_coverage
+                and len(selected_filters) >= self.options.minimum_filters
+                else "maximum_products_reached"
+            )
+        selected_products: list[dict[str, Any]] = []
+        for rank, candidate in enumerate(selected_candidates, start=1):
+            product = dict(candidate.product)
+            product["selection_rank"] = rank
+            product["observation_key"] = candidate.observation_key
+            selected_products.append(product)
+
+        branch_candidate_counts = Counter(candidate.mission for candidate in self.candidates.values())
+        result = {
+            "algorithm": "hierarchical_incremental_greedy",
+            "candidate_count": sum(self.branch_fetched_counts.values()),
+            "eligible_candidate_count": len(self.candidates),
+            "observation_group_count": len(self.groups),
+            "branch_candidate_counts": dict(sorted(branch_candidate_counts.items())),
+            "excluded_candidates": self.exclusions,
+            "exclusion_reasons": dict(sorted(Counter(value["reason"] for value in self.exclusions).items())),
+            "steps": steps,
+            "selected_products": selected_products,
+            "observation_groups": group_selected_products(selected_products),
+            "covered_fraction": self.grid.fraction_for_count(len(selected_cells)),
+            "selected_filters": sorted(selected_filters),
+            "total_selected_size_bytes": total_size,
+            "budget_skipped_candidates": budget_skipped,
+            "stop_reason": stop_reason,
+            "complexity_metrics": self.metrics,
+        }
+        LOGGER.info(
+            "Hierarchical selection finished selected_products=%s observation_groups=%s "
+            "filters=%s covered_fraction=%.6f total_mib=%.2f stop_reason=%s "
+            "score_updates=%s elapsed_seconds=%.3f",
+            len(selected_products),
+            len(result["observation_groups"]),
+            len(selected_filters),
+            result["covered_fraction"],
+            total_size / MIB,
+            stop_reason,
+            self.metrics["candidate_score_updates"],
             time.monotonic() - started,
         )
-        return response
+        return result
 
-    rows_by_mission: dict[str, list[dict[str, Any]]] = {}
-    failures: dict[str, str] = {}
-    worker_count = min(max(workers, 1), max(len(queries), 1), 4)
-    with ThreadPoolExecutor(max_workers=worker_count) as executor:
-        futures = {
-            executor.submit(query_mission, mission, query): mission
-            for mission, query in queries.items()
-        }
-        for future in as_completed(futures):
-            mission = futures[future]
-            try:
-                rows_by_mission[mission] = named_rows(future.result())
-            except RuntimeError as error:
-                failures[mission] = str(error)
-                LOGGER.warning("TAP mission query failed mission=%s error=%s", mission, error)
 
-    if failures and require_all_missions:
-        details = "; ".join(f"{mission}: {message}" for mission, message in sorted(failures.items()))
-        raise RuntimeError(f"One or more required mission queries failed: {details}")
-    if not rows_by_mission:
-        details = "; ".join(f"{mission}: {message}" for mission, message in sorted(failures.items()))
-        raise RuntimeError(f"All mission queries failed: {details}")
+def greedy_select_products(
+    response_rows: list[list[dict[str, Any]]],
+    grid: CoverageGrid,
+    options: SelectionOptions,
+) -> dict[str, Any]:
+    """Prepare TAP branches and run the reviewable greedy selection algorithm.
 
-    rows = [row for mission, _ in limits for row in rows_by_mission.get(mission, [])]
-    LOGGER.info(
-        "TAP candidate fetch finished rows=%s successful_missions=%s failed_missions=%s",
-        len(rows),
-        ",".join(mission for mission, _ in limits if mission in rows_by_mission),
-        ",".join(sorted(failures)),
-    )
-    return rows, queries, failures
+    Algorithm flow:
+        1. Divide TAP rows into independent mission branches.
+        2. Validate required footprint, filter, instrument, size, and URI fields.
+        3. Group eligible products by mission, instrument, and observation.
+        4. Build group heaps plus spatial-cell and filter inverted indexes.
+        5. Repeatedly choose the product with the highest marginal score::
 
+               (coverage_weight * new_coverage
+                + filter_weight * new_filter_count)
+               / size_mib**size_penalty_exponent
+
+        6. Incrementally update only candidates affected by newly covered cells
+           or newly acquired filters.
+        7. Return ordered products and regroup them for AOSImageStack creation.
+
+    Keeping this as a named function makes the complete algorithm easy to call,
+    test, profile, and review without going through the command-line interface.
+    """
+
+    branches = prepare_candidate_branches(response_rows, grid, options)
+    return HierarchicalIncrementalGreedySelector(branches, grid, options).select()
+
+
+# ---------------------------------------------------------------------------
+# Command-line orchestration and report generation
+# ---------------------------------------------------------------------------
 
 def parse_args() -> argparse.Namespace:
+    """Define query, diagnostics, logging, and optional selection arguments."""
+
     parser = argparse.ArgumentParser(
-        description="Query MAST TAP and greedily select science products and observation groups."
+        description=(
+            "Query MAST CAOM TAP and greedily select public science FITS products "
+            "when --select-products is enabled."
+        )
     )
     parser.add_argument("--target", help="Target name to resolve, for example 'NGC 628'.")
     parser.add_argument("--ra", type=float, help="ICRS right ascension in degrees.")
     parser.add_argument("--dec", type=float, help="ICRS declination in degrees.")
     parser.add_argument("--radius", type=float, default=0.1, help="Search radius in degrees (default: 0.1).")
-    parser.add_argument("--missions", default=",".join(DEFAULT_MISSIONS), help="Comma-separated collections.")
-    parser.add_argument("--filters", default="", help="Optional comma-separated filter fragments.")
-    parser.add_argument("--calib-levels", default="3,4", help="Comma-separated calibration levels.")
+    parser.add_argument("--missions", default=",".join(DEFAULT_MISSIONS), help="Comma-separated MAST collections.")
+    parser.add_argument("--filters", default="", help="Optional comma-separated filter-name fragments.")
+    parser.add_argument("--calib-levels", default="3,4", help="Comma-separated calibration levels (default: 3,4).")
     parser.add_argument("--product-types", default="IMAGE,CUBE", help="Comma-separated CAOM product types.")
-    parser.add_argument("--limit", type=int, default=100, help="Candidate TAP rows (default: 100).")
-    parser.add_argument(
-        "--balanced-missions",
-        action="store_true",
-        help="Divide --limit across mission queries; otherwise --limit applies to each mission.",
-    )
-    parser.add_argument("--max-products", type=int, default=5, help="Maximum selected products.")
-    parser.add_argument("--max-mb", type=float, default=70, help="Maximum MiB per product.")
-    parser.add_argument("--max-total-mb", type=float, help="Optional total selected MiB budget.")
-    parser.add_argument("--target-coverage", type=float, default=0.80, help="Desired coverage fraction.")
-    parser.add_argument("--min-filters", type=int, default=3, help="Desired distinct-filter count.")
-    parser.add_argument("--coverage-weight", type=float, default=0.65)
-    parser.add_argument("--filter-weight", type=float, default=0.35)
-    parser.add_argument("--size-penalty-exponent", type=float, default=1.0)
-    parser.add_argument("--grid", type=int, default=48, help="Coverage grid dimension.")
-    parser.add_argument("--timeout", type=float, default=120, help="Network timeout per request.")
+    parser.add_argument("--limit", type=int, default=50, help="Maximum returned rows (default: 50).")
+    parser.add_argument("--timeout", type=float, default=120, help="Network timeout in seconds.")
     parser.add_argument(
         "--retries",
         type=int,
@@ -854,118 +1278,277 @@ def parse_args() -> argparse.Namespace:
         default=1,
         choices=range(1, 5),
         metavar="1-4",
-        help="Concurrent mission queries. One is gentlest on MAST and is the default.",
+        help="Concurrent TAP branch queries; one is the MAST-friendly default.",
     )
     parser.add_argument(
         "--require-all-missions",
         action="store_true",
-        help="Fail the run if any mission query fails; default behavior keeps successful missions.",
+        help="Fail if any mission query fails instead of retaining successful missions.",
     )
-    parser.add_argument("--show-query", action="store_true", help="Print ADQL to stderr.")
+    parser.add_argument("--schema", action="store_true", help="Query the schema of the three joined CAOM tables.")
+    parser.add_argument(
+        "--balanced-missions",
+        action="store_true",
+        help=(
+            "Split --limit approximately evenly across requested missions. "
+            "Use this for representative availability samples."
+        ),
+    )
+    parser.add_argument("--show-query", action="store_true", help="Print ADQL to stderr before submitting it.")
+    parser.add_argument("--output", type=Path, help="Write formatted JSON to this path instead of stdout.")
     parser.add_argument(
         "--log-level",
         choices=("DEBUG", "INFO", "WARNING", "ERROR"),
         default="INFO",
-        help="Logging verbosity written to stderr (default: INFO).",
+        help="Terminal logging level (default: INFO).",
     )
-    parser.add_argument("--log-file", type=Path, help="Also append logs to this file.")
-    parser.add_argument("--output", type=Path, help="Write JSON here instead of stdout.")
+    parser.add_argument(
+        "--log-file",
+        type=Path,
+        help="Optionally duplicate terminal logs to this file.",
+    )
+    parser.add_argument(
+        "--columns",
+        default="",
+        help="Diagnostic override using comma-separated TAP column references.",
+    )
+    parser.add_argument(
+        "--select-products",
+        "--hierarchical-select",
+        dest="select_products",
+        action="store_true",
+        help=(
+            "Run hierarchical incremental greedy selection after preparing each "
+            "mission result separately. The unselected TAP rows remain in the report."
+        ),
+    )
+    parser.add_argument("--max-products", type=int, default=20, help="Maximum selected products (default: 20).")
+    parser.add_argument("--max-mb", type=float, default=70, help="Maximum size of one product in MiB (default: 70).")
+    parser.add_argument("--max-total-mb", type=float, help="Optional total selected-product budget in MiB.")
+    parser.add_argument("--target-coverage", type=float, default=0.80, help="Target grid coverage fraction (default: 0.80).")
+    parser.add_argument(
+        "--minimum-filters",
+        "--min-filters",
+        dest="minimum_filters",
+        type=int,
+        default=3,
+        help="Minimum distinct filters (default: 3).",
+    )
+    parser.add_argument("--coverage-weight", type=float, default=0.65, help="Coverage score weight (default: 0.65).")
+    parser.add_argument("--filter-weight", type=float, default=0.35, help="Filter-variety score weight (default: 0.35).")
+    parser.add_argument(
+        "--size-penalty-exponent",
+        type=float,
+        default=1.0,
+        help="Exponent applied to product size in the score denominator (default: 1).",
+    )
+    parser.add_argument(
+        "--grid-dimension",
+        "--grid",
+        dest="grid_dimension",
+        type=int,
+        default=48,
+        help="Coverage grid width/height (default: 48).",
+    )
     return parser.parse_args()
 
 
-def validate_args(args: argparse.Namespace) -> None:
-    if args.radius <= 0:
-        raise ValueError("--radius must be greater than zero")
-    if args.limit <= 0 or args.max_products <= 0 or args.max_mb <= 0:
-        raise ValueError("--limit, --max-products, and --max-mb must be greater than zero")
-    if args.grid <= 0 or args.coverage_weight < 0 or args.filter_weight < 0:
-        raise ValueError("--grid and scoring weights must be non-negative")
-    if args.retries < 0:
-        raise ValueError("--retries must be non-negative")
-    if args.size_penalty_exponent < 0:
-        raise ValueError("--size-penalty-exponent must be non-negative")
-    if (args.ra is None) != (args.dec is None):
-        raise ValueError("provide both --ra and --dec")
-    if args.ra is None and not args.target:
-        raise ValueError("provide --target or both --ra and --dec")
-
-
 def main() -> int:
+    """Run resolution → TAP fetch → optional selection → JSON report output."""
+
     args = parse_args()
     configure_logging(args.log_level, args.log_file)
-    workflow_started = time.monotonic()
-    LOGGER.info("Workflow started target=%r", args.target or "Coordinate target")
-    validate_args(args)
-    missions = parse_csv(args.missions)
-    filters = parse_csv(args.filters) if args.filters.strip() else []
-    product_types = parse_csv(args.product_types)
-    try:
-        calibration_levels = [int(value) for value in parse_csv(args.calib_levels, uppercase=False)]
-    except ValueError as error:
-        raise ValueError("--calib-levels must contain integers") from error
-    if not missions or not product_types or not calibration_levels:
-        raise ValueError("missions, product types, and calibration levels cannot be empty")
+    started = time.monotonic()
+    LOGGER.info(
+        "MAST TAP workflow started target=%r missions=%s limit=%s balanced_missions=%s selection=%s",
+        args.target,
+        args.missions,
+        args.limit,
+        args.balanced_missions,
+        args.select_products,
+    )
 
-    if args.ra is None:
-        ra, dec = resolve_target(args.target, args.timeout, args.retries)
+    if args.radius <= 0:
+        raise ValueError("--radius must be greater than zero")
+    if args.limit <= 0:
+        raise ValueError("--limit must be greater than zero")
+    if args.retries < 0:
+        raise ValueError("--retries cannot be negative")
+    if args.select_products:
+        if args.schema:
+            raise ValueError("--select-products cannot be combined with --schema")
+        if args.columns:
+            raise ValueError("--select-products requires the default application columns")
+        if args.max_products <= 0:
+            raise ValueError("--max-products must be greater than zero")
+        if args.max_mb <= 0:
+            raise ValueError("--max-mb must be greater than zero")
+        if args.max_total_mb is not None and args.max_total_mb <= 0:
+            raise ValueError("--max-total-mb must be greater than zero")
+        if not 0 <= args.target_coverage <= 1:
+            raise ValueError("--target-coverage must be in [0, 1]")
+        if args.minimum_filters < 0:
+            raise ValueError("--minimum-filters cannot be negative")
+        if args.coverage_weight < 0 or args.filter_weight < 0:
+            raise ValueError("selection weights cannot be negative")
+        if args.size_penalty_exponent < 0:
+            raise ValueError("--size-penalty-exponent cannot be negative")
+        if args.grid_dimension <= 0:
+            raise ValueError("--grid-dimension must be greater than zero")
+
+    if args.schema:
+        query = build_schema_query()
+        resolved_position = None
+        query_jobs = [("schema", query)]
     else:
-        ra, dec = args.ra, args.dec
-    if not 0 <= ra < 360 or not -90 <= dec <= 90:
-        raise ValueError("coordinates must satisfy 0 <= RA < 360 and -90 <= Dec <= 90")
+        if (args.ra is None) != (args.dec is None):
+            raise ValueError("provide both --ra and --dec")
+        if args.ra is None:
+            if not args.target:
+                raise ValueError("provide --target or both --ra and --dec")
+            ra, dec = resolve_target(args.target, timeout=args.timeout, retries=args.retries)
+        else:
+            ra, dec = args.ra, args.dec
 
-    products, queries, query_errors = fetch_candidates(
-        ra=ra,
-        dec=dec,
-        radius=args.radius,
-        missions=missions,
-        filters=filters,
-        calibration_levels=calibration_levels,
-        product_types=product_types,
-        limit=args.limit,
-        balanced_missions=args.balanced_missions,
+        if not 0 <= ra < 360:
+            raise ValueError("--ra must be in [0, 360)")
+        if not -90 <= dec <= 90:
+            raise ValueError("--dec must be in [-90, 90]")
+
+        resolved_position = {"ra": ra, "dec": dec, "radius_degrees": args.radius}
+        missions = parse_csv_values(args.missions)
+        filters = parse_csv_values(args.filters) if args.filters.strip() else []
+        product_types = parse_csv_values(args.product_types)
+        try:
+            calibration_levels = [
+                int(value.strip())
+                for value in args.calib_levels.split(",")
+                if value.strip()
+            ]
+        except ValueError as error:
+            raise ValueError("--calib-levels must contain comma-separated integers") from error
+        if not calibration_levels:
+            raise ValueError("--calib-levels requires at least one value")
+        columns = parse_column_values(args.columns) if args.columns.strip() else None
+
+        if args.balanced_missions and len(missions) > 1:
+            base_limit, remainder = divmod(args.limit, len(missions))
+            mission_limits = [
+                base_limit + (1 if index < remainder else 0)
+                for index in range(len(missions))
+            ]
+            query_jobs = [
+                (
+                    mission,
+                    build_science_product_query(
+                        ra=ra,
+                        dec=dec,
+                        radius=args.radius,
+                        missions=[mission],
+                        filters=filters,
+                        calibration_levels=calibration_levels,
+                        product_types=product_types,
+                        limit=mission_limit,
+                        columns=columns,
+                    ),
+                )
+                for mission, mission_limit in zip(missions, mission_limits)
+                if mission_limit > 0
+            ]
+        else:
+            query_jobs = [
+                (
+                    "combined",
+                    build_science_product_query(
+                        ra=ra,
+                        dec=dec,
+                        radius=args.radius,
+                        missions=missions,
+                        filters=filters,
+                        calibration_levels=calibration_levels,
+                        product_types=product_types,
+                        limit=args.limit,
+                        columns=columns,
+                    ),
+                )
+            ]
+
+    if args.show_query:
+        for label, adql in query_jobs:
+            LOGGER.info("ADQL branch=%s\n%s", label, adql)
+
+    completed_jobs, query_errors = execute_tap_queries(
+        query_jobs,
         timeout=args.timeout,
         retries=args.retries,
         workers=args.workers,
-        require_all_missions=args.require_all_missions,
-        show_query=args.show_query,
+        require_all=args.require_all_missions,
     )
-    options = SelectionOptions(
-        max_products=args.max_products,
-        max_product_bytes=int(args.max_mb * MIB),
-        max_total_bytes=int(args.max_total_mb * MIB) if args.max_total_mb is not None else None,
-        target_coverage=args.target_coverage,
-        minimum_filters=max(args.min_filters, 0),
-        coverage_weight=args.coverage_weight,
-        filter_weight=args.filter_weight,
-        size_penalty_exponent=args.size_penalty_exponent,
-        grid_dimension=args.grid,
-    )
-    result = greedy_select(
-        products,
-        target_name=args.target or "Coordinate target",
-        ra=ra,
-        dec=dec,
-        radius=args.radius,
-        options=options,
-    )
-    result["options"] = asdict(options)
-    result["missions"] = missions
-    result["adql_by_mission"] = queries
-    result["mission_query_errors"] = query_errors
+    responses = [response for _, response, _ in completed_jobs]
+    queries = [adql for _, _, adql in completed_jobs]
+    response_rows = [named_rows(response) for response in responses]
+    selection = None
+    if args.select_products:
+        assert resolved_position is not None
+        selection_options = SelectionOptions(
+            max_products=args.max_products,
+            max_product_bytes=int(args.max_mb * MIB),
+            max_total_bytes=int(args.max_total_mb * MIB) if args.max_total_mb is not None else None,
+            target_coverage=args.target_coverage,
+            minimum_filters=args.minimum_filters,
+            coverage_weight=args.coverage_weight,
+            filter_weight=args.filter_weight,
+            size_penalty_exponent=args.size_penalty_exponent,
+            grid_dimension=args.grid_dimension,
+        )
+        grid = make_coverage_grid(
+            resolved_position["ra"],
+            resolved_position["dec"],
+            resolved_position["radius_degrees"],
+            selection_options.grid_dimension,
+        )
+        # The named algorithm entry point performs branch preparation, grouping,
+        # heap/index construction, and incremental greedy traversal.
+        selection = greedy_select_products(response_rows, grid, selection_options)
+        selection["target"] = args.target
+        selection["position"] = resolved_position
+        selection["target_area_square_degrees"] = grid.target_area_square_degrees
+
+    rows = [row for branch_rows in response_rows for row in branch_rows]
+    response_columns = responses[0]["info"] if responses else []
+    result = {
+        "target": args.target,
+        "position": resolved_position,
+        "row_count": len(rows),
+        "columns": [column.get("name") for column in response_columns],
+        "column_availability": column_availability(rows),
+        "missions": mission_summary(rows),
+        "adql": queries[0] if len(queries) == 1 else queries,
+        "query_errors": query_errors,
+        "rows": rows,
+    }
+    if selection is not None:
+        result["selection"] = selection
     rendered = json.dumps(result, indent=2, ensure_ascii=False) + "\n"
 
     if args.output:
         args.output.parent.mkdir(parents=True, exist_ok=True)
         args.output.write_text(rendered, encoding="utf-8")
         LOGGER.info(
-            "Report written path=%s selected_products=%s observation_groups=%s",
+            "Report written path=%s rows=%s selected_products=%s",
             args.output,
-            len(result["selected_products"]),
-            len(result["observation_groups"]),
+            len(rows),
+            len(selection["selected_products"]) if selection is not None else 0,
         )
     else:
         sys.stdout.write(rendered)
-    LOGGER.info("Workflow finished elapsed_seconds=%.3f", time.monotonic() - workflow_started)
+
+    LOGGER.info(
+        "MAST TAP workflow finished rows=%s elapsed_seconds=%.3f",
+        len(rows),
+        time.monotonic() - started,
+    )
+
     return 0
 
 
