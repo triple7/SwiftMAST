@@ -196,6 +196,40 @@ swift run swiftmast-greedy-selection \
 The JSON report records candidates, exclusions, instrument branches, every accepted
 greedy step, cumulative coverage, distinct filters, and total selected bytes.
 
+### Requests-only Python research script
+
+The standalone Python version performs the same metadata-only selection without
+loading SwiftMAST, downloading FITS products, or reading FITS headers:
+
+```bash
+.venv/bin/python Sources/scripts/greedy_mast_tap_selection.py \
+  --target "NGC 628" \
+  --missions JWST,HST,HLA \
+  --balanced-missions \
+  --limit 100 \
+  --max-products 5 \
+  --max-mb 70 \
+  --log-level INFO \
+  --log-file greedy-science-product.log \
+  --output greedy-science-product-report.json
+```
+
+`--limit` controls the number of TAP candidate rows, matching the earlier TAP
+research script. `--max-products` controls how many products the greedy algorithm
+may select. The output includes both the ordered products and their observation
+groups.
+
+Mission queries run sequentially by default (`--workers 1`) because the synchronous
+MAST TAP service may return HTTP 500 under transient load. HTTP 429 and 5xx responses
+are retried five times with exponential backoff. If one mission still fails, successful
+mission results are retained and the error is written to `mission_query_errors`; add
+`--require-all-missions` when partial results are not acceptable.
+
+Logs are timestamped and written to stderr, keeping stdout available for JSON. Use
+`--log-level DEBUG` for HTTP and retry diagnostics, or `--log-file PATH` to retain a
+copy of the target-resolution, mission-query, candidate-filtering, greedy-step, and
+completion events.
+
 ## Science Product Extraction
 
 The `extractScienceProducts` API downloads a FITS file from MAST and extracts individual image HDUs into `ScienceProduct` objects, each with converted JPEG imagery and structured FITS headers.
