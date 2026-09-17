@@ -146,6 +146,56 @@ mast.lookupTargetCoordinates(targetName: "M31") { coordinates in
 }
 ```
 
+## Greedy Science-Product Selection
+
+`selectScienceProductsUsingGreedyTAP` is a review-focused, end-to-end selector for
+building a target image from a small set of public science FITS products. It queries
+each requested mission independently, removes candidates missing a footprint, filter,
+instrument, file size, or download URL, and then repeatedly selects the product with
+the greatest new spatial coverage and filter benefit per MiB.
+
+```swift
+let options = GreedyScienceProductSelectionOptions(
+    candidateRowLimit: 100,
+    maxSelectedProducts: 5,
+    maxProductSizeBytes: 70 * 1_048_576,
+    targetCoverageFraction: 0.80,
+    minimumDistinctFilters: 3,
+    fetchFITSHeadersForSelectedProducts: false
+)
+
+SwiftMAST().selectScienceProductsUsingGreedyTAP(
+    targetName: "NGC 628",
+    radiusDegrees: 0.05,
+    options: options
+) { selection in
+    print(selection.selectedObservationGroups)
+    print(selection.steps)
+}
+```
+
+The coverage calculation uses a deterministic grid approximation of the union of
+the selected `s_region` footprints. When enabled, FITS headers are fetched only after
+selection; header enrichment is disabled by default.
+
+Use the included probe to compare balanced, coverage-first, filter-first, and
+smallest-download configurations:
+
+```bash
+swift run swiftmast-greedy-selection \
+  --target "NGC 628" \
+  --missions JWST,HST \
+  --rows 100 \
+  --max-products 5 \
+  --max-mb 70 \
+  --preset all \
+  --headers false \
+  --output greedy-science-product-report.json
+```
+
+The JSON report records candidates, exclusions, instrument branches, every accepted
+greedy step, cumulative coverage, distinct filters, and total selected bytes.
+
 ## Science Product Extraction
 
 The `extractScienceProducts` API downloads a FITS file from MAST and extracts individual image HDUs into `ScienceProduct` objects, each with converted JPEG imagery and structured FITS headers.

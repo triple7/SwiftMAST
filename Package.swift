@@ -26,6 +26,9 @@ let package = Package(
         .executable(
             name: "swiftmast-function-graph",
             targets: ["SwiftMASTFunctionGraphTool"]),
+        .executable(
+            name: "swiftmast-greedy-selection",
+            targets: ["SwiftMASTGreedySelectionTool"]),
     ],
     dependencies: [
         .package(url: "https://github.com/triple7/SwiftQValue", branch: "main"),
@@ -68,6 +71,9 @@ let package = Package(
         .executableTarget(
             name: "SwiftMASTFunctionGraphTool",
             dependencies: ["SwiftMASTFunctionGraphCore"]),
+        .executableTarget(
+            name: "SwiftMASTGreedySelectionTool",
+            dependencies: ["SwiftMAST"]),
         .testTarget(
             name: "SwiftMASTTests",
             dependencies: ["SwiftMAST"]),

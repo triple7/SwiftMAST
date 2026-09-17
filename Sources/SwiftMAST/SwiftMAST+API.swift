@@ -2149,7 +2149,7 @@ extension SwiftMAST {
         result: @escaping ([ObservationGroup]) -> Void
     ) {
         let policy: ObservationFITSHeaderFetchPolicy = includeFITSImageHeaderMetadata ? .all : .none
-        getObservationGroupsUsingTAP(
+        executeObservationGroupsTAPQuery(
             targetName: targetName,
             ra: ra,
             dec: dec,
@@ -2185,7 +2185,7 @@ extension SwiftMAST {
         result: @escaping ([ObservationGroup]) -> Void
     ) {
         if let ra, let dec {
-            getObservationGroupsUsingTAP(
+            executeObservationGroupsTAPQuery(
                 targetName: targetName ?? "Coordinate target",
                 ra: Float(ra),
                 dec: Float(dec),
@@ -2247,7 +2247,9 @@ extension SwiftMAST {
         }
     }
 
-    private func getObservationGroupsUsingTAP(
+    /// Shared CAOM TAP executor used by the public observation-group and science-product
+    /// selection APIs. Callers are responsible for resolving the target coordinates first.
+    internal func executeObservationGroupsTAPQuery(
         targetName: String,
         ra: Float,
         dec: Float,
