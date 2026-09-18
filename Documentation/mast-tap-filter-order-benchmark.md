@@ -148,3 +148,39 @@ observation/filter structure and does not assume file size represents useful sky
 area. TAP-filtered maximum-size ordering is a useful coverage-oriented preset for
 this target, but it should be validated on several targets before becoming a
 general policy.
+
+## TAP record-limit probe
+
+MAST's live [CAOM TAP capabilities document](https://mast.stsci.edu/vo-tap/api/v0.1/caom/capabilities)
+declares both its default output limit and hard output limit as **100,000 rows**.
+This is the service-side result ceiling; it does not mean every synchronous query
+that requests 100,000 rows will finish before an HTTP gateway timeout.
+
+Incremental synchronous queries used the application's full selected-column set,
+fixed NGC 628 coordinates, the JWST/HST/HLA mission filters, and no retries. The
+radius was widened when the target no longer had enough matching rows to exercise
+the requested `TOP` value.
+
+| Radius | Requested `TOP` | Returned rows | Wall time | Report size | Result |
+|---:|---:|---:|---:|---:|---|
+| 0.1 deg | 100 | 100 | 7.29 s | 0.158 MiB | Success |
+| 0.1 deg | 250 | 250 | 7.23 s | 0.372 MiB | Success |
+| 0.1 deg | 500 | 500 | 8.80 s | 0.744 MiB | Success |
+| 0.1 deg | 1,000 | 722 | 7.90 s | 1.071 MiB | Success; only 722 matches |
+| 1 deg | 1,000 | 969 | 18.28 s | 1.412 MiB | Success |
+| 2 deg | 2,000 | 1,099 | 24.98 s | 1.628 MiB | Success |
+| 3 deg | 2,000 | 1,311 | 24.93 s | 1.913 MiB | Success |
+| 4 deg | 2,000 | 1,393 | 35.40 s | 2.023 MiB | Success |
+| 5 deg | 5,000 | — | 66.19 s | — | HTTP 504 |
+
+The largest successful application-shaped response in this probe was 1,393
+rows, but that is **not** the TAP row limit. It is only the largest result tested
+successfully for this target, query shape, and synchronous endpoint. The
+5-degree request failed because the server or gateway did not finish the more
+expensive spatial query in time.
+
+For routine interactive use, keep the synchronous query bounded and partition
+large searches by mission, instrument, time range, or sky region. Use TAP's
+asynchronous execution path for expensive searches, then combine and deduplicate
+the partitions locally before running the greedy selector. No single response can
+exceed the advertised 100,000-row hard limit.
