@@ -224,6 +224,11 @@ With it enabled, the report gains a `selection` object containing ordered produc
 observation groups, exclusions, selection steps, and heap/index operation metrics. The
 selector does not repeatedly scan every remaining candidate.
 
+`selection.summary` provides report-ready totals: coverage fraction and percentage,
+selected bytes and MiB, selected filter/product counts, eligible candidate count, and
+available/selected observation-group counts. Existing detailed arrays and raw values
+remain available alongside the summary.
+
 `--limit` controls the number of TAP candidate rows and `--max-products` controls the
 maximum selected products. Mission queries run sequentially by default (`--workers 1`)
 because the synchronous MAST TAP service may return HTTP 500 under transient load.
@@ -236,6 +241,13 @@ The script logs progress and elapsed times to the terminal at `INFO` level by de
 Use `--log-level DEBUG` for HTTP details, `--log-level WARNING` for quieter output, or
 `--log-file PATH` to retain a copy. Logs use stderr, so JSON written to stdout remains
 machine-readable.
+
+Use `--eligibility-filter-location tap` to push fixed required-field and per-product
+size checks into TAP before `TOP`, or keep the backward-compatible `local` default.
+Use `--tap-order group|min-size|max-size` to compare observation grouping with minimum
+or maximum content-length ordering. Dynamic coverage/filter gains always remain in the
+local greedy selector. See [the filtering and ordering benchmark](Documentation/mast-tap-filter-order-benchmark.md)
+for the measured tradeoffs and recommended hybrid policy.
 
 ## Science Product Extraction
 

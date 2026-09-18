@@ -68,6 +68,11 @@ MIB = 1_048_576
 IGNORED_FILTERS = {"", "CLEAR", "DETECTION", "N/A", "NA", "NONE", "UNKNOWN", "WHITE"}
 FILTER_TOKEN = re.compile(r"^(?:FQ?|G)\d{2,4}[A-Z0-9]*$")
 LOGGER = logging.getLogger("swiftmast.greedy_mast_tap")
+TAP_ORDERINGS = {
+    "group": "o.obs_collection, o.instrument_name, o.obs_id, o.filters",
+    "min-size": "a.contentlength ASC, o.instrument_name, o.obs_id, o.filters",
+    "max-size": "a.contentlength DESC, o.instrument_name, o.obs_id, o.filters",
+}
 
 # Keep this projection aligned with SwiftMAST's `.targetCompositeSelection`
 # profile. Required selection fields are followed by useful optional plane
@@ -445,11 +450,23 @@ def build_science_product_query(
     calibration_levels: list[int] | None = None,
     product_types: list[str] | None = None,
     columns: list[str] | None = None,
+    eligibility_filter_location: str = "local",
+    max_product_bytes: int | None = None,
+    tap_order: str = "group",
 ) -> str:
-    """Build the metadata-only ADQL used for candidate discovery."""
+    """Build candidate ADQL with configurable static filtering and ordering.
+
+    ``eligibility_filter_location="tap"`` pushes checks that never depend on
+    prior greedy choices into MAST. Coverage/filter marginal-gain calculations
+    remain local because they change after every selected product.
+    """
 
     calibration_levels = calibration_levels or [3, 4]
     product_types = product_types or ["IMAGE", "CUBE"]
+    if eligibility_filter_location not in {"local", "tap"}:
+        raise ValueError("eligibility_filter_location must be 'local' or 'tap'")
+    if tap_order not in TAP_ORDERINGS:
+        raise ValueError(f"unsupported TAP ordering: {tap_order}")
     predicates = [
         "CONTAINS("
         "POINT('ICRS', o.s_ra, o.s_dec), "
@@ -474,6 +491,20 @@ def build_science_product_query(
         filter_predicates = [f"UPPER(o.filters) LIKE '%{value}%'" for value in escaped_filters]
         predicates.append("(" + " OR ".join(filter_predicates) + ")")
 
+    if eligibility_filter_location == "tap":
+        predicates.extend(
+            [
+                "o.s_region IS NOT NULL",
+                "o.filters IS NOT NULL",
+                "o.instrument_name IS NOT NULL",
+                "a.contentlength IS NOT NULL",
+                "a.contentlength > 0",
+                "(a.datauri IS NOT NULL OR o.dataurl IS NOT NULL)",
+            ]
+        )
+        if max_product_bytes is not None:
+            predicates.append(f"a.contentlength <= {max_product_bytes}")
+
     select_columns = ",\n        ".join(columns or APPLICATION_COLUMNS)
 
     return (
@@ -484,7 +515,7 @@ def build_science_product_query(
         "JOIN dbo.caomartifact AS a ON a.planetid = p.planetid\n"
         "WHERE "
         + "\n  AND ".join(predicates)
-        + "\nORDER BY o.obs_collection, o.instrument_name, o.obs_id, o.filters"
+        + f"\nORDER BY {TAP_ORDERINGS[tap_order]}"
     )
 
 
@@ -1179,8 +1210,22 @@ class HierarchicalIncrementalGreedySelector:
             selected_products.append(product)
 
         branch_candidate_counts = Counter(candidate.mission for candidate in self.candidates.values())
+        selected_observation_groups = group_selected_products(selected_products)
+        coverage_fraction = self.grid.fraction_for_count(len(selected_cells))
+        selection_summary = {
+            "coverage_fraction": coverage_fraction,
+            "coverage_percentage": round(coverage_fraction * 100.0, 6),
+            "selected_size_bytes": total_size,
+            "selected_size_mib": round(total_size / MIB, 6),
+            "selected_filter_count": len(selected_filters),
+            "selected_product_count": len(selected_products),
+            "eligible_candidate_count": len(self.candidates),
+            "observation_group_count": len(self.groups),
+            "selected_observation_group_count": len(selected_observation_groups),
+        }
         result = {
             "algorithm": "hierarchical_incremental_greedy",
+            "summary": selection_summary,
             "candidate_count": sum(self.branch_fetched_counts.values()),
             "eligible_candidate_count": len(self.candidates),
             "observation_group_count": len(self.groups),
@@ -1189,8 +1234,8 @@ class HierarchicalIncrementalGreedySelector:
             "exclusion_reasons": dict(sorted(Counter(value["reason"] for value in self.exclusions).items())),
             "steps": steps,
             "selected_products": selected_products,
-            "observation_groups": group_selected_products(selected_products),
-            "covered_fraction": self.grid.fraction_for_count(len(selected_cells)),
+            "observation_groups": selected_observation_groups,
+            "covered_fraction": coverage_fraction,
             "selected_filters": sorted(selected_filters),
             "total_selected_size_bytes": total_size,
             "budget_skipped_candidates": budget_skipped,
@@ -1294,6 +1339,24 @@ def parse_args() -> argparse.Namespace:
             "Use this for representative availability samples."
         ),
     )
+    parser.add_argument(
+        "--eligibility-filter-location",
+        choices=("local", "tap"),
+        default="local",
+        help=(
+            "Apply required-field and per-product size checks after retrieval "
+            "(local, default) or in TAP before TOP/transfer (tap)."
+        ),
+    )
+    parser.add_argument(
+        "--tap-order",
+        choices=tuple(TAP_ORDERINGS),
+        default="group",
+        help=(
+            "TAP row priority: observation grouping, minimum file size first, "
+            "or maximum file size first (default: group)."
+        ),
+    )
     parser.add_argument("--show-query", action="store_true", help="Print ADQL to stderr before submitting it.")
     parser.add_argument("--output", type=Path, help="Write formatted JSON to this path instead of stdout.")
     parser.add_argument(
@@ -1360,12 +1423,15 @@ def main() -> int:
     configure_logging(args.log_level, args.log_file)
     started = time.monotonic()
     LOGGER.info(
-        "MAST TAP workflow started target=%r missions=%s limit=%s balanced_missions=%s selection=%s",
+        "MAST TAP workflow started target=%r missions=%s limit=%s balanced_missions=%s "
+        "selection=%s filter_location=%s tap_order=%s",
         args.target,
         args.missions,
         args.limit,
         args.balanced_missions,
         args.select_products,
+        args.eligibility_filter_location,
+        args.tap_order,
     )
 
     if args.radius <= 0:
@@ -1450,6 +1516,9 @@ def main() -> int:
                         product_types=product_types,
                         limit=mission_limit,
                         columns=columns,
+                        eligibility_filter_location=args.eligibility_filter_location,
+                        max_product_bytes=int(args.max_mb * MIB),
+                        tap_order=args.tap_order,
                     ),
                 )
                 for mission, mission_limit in zip(missions, mission_limits)
@@ -1469,6 +1538,9 @@ def main() -> int:
                         product_types=product_types,
                         limit=args.limit,
                         columns=columns,
+                        eligibility_filter_location=args.eligibility_filter_location,
+                        max_product_bytes=int(args.max_mb * MIB),
+                        tap_order=args.tap_order,
                     ),
                 )
             ]
@@ -1525,6 +1597,11 @@ def main() -> int:
         "missions": mission_summary(rows),
         "adql": queries[0] if len(queries) == 1 else queries,
         "query_errors": query_errors,
+        "query_strategy": {
+            "eligibility_filter_location": args.eligibility_filter_location,
+            "tap_order": args.tap_order,
+            "max_product_size_bytes": int(args.max_mb * MIB),
+        },
         "rows": rows,
     }
     if selection is not None:

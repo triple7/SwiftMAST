@@ -55,6 +55,8 @@ class HierarchicalGreedyTAPSelectionTests(unittest.TestCase):
         self.assertIsNone(args.log_file)
         self.assertEqual(args.retries, 5)
         self.assertEqual(args.workers, 1)
+        self.assertEqual(args.eligibility_filter_location, "local")
+        self.assertEqual(args.tap_order, "group")
 
     def test_query_uses_configurable_calibration_levels_and_product_types(self) -> None:
         query = MODULE.build_science_product_query(
@@ -70,6 +72,24 @@ class HierarchicalGreedyTAPSelectionTests(unittest.TestCase):
 
         self.assertIn("o.calib_level IN (2,4)", query)
         self.assertIn("LOWER(o.dataproduct_type) IN ('image','cube')", query)
+
+    def test_query_can_push_static_eligibility_filters_and_size_order_to_tap(self) -> None:
+        query = MODULE.build_science_product_query(
+            ra=10,
+            dec=0,
+            radius=0.05,
+            missions=["JWST"],
+            filters=[],
+            limit=10,
+            eligibility_filter_location="tap",
+            max_product_bytes=70 * MODULE.MIB,
+            tap_order="min-size",
+        )
+
+        self.assertIn("o.s_region IS NOT NULL", query)
+        self.assertIn("a.contentlength > 0", query)
+        self.assertIn(f"a.contentlength <= {70 * MODULE.MIB}", query)
+        self.assertIn("ORDER BY a.contentlength ASC", query)
 
     def test_tap_query_execution_retains_successful_branches(self) -> None:
         response = {"info": [], "data": []}
@@ -146,6 +166,16 @@ class HierarchicalGreedyTAPSelectionTests(unittest.TestCase):
         )
         self.assertEqual(result["selected_filters"], ["F435W", "F814W"])
         self.assertEqual(result["stop_reason"], "target_satisfied")
+        self.assertEqual(result["summary"]["selected_product_count"], 2)
+        self.assertEqual(result["summary"]["eligible_candidate_count"], 3)
+        self.assertEqual(result["summary"]["selected_filter_count"], 2)
+        self.assertEqual(result["summary"]["selected_size_bytes"], 15 * MODULE.MIB)
+        self.assertEqual(result["summary"]["selected_size_mib"], 15.0)
+        self.assertAlmostEqual(
+            result["summary"]["coverage_percentage"],
+            result["covered_fraction"] * 100,
+            places=6,
+        )
         self.assertEqual(result["complexity_metrics"]["full_candidate_rescans"], 0)
         self.assertGreater(result["complexity_metrics"]["candidate_score_updates"], 0)
 
