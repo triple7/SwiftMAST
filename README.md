@@ -244,10 +244,14 @@ machine-readable.
 
 Use `--eligibility-filter-location tap` to push fixed required-field and per-product
 size checks into TAP before `TOP`, or keep the backward-compatible `local` default.
+TAP rejects null footprint, filter, instrument, content length, and retrieval URI
+values, plus non-positive or oversized products. Optional nullable metadata such as
+preview, wavelength, timing, and image dimensions is not used as a rejection gate.
+The selector validates the returned values again locally to catch blank or malformed
+strings that `IS NOT NULL` alone cannot detect.
 Use `--tap-order group|min-size|max-size` to compare observation grouping with minimum
 or maximum content-length ordering. Dynamic coverage/filter gains always remain in the
-local greedy selector. See [the filtering and ordering benchmark](Documentation/mast-tap-filter-order-benchmark.md)
-for the measured tradeoffs and recommended hybrid policy.
+local greedy selector.
 
 ## Science Product Extraction
 

@@ -16,3 +16,6 @@ __pycache__/
 
 research/fit-headers/*.key
 research/mastFiles
+
+# Local research notes that should not be published
+Documentation/.local/
