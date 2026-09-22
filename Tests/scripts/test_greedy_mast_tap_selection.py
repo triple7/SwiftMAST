@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import importlib.util
+import json
 import sys
+import tempfile
 import unittest
 from pathlib import Path
 from unittest.mock import patch
@@ -57,6 +59,8 @@ class HierarchicalGreedyTAPSelectionTests(unittest.TestCase):
         self.assertEqual(args.workers, 1)
         self.assertEqual(args.eligibility_filter_location, "local")
         self.assertEqual(args.tap_order, "group")
+        self.assertFalse(args.download_selected)
+        self.assertEqual(args.cache_root, Path.home() / "Documents" / "MAST")
 
     def test_query_uses_configurable_calibration_levels_and_product_types(self) -> None:
         query = MODULE.build_science_product_query(
@@ -246,6 +250,91 @@ class HierarchicalGreedyTAPSelectionTests(unittest.TestCase):
             result["observation_groups"][0]["observation_key"],
             "hst_10775_62_wfc3",
         )
+
+    def test_swiftmast_cache_path_and_existing_fits_are_reused(self) -> None:
+        selected = product(
+            "hst_12345_01_wfc3_f606w",
+            "F606W;CLEAR2L",
+            1,
+            mission="HLA",
+            instrument="WFC3/UVIS",
+        )
+        payload = b"SIMPLE  " + b"0" * 8
+        selected["contentlength"] = len(payload)
+
+        class NoNetworkSession:
+            def get(self, *args: object, **kwargs: object) -> object:
+                raise AssertionError("cache hit must not perform a network request")
+
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            fits_path, sidecar_path = MODULE.swiftmast_cache_paths(
+                root, "NGC 628", selected
+            )
+            fits_path.parent.mkdir(parents=True)
+            fits_path.write_bytes(payload)
+
+            report = MODULE.download_selected_product(
+                NoNetworkSession(),
+                selected,
+                target_name="NGC 628",
+                cache_root=root,
+                timeout=10,
+            )
+
+            self.assertEqual(report["status"], "cached")
+            self.assertIn("NGC_628/HST/hst_12345_01_wfc3_f606w", fits_path.as_posix())
+            self.assertIn("F606W-CLEAR2L/fit", fits_path.as_posix())
+            sidecar = json.loads(sidecar_path.read_text(encoding="utf-8"))
+            self.assertEqual(sidecar["dataURL"], selected["datauri"])
+            self.assertEqual(sidecar["obs_collection"], "HLA")
+            self.assertEqual(sidecar["dataURLSizeBytes"], len(payload))
+
+    def test_selected_fits_download_is_atomic_and_uses_mast_product_uri(self) -> None:
+        selected = product("jw-product", "F200W", 1)
+        payload = b"SIMPLE  " + b"1" * 8
+        selected["contentlength"] = len(payload)
+
+        class Response:
+            status_code = 200
+
+            def raise_for_status(self) -> None:
+                return None
+
+            def iter_content(self, chunk_size: int) -> list[bytes]:
+                self.chunk_size = chunk_size
+                return [payload[:9], payload[9:]]
+
+            def close(self) -> None:
+                return None
+
+        class Session:
+            def __init__(self) -> None:
+                self.calls: list[tuple[object, object]] = []
+
+            def get(self, url: str, **kwargs: object) -> Response:
+                self.calls.append((url, kwargs.get("params")))
+                return Response()
+
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            session = Session()
+            report = MODULE.download_selected_product(
+                session,
+                selected,
+                target_name="Test target",
+                cache_root=root,
+                timeout=10,
+            )
+
+            fits_path = Path(report["local_fits_path"])
+            self.assertEqual(report["status"], "downloaded")
+            self.assertEqual(fits_path.read_bytes(), payload)
+            self.assertFalse(fits_path.with_suffix(".fits.part").exists())
+            self.assertEqual(session.calls[0][0], MODULE.MAST_DOWNLOAD_URL)
+            self.assertEqual(
+                session.calls[0][1], {"uri": selected["datauri"]}
+            )
 
 
 if __name__ == "__main__":

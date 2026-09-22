@@ -13,11 +13,14 @@ Flow:
     4. When --select-products is enabled, prepare each mission independently,
        group candidates by observation, and run hierarchical incremental greedy
        selection using coverage/filter indexes and priority heaps.
-    5. Emit the original query rows plus availability statistics and, when
+    5. Optionally cache selected FITS files with ``--download-selected``.
+    6. Emit the original query rows plus availability statistics and, when
        requested, the ordered product and observation-group selection.
 
-The selector is metadata-only. A selected product can later become an AOSImage,
-and the selected products in one observation group can become an AOSImageStack.
+The query and selector are metadata-only unless ``--download-selected`` is
+supplied. That option downloads only the greedy result into SwiftMAST's normal
+``Documents/MAST`` cache layout, writes the CAOM sidecar used by the Swift cache
+scanner, and reuses complete files already present there.
 
 Dependency:
     python3 -m pip install requests
@@ -36,6 +39,12 @@ Examples:
         --max-products 20 --max-total-mb 500 \
         --output hierarchical-science-product-report.json
 
+    python3 Sources/scripts/greedy_mast_tap_selection.py \
+        --target "NGC 628" --missions JWST,HST,HLA \
+        --balanced-missions --limit 100 --download-selected \
+        --max-products 20 --max-total-mb 500 \
+        --output hierarchical-science-product-report.json
+
     python3 Sources/scripts/greedy_mast_tap_selection.py --schema
 """
 
@@ -46,6 +55,7 @@ import heapq
 import json
 import logging
 import math
+import os
 import re
 import sys
 import time
@@ -62,6 +72,7 @@ from urllib3.util.retry import Retry
 
 MAST_TAP_URL = "https://mast.stsci.edu/vo-tap/api/v0.1/caom/sync"
 MAST_API_URL = "https://mast.stsci.edu/api/v0/invoke"
+MAST_DOWNLOAD_URL = "https://mast.stsci.edu/api/v0.1/Download/file"
 DEFAULT_MISSIONS = ("JWST", "HST", "HLA")
 TAP_TABLES = ("dbo.obspointing", "dbo.caomplane", "dbo.caomartifact")
 MIB = 1_048_576
@@ -216,7 +227,7 @@ def requests_session(retries: int) -> requests.Session:
         read=retries,
         status=retries,
         backoff_factor=2,
-        allowed_methods=frozenset({"POST"}),
+        allowed_methods=frozenset({"GET", "POST"}),
         status_forcelist=(429, 500, 502, 503, 504),
         respect_retry_after_header=True,
         raise_on_status=False,
@@ -226,6 +237,7 @@ def requests_session(retries: int) -> requests.Session:
     session.headers.update(
         {
             "Accept": "application/json",
+            "Accept-Encoding": "identity",
             "User-Agent": "SwiftMAST-TAP-query/2.0",
         }
     )
@@ -1289,6 +1301,377 @@ def greedy_select_products(
 
 
 # ---------------------------------------------------------------------------
+# SwiftMAST-compatible selected-product download cache
+# ---------------------------------------------------------------------------
+
+def storage_safe_path_component(value: Any, fallback: str) -> str:
+    """Mirror SwiftMAST's filesystem-safe path-component normalization."""
+
+    source = str(value or "").strip() or fallback
+    replaced = "".join(
+        character if character.isalnum() or character in "-_." else "_"
+        for character in source
+    )
+    collapsed = re.sub(r"__+", "_", replaced).strip("_")
+    return collapsed or fallback
+
+
+def swiftmast_cache_paths(
+    cache_root: Path,
+    target_name: str,
+    product: dict[str, Any],
+) -> tuple[Path, Path]:
+    """Return the FITS and CAOM-sidecar paths used by SwiftMAST's cache scanner."""
+
+    collection = str(product.get("obs_collection") or "").strip()
+    mission = "HST" if collection.upper() == "HLA" else collection
+    safe_target = storage_safe_path_component(target_name, "unknown-target")
+    safe_mission = storage_safe_path_component(mission, "unknown-mission")
+    safe_observation = storage_safe_path_component(
+        product.get("obs_id"), "unknown-observation"
+    )
+    filter_value = str(product.get("filters") or "").replace(";", "-")
+    safe_filter = storage_safe_path_component(filter_value, "unknown-filter")
+    filter_folder = (
+        cache_root
+        / safe_target
+        / safe_mission
+        / safe_observation
+        / safe_filter
+    )
+    fits_name = (
+        f"{safe_target}_{safe_mission}_{safe_observation}_{safe_filter}.fits"
+    )
+    return filter_folder / "fit" / fits_name, filter_folder / "coam-result.json"
+
+
+def integer_value(value: Any) -> int:
+    """Match Swift's tolerant TAP numeric conversion for sidecar fields."""
+
+    try:
+        return int(float(value)) if value not in (None, "") else 0
+    except (TypeError, ValueError, OverflowError):
+        return 0
+
+
+def float_value(value: Any) -> float:
+    """Return a finite JSON-compatible float, or zero for missing TAP values."""
+
+    try:
+        number = float(value)
+        return number if math.isfinite(number) else 0.0
+    except (TypeError, ValueError, OverflowError):
+        return 0.0
+
+
+def string_value(value: Any) -> str:
+    """Return SwiftMAST's empty-string representation for a missing TAP value."""
+
+    return "" if value is None else str(value)
+
+
+def swiftmast_coam_sidecar(product: dict[str, Any]) -> dict[str, Any]:
+    """Convert one selected TAP row into SwiftMAST's Codable CoamResult shape."""
+
+    return {
+        "calib_level": integer_value(product.get("calib_level")),
+        "dataRights": string_value(product.get("datarights")),
+        "dataURL": string_value(product.get("datauri")),
+        "dataproduct_type": string_value(product.get("dataproduct_type")).upper(),
+        "distance": 0,
+        "em_max": integer_value(product.get("em_max")),
+        "em_min": integer_value(product.get("em_min")),
+        "filters": string_value(product.get("filters")),
+        "instrument_name": string_value(product.get("instrument_name")),
+        "intentType": string_value(product.get("intenttype")),
+        "jpegURL": string_value(product.get("previewuri")),
+        "mtFlag": False,
+        "objID": 0,
+        "obs_collection": string_value(product.get("obs_collection")),
+        "obs_id": string_value(product.get("obs_id")),
+        "obs_title": "",
+        "obsid": integer_value(product.get("obsid")),
+        "project": string_value(product.get("project")),
+        "proposal_id": string_value(product.get("proposal_id")),
+        "proposal_pi": "",
+        "proposal_type": "",
+        "provenance_name": string_value(product.get("provenance_name")),
+        "s_dec": product.get("s_dec") if product.get("s_dec") is not None else "",
+        "s_ra": product.get("s_ra") if product.get("s_ra") is not None else "",
+        "s_region": string_value(product.get("s_region")),
+        "s_region_area": None,
+        "sequence_number": 0,
+        "srcDen": 0,
+        "t_exptime": float_value(product.get("t_exptime")),
+        "t_max": float_value(product.get("t_max")),
+        "t_min": float_value(product.get("t_min")),
+        "t_obs_release": 0.0,
+        "target_classification": "",
+        "target_name": string_value(product.get("target_name")),
+        "wavelength_region": string_value(product.get("wavelength_region")),
+        "productFilename": product.get("productfilename"),
+        "artifactContentType": product.get("contenttype"),
+        "positionDimension1": product.get("posdimension1"),
+        "positionDimension2": product.get("posdimension2"),
+        "positionSampleSize": product.get("possamplesize"),
+        "dataURLSizeBytes": product.get("contentlength"),
+        "jpegURLSizeBytes": None,
+        "fitsImageHeaderMetadata": None,
+        "localResources": None,
+    }
+
+
+def write_json_atomically(path: Path, value: dict[str, Any]) -> None:
+    """Write a JSON sidecar without exposing a partially written file."""
+
+    path.parent.mkdir(parents=True, exist_ok=True)
+    temporary = path.with_name(f".{path.name}.tmp")
+    temporary.write_text(
+        json.dumps(value, indent=2, sort_keys=True, ensure_ascii=False) + "\n",
+        encoding="utf-8",
+    )
+    temporary.replace(path)
+
+
+def is_complete_fits(path: Path, expected_size: int | None) -> bool:
+    """Recognize a complete cached FITS file by size and its primary header card."""
+
+    try:
+        actual_size = path.stat().st_size
+        if actual_size <= 0 or (expected_size is not None and actual_size != expected_size):
+            return False
+        with path.open("rb") as stream:
+            return stream.read(8) == b"SIMPLE  "
+    except OSError:
+        return False
+
+
+def product_download_request(product: dict[str, Any]) -> tuple[str, dict[str, str] | None]:
+    """Return a direct URL or the MAST Download/file request for a product URI."""
+
+    data_uri = string_value(product.get("datauri")).strip()
+    if not data_uri:
+        raise RuntimeError("selected product has no datauri")
+    if data_uri.lower().startswith(("http://", "https://")):
+        return data_uri, None
+    return MAST_DOWNLOAD_URL, {"uri": data_uri}
+
+
+def download_selected_product(
+    session: requests.Session,
+    product: dict[str, Any],
+    *,
+    target_name: str,
+    cache_root: Path,
+    timeout: float,
+) -> dict[str, Any]:
+    """Download one selected FITS product atomically, resuming a prior partial file."""
+
+    destination, sidecar = swiftmast_cache_paths(cache_root, target_name, product)
+    expected_size_value = integer_value(product.get("contentlength"))
+    expected_size = expected_size_value if expected_size_value > 0 else None
+    report = {
+        "selection_rank": product.get("selection_rank"),
+        "observation_id": product.get("obs_id"),
+        "product_uri": product.get("datauri"),
+        "expected_size_bytes": expected_size,
+        "local_fits_path": str(destination),
+        "coam_sidecar_path": str(sidecar),
+    }
+
+    if is_complete_fits(destination, expected_size):
+        write_json_atomically(sidecar, swiftmast_coam_sidecar(product))
+        report.update(
+            status="cached",
+            transferred_bytes=0,
+            local_size_bytes=destination.stat().st_size,
+        )
+        LOGGER.info(
+            "FITS cache hit rank=%s observation_id=%r path=%s",
+            product.get("selection_rank"),
+            product.get("obs_id"),
+            destination,
+        )
+        return report
+
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    partial = destination.with_suffix(destination.suffix + ".part")
+    if is_complete_fits(partial, expected_size):
+        partial.replace(destination)
+        write_json_atomically(sidecar, swiftmast_coam_sidecar(product))
+        report.update(
+            status="resumed",
+            transferred_bytes=0,
+            local_size_bytes=destination.stat().st_size,
+        )
+        return report
+
+    resume_offset = partial.stat().st_size if partial.exists() else 0
+    if resume_offset > 0:
+        try:
+            with partial.open("rb") as stream:
+                prefix = stream.read(8)
+        except OSError:
+            prefix = b""
+        if (len(prefix) == 8 and prefix != b"SIMPLE  ") or (
+            expected_size is not None and resume_offset >= expected_size
+        ):
+            LOGGER.warning("Discarding invalid partial download path=%s", partial)
+            resume_offset = 0
+    request_url, parameters = product_download_request(product)
+    headers = {"Accept": "application/fits, application/octet-stream"}
+    token = os.environ.get("MAST_API_TOKEN", "").strip()
+    if token:
+        headers["Authorization"] = f"token {token}"
+    if resume_offset > 0:
+        headers["Range"] = f"bytes={resume_offset}-"
+
+    LOGGER.info(
+        "FITS download started rank=%s observation_id=%r expected_mib=%.2f resume_bytes=%s",
+        product.get("selection_rank"),
+        product.get("obs_id"),
+        (expected_size or 0) / MIB,
+        resume_offset,
+    )
+    started = time.monotonic()
+    response = session.get(
+        request_url,
+        params=parameters,
+        headers=headers,
+        stream=True,
+        timeout=timeout,
+    )
+    try:
+        if response.status_code == 416 and is_complete_fits(partial, expected_size):
+            partial.replace(destination)
+            write_json_atomically(sidecar, swiftmast_coam_sidecar(product))
+            report.update(
+                status="resumed",
+                transferred_bytes=0,
+                local_size_bytes=destination.stat().st_size,
+            )
+            return report
+        response.raise_for_status()
+        append = resume_offset > 0 and response.status_code == 206
+        transferred = 0
+        with partial.open("ab" if append else "wb") as stream:
+            for chunk in response.iter_content(chunk_size=MIB):
+                if not chunk:
+                    continue
+                stream.write(chunk)
+                transferred += len(chunk)
+            stream.flush()
+            os.fsync(stream.fileno())
+    finally:
+        response.close()
+
+    if not is_complete_fits(partial, expected_size):
+        actual_size = partial.stat().st_size if partial.exists() else 0
+        raise RuntimeError(
+            f"downloaded FITS validation failed: expected {expected_size} bytes, "
+            f"found {actual_size} bytes at {partial}"
+        )
+
+    partial.replace(destination)
+    write_json_atomically(sidecar, swiftmast_coam_sidecar(product))
+    product["local_fits_path"] = str(destination)
+    product["download_status"] = "resumed" if resume_offset > 0 else "downloaded"
+    report.update(
+        status=product["download_status"],
+        transferred_bytes=transferred,
+        local_size_bytes=destination.stat().st_size,
+        elapsed_seconds=round(time.monotonic() - started, 3),
+    )
+    LOGGER.info(
+        "FITS download finished rank=%s observation_id=%r status=%s transferred_mib=%.2f "
+        "elapsed_seconds=%.3f path=%s",
+        product.get("selection_rank"),
+        product.get("obs_id"),
+        report["status"],
+        transferred / MIB,
+        time.monotonic() - started,
+        destination,
+    )
+    return report
+
+
+def download_selected_products(
+    products: list[dict[str, Any]],
+    *,
+    target_name: str,
+    cache_root: Path,
+    timeout: float,
+    retries: int,
+) -> dict[str, Any]:
+    """Cache selected FITS files serially, matching SwiftMAST's download behavior."""
+
+    started = time.monotonic()
+    product_reports: list[dict[str, Any]] = []
+    cache_root = cache_root.expanduser().resolve()
+    LOGGER.info(
+        "Selected FITS caching started products=%s target=%r cache_root=%s",
+        len(products),
+        target_name,
+        cache_root,
+    )
+    with requests_session(retries) as session:
+        for product in products:
+            try:
+                product_report = download_selected_product(
+                    session,
+                    product,
+                    target_name=target_name,
+                    cache_root=cache_root,
+                    timeout=timeout,
+                )
+                if product_report["status"] in {"cached", "downloaded", "resumed"}:
+                    product["local_fits_path"] = product_report["local_fits_path"]
+                    product["download_status"] = product_report["status"]
+                product_reports.append(product_report)
+            except (OSError, requests.RequestException, RuntimeError) as error:
+                LOGGER.error(
+                    "FITS download failed rank=%s observation_id=%r error=%s",
+                    product.get("selection_rank"),
+                    product.get("obs_id"),
+                    error,
+                )
+                product["download_status"] = "failed"
+                product_reports.append(
+                    {
+                        "selection_rank": product.get("selection_rank"),
+                        "observation_id": product.get("obs_id"),
+                        "product_uri": product.get("datauri"),
+                        "status": "failed",
+                        "error": str(error),
+                    }
+                )
+
+    counts = Counter(report["status"] for report in product_reports)
+    summary = {
+        "cache_root": str(cache_root),
+        "requested_product_count": len(products),
+        "downloaded_product_count": counts["downloaded"] + counts["resumed"],
+        "cached_product_count": counts["cached"],
+        "failed_product_count": counts["failed"],
+        "transferred_bytes": sum(
+            int(report.get("transferred_bytes") or 0) for report in product_reports
+        ),
+        "elapsed_seconds": round(time.monotonic() - started, 3),
+        "products": product_reports,
+    }
+    LOGGER.info(
+        "Selected FITS caching finished downloaded=%s cached=%s failed=%s "
+        "transferred_mib=%.2f elapsed_seconds=%.3f",
+        summary["downloaded_product_count"],
+        summary["cached_product_count"],
+        summary["failed_product_count"],
+        summary["transferred_bytes"] / MIB,
+        summary["elapsed_seconds"],
+    )
+    return summary
+
+
+# ---------------------------------------------------------------------------
 # Command-line orchestration and report generation
 # ---------------------------------------------------------------------------
 
@@ -1385,6 +1768,27 @@ def parse_args() -> argparse.Namespace:
             "mission result separately. The unselected TAP rows remain in the report."
         ),
     )
+    parser.add_argument(
+        "--download-selected",
+        action="store_true",
+        help=(
+            "Run greedy selection and cache only its selected FITS files using "
+            "SwiftMAST's Documents/MAST directory structure."
+        ),
+    )
+    parser.add_argument(
+        "--cache-root",
+        type=Path,
+        default=Path.home() / "Documents" / "MAST",
+        help="SwiftMAST MAST cache root (default: ~/Documents/MAST).",
+    )
+    parser.add_argument(
+        "--cache-target-name",
+        help=(
+            "Target folder name in the SwiftMAST cache. Defaults to --target, "
+            "or a coordinate-derived name when --ra/--dec are used."
+        ),
+    )
     parser.add_argument("--max-products", type=int, default=20, help="Maximum selected products (default: 20).")
     parser.add_argument("--max-mb", type=float, default=70, help="Maximum size of one product in MiB (default: 70).")
     parser.add_argument("--max-total-mb", type=float, help="Optional total selected-product budget in MiB.")
@@ -1417,19 +1821,22 @@ def parse_args() -> argparse.Namespace:
 
 
 def main() -> int:
-    """Run resolution → TAP fetch → optional selection → JSON report output."""
+    """Run resolution → TAP fetch → selection → optional cache → JSON output."""
 
     args = parse_args()
+    if args.download_selected:
+        args.select_products = True
     configure_logging(args.log_level, args.log_file)
     started = time.monotonic()
     LOGGER.info(
         "MAST TAP workflow started target=%r missions=%s limit=%s balanced_missions=%s "
-        "selection=%s filter_location=%s tap_order=%s",
+        "selection=%s download_selected=%s filter_location=%s tap_order=%s",
         args.target,
         args.missions,
         args.limit,
         args.balanced_missions,
         args.select_products,
+        args.download_selected,
         args.eligibility_filter_location,
         args.tap_order,
     )
@@ -1585,6 +1992,19 @@ def main() -> int:
         selection["target"] = args.target
         selection["position"] = resolved_position
         selection["target_area_square_degrees"] = grid.target_area_square_degrees
+        if args.download_selected:
+            cache_target_name = string_value(args.cache_target_name or args.target).strip()
+            if not cache_target_name:
+                cache_target_name = (
+                    f"ra-{resolved_position['ra']:.6f}_dec-{resolved_position['dec']:.6f}"
+                )
+            selection["downloads"] = download_selected_products(
+                selection["selected_products"],
+                target_name=cache_target_name,
+                cache_root=args.cache_root,
+                timeout=args.timeout,
+                retries=args.retries,
+            )
 
     rows = [row for branch_rows in response_rows for row in branch_rows]
     response_columns = responses[0]["info"] if responses else []
@@ -1626,6 +2046,8 @@ def main() -> int:
         time.monotonic() - started,
     )
 
+    if selection is not None and args.download_selected:
+        return 1 if selection["downloads"]["failed_product_count"] else 0
     return 0
 
 
