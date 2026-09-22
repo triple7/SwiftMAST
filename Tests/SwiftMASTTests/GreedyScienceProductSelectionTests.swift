@@ -50,6 +50,13 @@ final class GreedyScienceProductSelectionTests: XCTestCase {
         XCTAssertGreaterThan(result.steps[1].newCoverageFraction, 0)
         XCTAssertEqual(result.steps[1].newFilterCount, 1)
         XCTAssertEqual(result.stopReason, .targetSatisfied)
+        XCTAssertEqual(result.branchCandidateCounts, ["JWST": 3])
+        XCTAssertEqual(result.observationGroupCount, 3)
+        XCTAssertEqual(result.selectedObservationGroupCount, 2)
+        XCTAssertGreaterThan(result.targetAreaSquareDegrees, 0)
+        XCTAssertGreaterThan(result.coverageGridPointCount, 0)
+        XCTAssertEqual(result.complexityMetrics.fullCandidateRescans, 0)
+        XCTAssertGreaterThan(result.complexityMetrics.groupHeapPops, 0)
     }
 
     func testGreedySelectionRejectsMissingCompulsoryFieldsAndOversizedProducts() {
@@ -113,7 +120,73 @@ final class GreedyScienceProductSelectionTests: XCTestCase {
 
         XCTAssertEqual(result.selectedProducts.count, 1)
         XCTAssertEqual(result.totalSelectedSizeBytes, 8 * 1_048_576)
+        XCTAssertEqual(result.budgetSkippedCandidateCount, 2)
         XCTAssertEqual(result.stopReason, .noAdditionalBenefit)
+    }
+
+    func testHierarchicalTraversalIsDeterministicAndUpdatesOnlyGraphNeighbors() {
+        let mast = SwiftMAST()
+        let products = [
+            makeProduct(
+                id: "jw00001-o001_t001_nircam_f200w",
+                filter: "F200W",
+                sizeMB: 6,
+                region: "CIRCLE ICRS 10.0 0.0 0.03"
+            ),
+            makeProduct(
+                id: "jw00001-o001_t001_nircam_f356w",
+                filter: "F356W",
+                sizeMB: 7,
+                region: "CIRCLE ICRS 10.0 0.0 0.03"
+            ),
+            makeProduct(
+                id: "jw00001-o002_t001_nircam_f444w",
+                filter: "F444W",
+                sizeMB: 8,
+                region: "CIRCLE ICRS 10.035 0.0 0.03"
+            ),
+            makeProduct(
+                id: "jw00001-o002_t001_nircam_f200w",
+                filter: "F200W",
+                sizeMB: 9,
+                region: "CIRCLE ICRS 10.035 0.0 0.03"
+            ),
+        ]
+        let options = GreedyScienceProductSelectionOptions(
+            maxSelectedProducts: 4,
+            targetCoverageFraction: 0.75,
+            minimumDistinctFilters: 3,
+            coverageGridDimension: 40,
+            fetchFITSHeadersForSelectedProducts: false
+        )
+
+        let forward = mast.selectScienceProductsGreedily(
+            from: [makeGroup(products)],
+            targetName: "Test target",
+            targetRA: 10,
+            targetDec: 0,
+            radiusDegrees: 0.05,
+            options: options
+        )
+        let reversed = mast.selectScienceProductsGreedily(
+            from: [makeGroup(Array(products.reversed()))],
+            targetName: "Test target",
+            targetRA: 10,
+            targetDec: 0,
+            radiusDegrees: 0.05,
+            options: options
+        )
+
+        XCTAssertEqual(
+            forward.selectedProducts.map(\.dataURL),
+            reversed.selectedProducts.map(\.dataURL)
+        )
+        XCTAssertEqual(forward.observationGroupCount, 2)
+        XCTAssertEqual(forward.selectedObservationGroupCount, 2)
+        XCTAssertEqual(forward.complexityMetrics.fullCandidateRescans, 0)
+        XCTAssertGreaterThan(forward.complexityMetrics.candidateScoreUpdates, 0)
+        XCTAssertGreaterThan(forward.complexityMetrics.coverageEdgeVisits, 0)
+        XCTAssertGreaterThan(forward.complexityMetrics.filterEdgeVisits, 0)
     }
 
     private func makeGroup(_ products: [CoamResult]) -> ObservationGroup {

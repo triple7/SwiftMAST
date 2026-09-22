@@ -152,7 +152,10 @@ mast.lookupTargetCoordinates(targetName: "M31") { coordinates in
 building a target image from a small set of public science FITS products. It queries
 each requested mission independently, removes candidates missing a footprint, filter,
 instrument, file size, or download URL, and then repeatedly selects the product with
-the greatest new spatial coverage and filter benefit per MiB.
+the greatest new spatial coverage and filter benefit per MiB. Eligible products are
+kept in mission/instrument/observation-group heaps. Coverage-cell and filter indexes
+rescore only graph neighbors affected by the latest selection instead of rescanning
+the complete candidate array.
 
 ```swift
 let options = GreedyScienceProductSelectionOptions(
@@ -171,6 +174,8 @@ SwiftMAST().selectScienceProductsUsingGreedyTAP(
 ) { selection in
     print(selection.selectedObservationGroups)
     print(selection.steps)
+    print(selection.coveragePercentage)
+    print(selection.complexityMetrics)
 }
 ```
 
@@ -184,17 +189,24 @@ smallest-download configurations:
 ```bash
 swift run swiftmast-greedy-selection \
   --target "NGC 628" \
-  --missions JWST,HST \
+  --missions HST \
+  --radius 0.03 \
   --rows 100 \
-  --max-products 5 \
-  --max-mb 70 \
-  --preset all \
+  --max-products 10 \
+  --max-mb 1000 \
+  --coverage 1.0 \
+  --coverage-weight 0.995 \
+  --filter-weight 0.005 \
+  --size-penalty 0 \
+  --preset coverage \
   --headers false \
   --output greedy-science-product-report.json
 ```
 
-The JSON report records candidates, exclusions, instrument branches, every accepted
-greedy step, cumulative coverage, distinct filters, and total selected bytes.
+Omit `--max-total-mb` for an unlimited aggregate budget. The JSON report records
+candidates, exclusions, mission branches, observation-group counts, every accepted
+greedy step, cumulative coverage, distinct filters, total selected bytes, budget
+skips, and heap/index complexity counters. `fullCandidateRescans` should remain zero.
 
 ### Requests-only Python research script
 

@@ -127,14 +127,37 @@ public enum GreedyScienceProductSelectionStopReason: String, Codable {
     case invalidConfiguration
 }
 
+/// Work counters emitted by the hierarchical selector so callers can verify that
+/// selection updates graph neighbors instead of rescanning the complete frontier.
+public struct GreedyScienceProductSelectionComplexityMetrics: Codable, Equatable {
+    public let candidateScoreUpdates: Int
+    public let coverageEdgeVisits: Int
+    public let filterEdgeVisits: Int
+    public let candidateHeapPops: Int
+    public let groupHeapPops: Int
+    public let fullCandidateRescans: Int
+
+    internal static let zero = GreedyScienceProductSelectionComplexityMetrics(
+        candidateScoreUpdates: 0,
+        coverageEdgeVisits: 0,
+        filterEdgeVisits: 0,
+        candidateHeapPops: 0,
+        groupHeapPops: 0,
+        fullCandidateRescans: 0
+    )
+}
+
 /// Review data and selected products produced by the greedy traversal.
 public struct GreedyScienceProductSelectionResult {
     public let targetName: String
     public let targetRA: Double?
     public let targetDec: Double?
     public let radiusDegrees: Double
+    public let targetAreaSquareDegrees: Double
+    public let coverageGridPointCount: Int
     public let candidateCount: Int
     public let eligibleCandidateCount: Int
+    public let observationGroupCount: Int
     public let branchCandidateCounts: [String: Int]
     public let excludedCandidates: [GreedyScienceProductExclusion]
     public let steps: [GreedyScienceProductSelectionStep]
@@ -143,7 +166,13 @@ public struct GreedyScienceProductSelectionResult {
     public let coveredFraction: Double
     public let selectedFilters: [String]
     public let totalSelectedSizeBytes: Int64
+    public let budgetSkippedCandidateCount: Int
+    public let complexityMetrics: GreedyScienceProductSelectionComplexityMetrics
     public let stopReason: GreedyScienceProductSelectionStopReason
+
+    public var coveragePercentage: Double { coveredFraction * 100 }
+    public var selectedSizeMiB: Double { Double(totalSelectedSizeBytes) / 1_048_576 }
+    public var selectedObservationGroupCount: Int { selectedObservationGroups.count }
 
     internal func replacingSelectedProducts(
         _ products: [CoamResult],
@@ -154,8 +183,11 @@ public struct GreedyScienceProductSelectionResult {
             targetRA: targetRA,
             targetDec: targetDec,
             radiusDegrees: radiusDegrees,
+            targetAreaSquareDegrees: targetAreaSquareDegrees,
+            coverageGridPointCount: coverageGridPointCount,
             candidateCount: candidateCount,
             eligibleCandidateCount: eligibleCandidateCount,
+            observationGroupCount: observationGroupCount,
             branchCandidateCounts: branchCandidateCounts,
             excludedCandidates: excludedCandidates,
             steps: steps,
@@ -164,6 +196,8 @@ public struct GreedyScienceProductSelectionResult {
             coveredFraction: coveredFraction,
             selectedFilters: selectedFilters,
             totalSelectedSizeBytes: totalSelectedSizeBytes,
+            budgetSkippedCandidateCount: budgetSkippedCandidateCount,
+            complexityMetrics: complexityMetrics,
             stopReason: stopReason
         )
     }
@@ -189,6 +223,9 @@ extension SwiftMAST {
               options.candidateRowLimit > 0,
               options.maxSelectedProducts > 0,
               options.maxProductSizeBytes > 0,
+              (options.maxTotalSizeBytes.map({ $0 > 0 }) ?? true),
+              (0...1).contains(options.targetCoverageFraction),
+              options.minimumDistinctFilters >= 0,
               options.coverageGridDimension > 0,
               options.coverageWeight >= 0,
               options.filterWeight >= 0,
@@ -245,9 +282,19 @@ extension SwiftMAST {
                             "event": "greedyScienceProductSelectionFinished",
                             "candidateCount": String(finalSelection.candidateCount),
                             "eligibleCandidateCount": String(finalSelection.eligibleCandidateCount),
+                            "observationGroupCount": String(finalSelection.observationGroupCount),
                             "selectedProductCount": String(finalSelection.selectedProducts.count),
                             "selectedFilterCount": String(finalSelection.selectedFilters.count),
                             "coveredFraction": String(finalSelection.coveredFraction),
+                            "budgetSkippedCandidateCount": String(
+                                finalSelection.budgetSkippedCandidateCount
+                            ),
+                            "candidateScoreUpdates": String(
+                                finalSelection.complexityMetrics.candidateScoreUpdates
+                            ),
+                            "fullCandidateRescans": String(
+                                finalSelection.complexityMetrics.fullCandidateRescans
+                            ),
                             "stopReason": finalSelection.stopReason.rawValue,
                         ]
                     )
@@ -311,6 +358,15 @@ extension SwiftMAST {
 
     /// Pure local portion of the algorithm. It is internal so unit tests can review the greedy
     /// behavior without making network requests, while library users see one public workflow API.
+    ///
+    /// Flow:
+    /// 1. Validate and deduplicate products returned by each TAP mission branch.
+    /// 2. Sample every `s_region` footprint on the fixed target coverage grid.
+    /// 3. Group candidates by mission, instrument, and observation for AOSImageStack use.
+    /// 4. Build a product heap per group, a root group heap, and inverted cell/filter indexes.
+    /// 5. Pop the highest marginal-benefit-per-size candidate and update only graph neighbors.
+    /// 6. Stop at the coverage/filter goal, product limit, budget exhaustion, or zero benefit.
+    /// 7. Restore selected products to observation groups for image-stack construction.
     internal func selectScienceProductsGreedily(
         from groups: [ObservationGroup],
         targetName: String,
@@ -327,7 +383,7 @@ extension SwiftMAST {
             requestedDimension: options.coverageGridDimension
         )
 
-        var candidates: [GreedyScienceProductCandidate] = []
+        var candidates: [GreedyScienceProductCandidateState] = []
         var exclusions: [GreedyScienceProductExclusion] = []
         var seenProductIDs = Set<String>()
 
@@ -374,8 +430,12 @@ extension SwiftMAST {
                 }
             )
             candidates.append(
-                GreedyScienceProductCandidate(
+                GreedyScienceProductCandidateState(
                     product: product,
+                    identity: identity,
+                    missionBranch: product.obs_collection
+                        .trimmingCharacters(in: .whitespacesAndNewlines)
+                        .uppercased(),
                     instrumentBranch: instrument.uppercased(),
                     observationKey: observationGroupKey(product),
                     filters: filters,
@@ -385,16 +445,20 @@ extension SwiftMAST {
             )
         }
 
-        let branchCounts = Dictionary(grouping: candidates, by: \.instrumentBranch)
+        let branchCounts = Dictionary(grouping: candidates, by: \.missionBranch)
             .mapValues(\.count)
+        let observationGroupCount = Set(candidates.map(\.groupID)).count
         guard !candidates.isEmpty else {
             return GreedyScienceProductSelectionResult(
                 targetName: targetName,
                 targetRA: targetRA,
                 targetDec: targetDec,
                 radiusDegrees: radiusDegrees,
+                targetAreaSquareDegrees: grid.targetAreaSquareDegrees,
+                coverageGridPointCount: grid.points.count,
                 candidateCount: products.count,
                 eligibleCandidateCount: 0,
+                observationGroupCount: 0,
                 branchCandidateCounts: branchCounts,
                 excludedCandidates: exclusions,
                 steps: [],
@@ -403,116 +467,40 @@ extension SwiftMAST {
                 coveredFraction: 0,
                 selectedFilters: [],
                 totalSelectedSizeBytes: 0,
+                budgetSkippedCandidateCount: 0,
+                complexityMetrics: .zero,
                 stopReason: .noEligibleCandidates
             )
         }
 
-        let targetCoverage = min(max(options.targetCoverageFraction, 0), 1)
-        let minimumFilters = max(options.minimumDistinctFilters, 0)
-        let coverageWeight = max(options.coverageWeight, 0)
-        let filterWeight = max(options.filterWeight, 0)
-        let sizeExponent = max(options.sizePenaltyExponent, 0)
-
-        var remaining = candidates
-        var selectedCandidates: [GreedyScienceProductCandidate] = []
-        var selectedCells = Set<Int>()
-        var selectedFilters = Set<String>()
-        var totalSize: Int64 = 0
-        var steps: [GreedyScienceProductSelectionStep] = []
-        var stopReason: GreedyScienceProductSelectionStopReason = .noAdditionalBenefit
-
-        while selectedCandidates.count < options.maxSelectedProducts {
-            let coveredFraction = grid.coverageFraction(for: selectedCells)
-            if coveredFraction >= targetCoverage && selectedFilters.count >= minimumFilters {
-                stopReason = .targetSatisfied
-                break
-            }
-
-            var best: GreedyScoredScienceProductCandidate?
-            for candidate in remaining {
-                if let maxTotal = options.maxTotalSizeBytes,
-                   totalSize > maxTotal - candidate.fileSizeBytes
-                {
-                    continue
-                }
-
-                let newCells = candidate.coveredCells.subtracting(selectedCells)
-                let newCoverage = grid.coverageFraction(for: newCells)
-                let newFilters = candidate.filters.subtracting(selectedFilters)
-                let benefit = coverageWeight * newCoverage
-                    + filterWeight * Double(newFilters.count)
-                guard benefit > 0 else { continue }
-
-                let sizeMiB = max(Double(candidate.fileSizeBytes) / 1_048_576.0, 0.001)
-                let sizeCost = pow(sizeMiB, sizeExponent)
-                let scored = GreedyScoredScienceProductCandidate(
-                    candidate: candidate,
-                    newCells: newCells,
-                    newFilters: newFilters,
-                    newCoverageFraction: newCoverage,
-                    score: benefit / max(sizeCost, 0.000_001)
-                )
-                if best == nil || greedyCandidate(scored, ranksBefore: best!) {
-                    best = scored
-                }
-            }
-
-            guard let best else {
-                stopReason = .noAdditionalBenefit
-                break
-            }
-
-            let candidate = best.candidate
-            selectedCandidates.append(candidate)
-            selectedCells.formUnion(candidate.coveredCells)
-            selectedFilters.formUnion(candidate.filters)
-            totalSize += candidate.fileSizeBytes
-            remaining.removeAll { $0.identity == candidate.identity }
-
-            let cumulativeCoverage = grid.coverageFraction(for: selectedCells)
-            steps.append(
-                GreedyScienceProductSelectionStep(
-                    iteration: steps.count + 1,
-                    instrumentBranch: candidate.instrumentBranch,
-                    observationKey: candidate.observationKey,
-                    observationID: candidate.product.obs_id,
-                    filters: candidate.filters.sorted(),
-                    fileSizeBytes: candidate.fileSizeBytes,
-                    newCoverageFraction: best.newCoverageFraction,
-                    newAreaSquareDegrees: best.newCoverageFraction * grid.targetAreaSquareDegrees,
-                    newFilterCount: best.newFilters.count,
-                    score: best.score,
-                    cumulativeCoverageFraction: cumulativeCoverage,
-                    cumulativeFilters: selectedFilters.sorted(),
-                    cumulativeSizeBytes: totalSize
-                )
-            )
-        }
-
-        if selectedCandidates.count >= options.maxSelectedProducts {
-            let coveredFraction = grid.coverageFraction(for: selectedCells)
-            stopReason = coveredFraction >= targetCoverage && selectedFilters.count >= minimumFilters
-                ? .targetSatisfied
-                : .maximumProductsReached
-        }
-
-        let selectedProducts = selectedCandidates.map(\.product)
+        let traversal = GreedyHierarchicalScienceProductSelector(
+            candidates: candidates,
+            grid: grid,
+            options: options
+        ).select()
+        let selectedProducts = traversal.selectedCandidates.map(\.product)
+        let selectedGroups = buildObservationGroups(from: selectedProducts)
         return GreedyScienceProductSelectionResult(
             targetName: targetName,
             targetRA: targetRA,
             targetDec: targetDec,
             radiusDegrees: radiusDegrees,
+            targetAreaSquareDegrees: grid.targetAreaSquareDegrees,
+            coverageGridPointCount: grid.points.count,
             candidateCount: products.count,
             eligibleCandidateCount: candidates.count,
+            observationGroupCount: observationGroupCount,
             branchCandidateCounts: branchCounts,
             excludedCandidates: exclusions,
-            steps: steps,
+            steps: traversal.steps,
             selectedProducts: selectedProducts,
-            selectedObservationGroups: buildObservationGroups(from: selectedProducts),
-            coveredFraction: grid.coverageFraction(for: selectedCells),
-            selectedFilters: selectedFilters.sorted(),
-            totalSelectedSizeBytes: totalSize,
-            stopReason: stopReason
+            selectedObservationGroups: selectedGroups,
+            coveredFraction: traversal.coveredFraction,
+            selectedFilters: traversal.selectedFilters.sorted(),
+            totalSelectedSizeBytes: traversal.totalSelectedSizeBytes,
+            budgetSkippedCandidateCount: traversal.budgetSkippedCandidateCount,
+            complexityMetrics: traversal.complexityMetrics,
+            stopReason: traversal.stopReason
         )
     }
 
@@ -526,8 +514,11 @@ extension SwiftMAST {
             targetRA: nil,
             targetDec: nil,
             radiusDegrees: radiusDegrees,
+            targetAreaSquareDegrees: 0,
+            coverageGridPointCount: 0,
             candidateCount: 0,
             eligibleCandidateCount: 0,
+            observationGroupCount: 0,
             branchCandidateCounts: [:],
             excludedCandidates: [],
             steps: [],
@@ -536,30 +527,416 @@ extension SwiftMAST {
             coveredFraction: 0,
             selectedFilters: [],
             totalSelectedSizeBytes: 0,
+            budgetSkippedCandidateCount: 0,
+            complexityMetrics: .zero,
             stopReason: stopReason
         )
     }
 }
 
-private struct GreedyScienceProductCandidate {
+private struct GreedyObservationGroupID: Hashable {
+    let mission: String
+    let instrument: String
+    let observationKey: String
+
+    var sortKey: String {
+        [mission, instrument, observationKey].joined(separator: "\u{1f}")
+    }
+}
+
+private final class GreedyScienceProductCandidateState {
     let product: CoamResult
+    let identity: String
+    let missionBranch: String
     let instrumentBranch: String
     let observationKey: String
     let filters: Set<String>
     let fileSizeBytes: Int64
     let coveredCells: Set<Int>
+    var uncoveredCellCount: Int
+    var unseenFilterCount: Int
+    var score: Double = 0
+    var version = 0
+    var isActive = true
 
-    var identity: String {
-        greedyScienceProductIdentity(product)
+    init(
+        product: CoamResult,
+        identity: String,
+        missionBranch: String,
+        instrumentBranch: String,
+        observationKey: String,
+        filters: Set<String>,
+        fileSizeBytes: Int64,
+        coveredCells: Set<Int>
+    ) {
+        self.product = product
+        self.identity = identity
+        self.missionBranch = missionBranch.isEmpty ? "UNKNOWN" : missionBranch
+        self.instrumentBranch = instrumentBranch
+        self.observationKey = observationKey
+        self.filters = filters
+        self.fileSizeBytes = fileSizeBytes
+        self.coveredCells = coveredCells
+        self.uncoveredCellCount = coveredCells.count
+        self.unseenFilterCount = filters.count
+    }
+
+    var groupID: GreedyObservationGroupID {
+        GreedyObservationGroupID(
+            mission: missionBranch,
+            instrument: instrumentBranch,
+            observationKey: observationKey
+        )
     }
 }
 
-private struct GreedyScoredScienceProductCandidate {
-    let candidate: GreedyScienceProductCandidate
-    let newCells: Set<Int>
-    let newFilters: Set<String>
-    let newCoverageFraction: Double
+private struct GreedyCandidateHeapEntry {
+    let identity: String
+    let version: Int
     let score: Double
+    let uncoveredCellCount: Int
+    let unseenFilterCount: Int
+    let fileSizeBytes: Int64
+
+    init(_ candidate: GreedyScienceProductCandidateState) {
+        identity = candidate.identity
+        version = candidate.version
+        score = candidate.score
+        uncoveredCellCount = candidate.uncoveredCellCount
+        unseenFilterCount = candidate.unseenFilterCount
+        fileSizeBytes = candidate.fileSizeBytes
+    }
+}
+
+private struct GreedyRootHeapEntry {
+    let candidate: GreedyCandidateHeapEntry
+    let groupID: GreedyObservationGroupID
+    let groupVersion: Int
+}
+
+private final class GreedyObservationGroupQueue {
+    let id: GreedyObservationGroupID
+    var version = 0
+    var candidateHeap = GreedyBinaryHeap<GreedyCandidateHeapEntry>(
+        sort: greedyCandidateEntryRanksBefore
+    )
+
+    init(id: GreedyObservationGroupID) {
+        self.id = id
+    }
+}
+
+private struct GreedyBinaryHeap<Element> {
+    private var elements: [Element] = []
+    private let sort: (Element, Element) -> Bool
+
+    init(sort: @escaping (Element, Element) -> Bool) {
+        self.sort = sort
+    }
+
+    var peek: Element? { elements.first }
+
+    mutating func insert(_ element: Element) {
+        elements.append(element)
+        var child = elements.count - 1
+        while child > 0 {
+            let parent = (child - 1) / 2
+            guard sort(elements[child], elements[parent]) else { break }
+            elements.swapAt(child, parent)
+            child = parent
+        }
+    }
+
+    @discardableResult
+    mutating func pop() -> Element? {
+        guard !elements.isEmpty else { return nil }
+        if elements.count == 1 { return elements.removeLast() }
+
+        let result = elements[0]
+        elements[0] = elements.removeLast()
+        var parent = 0
+        while true {
+            let left = parent * 2 + 1
+            guard left < elements.count else { break }
+            let right = left + 1
+            var preferred = left
+            if right < elements.count, sort(elements[right], elements[left]) {
+                preferred = right
+            }
+            guard sort(elements[preferred], elements[parent]) else { break }
+            elements.swapAt(parent, preferred)
+            parent = preferred
+        }
+        return result
+    }
+}
+
+private struct GreedyScienceProductTraversalResult {
+    let selectedCandidates: [GreedyScienceProductCandidateState]
+    let steps: [GreedyScienceProductSelectionStep]
+    let coveredFraction: Double
+    let selectedFilters: Set<String>
+    let totalSelectedSizeBytes: Int64
+    let budgetSkippedCandidateCount: Int
+    let complexityMetrics: GreedyScienceProductSelectionComplexityMetrics
+    let stopReason: GreedyScienceProductSelectionStopReason
+}
+
+/// Heap-based graph traversal equivalent to the Python
+/// `HierarchicalIncrementalGreedySelector`.
+private final class GreedyHierarchicalScienceProductSelector {
+    private let grid: GreedyCoverageGrid
+    private let options: GreedyScienceProductSelectionOptions
+    private var candidatesByIdentity: [String: GreedyScienceProductCandidateState] = [:]
+    private var groups: [GreedyObservationGroupID: GreedyObservationGroupQueue] = [:]
+    private var candidatesByCell: [Int: Set<String>] = [:]
+    private var candidatesByFilter: [String: Set<String>] = [:]
+    private var rootHeap = GreedyBinaryHeap<GreedyRootHeapEntry>(
+        sort: greedyRootEntryRanksBefore
+    )
+
+    private var candidateScoreUpdates = 0
+    private var coverageEdgeVisits = 0
+    private var filterEdgeVisits = 0
+    private var candidateHeapPops = 0
+    private var groupHeapPops = 0
+
+    init(
+        candidates: [GreedyScienceProductCandidateState],
+        grid: GreedyCoverageGrid,
+        options: GreedyScienceProductSelectionOptions
+    ) {
+        self.grid = grid
+        self.options = options
+
+        for candidate in candidates {
+            candidate.score = score(candidate)
+            candidatesByIdentity[candidate.identity] = candidate
+
+            let group = groups[candidate.groupID]
+                ?? GreedyObservationGroupQueue(id: candidate.groupID)
+            groups[candidate.groupID] = group
+            group.candidateHeap.insert(GreedyCandidateHeapEntry(candidate))
+
+            for cell in candidate.coveredCells {
+                candidatesByCell[cell, default: []].insert(candidate.identity)
+            }
+            for filter in candidate.filters {
+                candidatesByFilter[filter, default: []].insert(candidate.identity)
+            }
+        }
+
+        for group in groups.values {
+            publish(group)
+        }
+    }
+
+    func select() -> GreedyScienceProductTraversalResult {
+        let targetCoverage = min(max(options.targetCoverageFraction, 0), 1)
+        let minimumFilters = max(options.minimumDistinctFilters, 0)
+        var selectedCandidates: [GreedyScienceProductCandidateState] = []
+        var selectedCells = Set<Int>()
+        var selectedFilters = Set<String>()
+        var totalSize: Int64 = 0
+        var steps: [GreedyScienceProductSelectionStep] = []
+        var budgetSkipped = 0
+        var stopReason: GreedyScienceProductSelectionStopReason = candidatesByIdentity.isEmpty
+            ? .noEligibleCandidates
+            : .noAdditionalBenefit
+
+        while selectedCandidates.count < options.maxSelectedProducts {
+            if grid.coverageFraction(for: selectedCells) >= targetCoverage,
+               selectedFilters.count >= minimumFilters
+            {
+                stopReason = .targetSatisfied
+                break
+            }
+
+            guard let candidate = popBestCandidate(), candidate.score > 0 else {
+                stopReason = candidatesByIdentity.isEmpty
+                    ? .noEligibleCandidates
+                    : .noAdditionalBenefit
+                break
+            }
+
+            if let maxTotal = options.maxTotalSizeBytes,
+               candidate.fileSizeBytes > maxTotal
+                || totalSize > maxTotal - candidate.fileSizeBytes
+            {
+                candidate.isActive = false
+                candidate.version += 1
+                budgetSkipped += 1
+                if let group = groups[candidate.groupID] { publish(group) }
+                continue
+            }
+
+            let newCells = candidate.coveredCells.subtracting(selectedCells)
+            let newFilters = candidate.filters.subtracting(selectedFilters)
+            let selectedScore = candidate.score
+            selectedCandidates.append(candidate)
+            selectedCells.formUnion(newCells)
+            selectedFilters.formUnion(newFilters)
+            totalSize += candidate.fileSizeBytes
+            candidate.isActive = false
+            candidate.version += 1
+
+            let newCoverage = grid.coverageFraction(for: newCells)
+            steps.append(
+                GreedyScienceProductSelectionStep(
+                    iteration: steps.count + 1,
+                    instrumentBranch: candidate.instrumentBranch,
+                    observationKey: candidate.observationKey,
+                    observationID: candidate.product.obs_id,
+                    filters: candidate.filters.sorted(),
+                    fileSizeBytes: candidate.fileSizeBytes,
+                    newCoverageFraction: newCoverage,
+                    newAreaSquareDegrees: newCoverage * grid.targetAreaSquareDegrees,
+                    newFilterCount: newFilters.count,
+                    score: selectedScore,
+                    cumulativeCoverageFraction: grid.coverageFraction(for: selectedCells),
+                    cumulativeFilters: selectedFilters.sorted(),
+                    cumulativeSizeBytes: totalSize
+                )
+            )
+            updateAffectedCandidates(
+                selected: candidate,
+                newCells: newCells,
+                newFilters: newFilters
+            )
+        }
+
+        if selectedCandidates.count >= options.maxSelectedProducts {
+            stopReason = grid.coverageFraction(for: selectedCells) >= targetCoverage
+                && selectedFilters.count >= minimumFilters
+                ? .targetSatisfied
+                : .maximumProductsReached
+        }
+
+        return GreedyScienceProductTraversalResult(
+            selectedCandidates: selectedCandidates,
+            steps: steps,
+            coveredFraction: grid.coverageFraction(for: selectedCells),
+            selectedFilters: selectedFilters,
+            totalSelectedSizeBytes: totalSize,
+            budgetSkippedCandidateCount: budgetSkipped,
+            complexityMetrics: GreedyScienceProductSelectionComplexityMetrics(
+                candidateScoreUpdates: candidateScoreUpdates,
+                coverageEdgeVisits: coverageEdgeVisits,
+                filterEdgeVisits: filterEdgeVisits,
+                candidateHeapPops: candidateHeapPops,
+                groupHeapPops: groupHeapPops,
+                fullCandidateRescans: 0
+            ),
+            stopReason: stopReason
+        )
+    }
+
+    private func score(_ candidate: GreedyScienceProductCandidateState) -> Double {
+        let coverageWeight = max(options.coverageWeight, 0)
+        let filterWeight = max(options.filterWeight, 0)
+        let sizeExponent = max(options.sizePenaltyExponent, 0)
+        let newCoverage = grid.coverageFraction(forCount: candidate.uncoveredCellCount)
+        let benefit = coverageWeight * newCoverage
+            + filterWeight * Double(candidate.unseenFilterCount)
+        let sizeMiB = max(Double(candidate.fileSizeBytes) / 1_048_576, 0.001)
+        let sizeCost = max(pow(sizeMiB, sizeExponent), 0.000_001)
+        return benefit / sizeCost
+    }
+
+    private func clean(_ group: GreedyObservationGroupQueue)
+        -> GreedyScienceProductCandidateState?
+    {
+        while let entry = group.candidateHeap.peek {
+            if let candidate = candidatesByIdentity[entry.identity],
+               candidate.isActive,
+               candidate.version == entry.version
+            {
+                return candidate
+            }
+            group.candidateHeap.pop()
+            candidateHeapPops += 1
+        }
+        return nil
+    }
+
+    private func publish(_ group: GreedyObservationGroupQueue) {
+        group.version += 1
+        guard let best = clean(group) else { return }
+        rootHeap.insert(
+            GreedyRootHeapEntry(
+                candidate: GreedyCandidateHeapEntry(best),
+                groupID: group.id,
+                groupVersion: group.version
+            )
+        )
+    }
+
+    private func popBestCandidate() -> GreedyScienceProductCandidateState? {
+        while let entry = rootHeap.pop() {
+            groupHeapPops += 1
+            guard let group = groups[entry.groupID],
+                  group.version == entry.groupVersion
+            else {
+                continue
+            }
+            guard let best = clean(group) else { continue }
+            guard best.identity == entry.candidate.identity,
+                  best.version == entry.candidate.version
+            else {
+                publish(group)
+                continue
+            }
+            return best
+        }
+        return nil
+    }
+
+    private func updateAffectedCandidates(
+        selected: GreedyScienceProductCandidateState,
+        newCells: Set<Int>,
+        newFilters: Set<String>
+    ) {
+        var affected = Set<String>()
+        for cell in newCells {
+            let identities = candidatesByCell[cell] ?? []
+            coverageEdgeVisits += identities.count
+            for identity in identities {
+                guard let candidate = candidatesByIdentity[identity], candidate.isActive else {
+                    continue
+                }
+                candidate.uncoveredCellCount = max(candidate.uncoveredCellCount - 1, 0)
+                affected.insert(identity)
+            }
+        }
+        for filter in newFilters {
+            let identities = candidatesByFilter[filter] ?? []
+            filterEdgeVisits += identities.count
+            for identity in identities {
+                guard let candidate = candidatesByIdentity[identity], candidate.isActive else {
+                    continue
+                }
+                candidate.unseenFilterCount = max(candidate.unseenFilterCount - 1, 0)
+                affected.insert(identity)
+            }
+        }
+
+        var affectedGroups: Set<GreedyObservationGroupID> = [selected.groupID]
+        for identity in affected {
+            guard let candidate = candidatesByIdentity[identity],
+                  let group = groups[candidate.groupID]
+            else {
+                continue
+            }
+            candidate.score = score(candidate)
+            candidate.version += 1
+            candidateScoreUpdates += 1
+            group.candidateHeap.insert(GreedyCandidateHeapEntry(candidate))
+            affectedGroups.insert(candidate.groupID)
+        }
+        for groupID in affectedGroups {
+            if let group = groups[groupID] { publish(group) }
+        }
+    }
 }
 
 private struct GreedyCoverageGrid {
@@ -601,8 +978,12 @@ private struct GreedyCoverageGrid {
     }
 
     func coverageFraction(for cells: Set<Int>) -> Double {
+        coverageFraction(forCount: cells.count)
+    }
+
+    func coverageFraction(forCount count: Int) -> Double {
         guard !points.isEmpty else { return 0 }
-        return min(Double(cells.count) / Double(points.count), 1)
+        return min(Double(count) / Double(points.count), 1)
     }
 }
 
@@ -637,19 +1018,28 @@ private func greedyExclusion(
     )
 }
 
-private func greedyCandidate(
-    _ lhs: GreedyScoredScienceProductCandidate,
-    ranksBefore rhs: GreedyScoredScienceProductCandidate
+private func greedyCandidateEntryRanksBefore(
+    _ lhs: GreedyCandidateHeapEntry,
+    _ rhs: GreedyCandidateHeapEntry
 ) -> Bool {
     if lhs.score != rhs.score { return lhs.score > rhs.score }
-    if lhs.newCoverageFraction != rhs.newCoverageFraction {
-        return lhs.newCoverageFraction > rhs.newCoverageFraction
+    if lhs.uncoveredCellCount != rhs.uncoveredCellCount {
+        return lhs.uncoveredCellCount > rhs.uncoveredCellCount
     }
-    if lhs.newFilters.count != rhs.newFilters.count {
-        return lhs.newFilters.count > rhs.newFilters.count
+    if lhs.unseenFilterCount != rhs.unseenFilterCount {
+        return lhs.unseenFilterCount > rhs.unseenFilterCount
     }
-    if lhs.candidate.fileSizeBytes != rhs.candidate.fileSizeBytes {
-        return lhs.candidate.fileSizeBytes < rhs.candidate.fileSizeBytes
+    if lhs.fileSizeBytes != rhs.fileSizeBytes {
+        return lhs.fileSizeBytes < rhs.fileSizeBytes
     }
-    return lhs.candidate.identity < rhs.candidate.identity
+    return lhs.identity < rhs.identity
+}
+
+private func greedyRootEntryRanksBefore(
+    _ lhs: GreedyRootHeapEntry,
+    _ rhs: GreedyRootHeapEntry
+) -> Bool {
+    if greedyCandidateEntryRanksBefore(lhs.candidate, rhs.candidate) { return true }
+    if greedyCandidateEntryRanksBefore(rhs.candidate, lhs.candidate) { return false }
+    return lhs.groupID.sortKey < rhs.groupID.sortKey
 }

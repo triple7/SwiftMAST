@@ -13,9 +13,12 @@ private struct Arguments {
     var maxTotalMB: Double?
     var targetCoverage = 0.80
     var minimumFilters = 3
+    var coverageWeight: Double?
+    var filterWeight: Double?
+    var sizePenaltyExponent: Double?
     var gridDimension = 48
     var fetchHeaders = false
-    var preset = "all"
+    var preset = "balanced"
     var outputPath = "greedy-science-product-report.json"
 }
 
@@ -33,15 +36,23 @@ private struct ProductSummary: Codable {
 
 private struct SelectionRunReport: Codable {
     let preset: String
+    let targetAreaSquareDegrees: Double
+    let coverageGridPointCount: Int
     let candidateCount: Int
     let eligibleCandidateCount: Int
+    let observationGroupCount: Int
+    let selectedObservationGroupCount: Int
     let branchCandidateCounts: [String: Int]
     let excludedCandidates: [GreedyScienceProductExclusion]
     let selectedProducts: [ProductSummary]
     let steps: [GreedyScienceProductSelectionStep]
     let coveredFraction: Double
+    let coveragePercentage: Double
     let selectedFilters: [String]
     let totalSelectedSizeBytes: Int64
+    let selectedSizeMiB: Double
+    let budgetSkippedCandidateCount: Int
+    let complexityMetrics: GreedyScienceProductSelectionComplexityMetrics
     let stopReason: GreedyScienceProductSelectionStopReason
 }
 
@@ -59,23 +70,26 @@ Usage:
 Options:
   --target NAME            Resolvable MAST target (default: NGC 628)
   --radius DEG             Search-cone radius (default: 0.05)
-  --missions LIST          Comma-separated JWST,HST,PS1,GALEX,SWIFT,TESS
+  --missions LIST          Comma-separated JWST,HST,PS1,GALEX,SWIFT,TESS (HST includes HLA)
   --instruments LIST       Optional comma-separated TAP instrument names
   --filters LIST           Optional comma-separated filter names
   --rows N                 TAP row limit per mission branch (default: 400)
   --max-products N         Maximum selected products (default: 5)
   --max-mb MB              Per-product size limit (default: 70)
-  --max-total-mb MB        Optional aggregate size budget
+  --max-total-mb MB        Optional aggregate size budget; omit for unlimited
   --coverage FRACTION      Desired target coverage from 0...1 (default: 0.80)
   --min-filters N          Desired distinct-filter count (default: 3)
+  --coverage-weight N      Override the preset's marginal-coverage weight
+  --filter-weight N        Override the preset's new-filter weight
+  --size-penalty N         Override the preset's file-size exponent
   --grid N                 Coverage grid dimension (default: 48)
   --headers true|false     Read FITS headers after selection (default: false)
-  --preset NAME            all, balanced, coverage, filters, or smallest
+  --preset NAME            balanced, coverage, filters, smallest, or all (default: balanced)
   --output PATH            JSON comparison report path
   --help                   Show this help
 
-`all` runs four weight/size-penalty strategies against the same TAP query so their
-selection order, coverage, filter variety, and download cost can be compared.
+`all` runs four end-to-end TAP selections. Use a single preset for the lightest
+archive load and most direct timing.
 """
 
 private func commaSeparated(_ value: String) -> [String] {
@@ -120,6 +134,9 @@ private func parseArguments() throws -> Arguments {
         case "--max-total-mb": parsed.maxTotalMB = Double(try value(after: flag))
         case "--coverage": parsed.targetCoverage = Double(try value(after: flag)) ?? parsed.targetCoverage
         case "--min-filters": parsed.minimumFilters = Int(try value(after: flag)) ?? parsed.minimumFilters
+        case "--coverage-weight": parsed.coverageWeight = Double(try value(after: flag))
+        case "--filter-weight": parsed.filterWeight = Double(try value(after: flag))
+        case "--size-penalty": parsed.sizePenaltyExponent = Double(try value(after: flag))
         case "--grid": parsed.gridDimension = Int(try value(after: flag)) ?? parsed.gridDimension
         case "--headers": parsed.fetchHeaders = (try value(after: flag)).lowercased() == "true"
         case "--preset": parsed.preset = try value(after: flag).lowercased()
@@ -160,6 +177,10 @@ private func selectionOptions(
     default:
         break
     }
+
+    coverageWeight = arguments.coverageWeight ?? coverageWeight
+    filterWeight = arguments.filterWeight ?? filterWeight
+    sizeExponent = arguments.sizePenaltyExponent ?? sizeExponent
 
     return GreedyScienceProductSelectionOptions(
         missions: arguments.missions,
@@ -205,8 +226,9 @@ private func runSelection(
 }
 
 private func printSelection(_ selection: GreedyScienceProductSelectionResult, preset: String) {
-    print("\n[\(preset)] candidates=\(selection.candidateCount) eligible=\(selection.eligibleCandidateCount) selected=\(selection.selectedProducts.count)")
-    print("coverage=\(String(format: "%.4f", selection.coveredFraction)) filters=\(selection.selectedFilters.joined(separator: ",")) sizeMB=\(String(format: "%.2f", Double(selection.totalSelectedSizeBytes) / 1_048_576)) stop=\(selection.stopReason.rawValue)")
+    print("\n[\(preset)] candidates=\(selection.candidateCount) eligible=\(selection.eligibleCandidateCount) groups=\(selection.observationGroupCount) selected=\(selection.selectedProducts.count)")
+    print("coverage=\(String(format: "%.2f", selection.coveragePercentage))% gridPoints=\(selection.coverageGridPointCount) filters=\(selection.selectedFilters.joined(separator: ",")) sizeMB=\(String(format: "%.2f", selection.selectedSizeMiB)) stop=\(selection.stopReason.rawValue)")
+    print("graph scoreUpdates=\(selection.complexityMetrics.candidateScoreUpdates) coverageEdges=\(selection.complexityMetrics.coverageEdgeVisits) filterEdges=\(selection.complexityMetrics.filterEdgeVisits) groupHeapPops=\(selection.complexityMetrics.groupHeapPops) fullRescans=\(selection.complexityMetrics.fullCandidateRescans) budgetSkipped=\(selection.budgetSkippedCandidateCount)")
     for step in selection.steps {
         print("  \(step.iteration). \(step.instrumentBranch) | \(step.observationID) | \(step.filters.joined(separator: "+")) | newCoverage=\(String(format: "%.4f", step.newCoverageFraction)) | newFilters=\(step.newFilterCount) | sizeMB=\(String(format: "%.2f", Double(step.fileSizeBytes) / 1_048_576)) | score=\(String(format: "%.6f", step.score))")
     }
@@ -232,8 +254,12 @@ do {
         reports.append(
             SelectionRunReport(
                 preset: preset,
+                targetAreaSquareDegrees: selection.targetAreaSquareDegrees,
+                coverageGridPointCount: selection.coverageGridPointCount,
                 candidateCount: selection.candidateCount,
                 eligibleCandidateCount: selection.eligibleCandidateCount,
+                observationGroupCount: selection.observationGroupCount,
+                selectedObservationGroupCount: selection.selectedObservationGroupCount,
                 branchCandidateCounts: selection.branchCandidateCounts,
                 excludedCandidates: selection.excludedCandidates,
                 selectedProducts: selection.selectedProducts.map {
@@ -251,8 +277,12 @@ do {
                 },
                 steps: selection.steps,
                 coveredFraction: selection.coveredFraction,
+                coveragePercentage: selection.coveragePercentage,
                 selectedFilters: selection.selectedFilters,
                 totalSelectedSizeBytes: selection.totalSelectedSizeBytes,
+                selectedSizeMiB: selection.selectedSizeMiB,
+                budgetSkippedCandidateCount: selection.budgetSkippedCandidateCount,
+                complexityMetrics: selection.complexityMetrics,
                 stopReason: selection.stopReason
             )
         )
