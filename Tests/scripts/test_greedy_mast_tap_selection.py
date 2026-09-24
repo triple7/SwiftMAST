@@ -251,6 +251,34 @@ class HierarchicalGreedyTAPSelectionTests(unittest.TestCase):
             "hst_10775_62_wfc3",
         )
 
+    def test_filter_novelty_is_scoped_to_each_observation_group(self) -> None:
+        rows = [
+            product("jw00001-o001_t001_nircam_f435w_a", "F435W", 5),
+            product("jw00001-o001_t001_nircam_f435w_b", "F435W", 6),
+            product("jw00001-o002_t001_nircam_f435w", "F435W", 5),
+        ]
+        options = MODULE.SelectionOptions(
+            max_products=2,
+            target_coverage=1,
+            minimum_filters=2,
+            coverage_weight=0,
+            filter_weight=1,
+            size_penalty_exponent=0,
+        )
+        grid = MODULE.make_coverage_grid(10, 0, 0.05, options.grid_dimension)
+        result = MODULE.greedy_select_products([rows], grid, options)
+
+        self.assertEqual(result["filter_novelty_scope"], "observation_group")
+        self.assertEqual(result["summary"]["selected_product_count"], 2)
+        self.assertEqual(result["summary"]["selected_observation_group_count"], 2)
+        self.assertEqual(result["summary"]["selected_group_filter_count"], 2)
+        self.assertEqual(result["selected_filters"], ["F435W"])
+        self.assertEqual([step["new_filter_count"] for step in result["steps"]], [1, 1])
+        self.assertEqual(
+            {product["observation_key"] for product in result["selected_products"]},
+            {"jw00001-o001_t001_nircam", "jw00001-o002_t001_nircam"},
+        )
+
     def test_swiftmast_cache_path_and_existing_fits_are_reused(self) -> None:
         selected = product(
             "hst_12345_01_wfc3_f606w",

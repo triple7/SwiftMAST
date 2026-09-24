@@ -970,7 +970,11 @@ class HierarchicalIncrementalGreedySelector:
         self.candidates: dict[str, CandidateState] = {}
         self.groups: dict[tuple[str, str, str], ObservationGroupQueue] = {}
         self.candidates_by_cell: dict[int, set[str]] = defaultdict(set)
-        self.candidates_by_filter: dict[str, set[str]] = defaultdict(set)
+        # Filter novelty is local to an observation group. Selecting F435W in
+        # one group must not remove the F435W benefit from another group.
+        self.candidates_by_filter: dict[
+            tuple[tuple[str, str, str], str], set[str]
+        ] = defaultdict(set)
         self.root_heap: list[tuple[Any, ...]] = []
         self.exclusions = [value for branch in branches for value in branch.exclusions]
         self.branch_fetched_counts: Counter[str] = Counter()
@@ -999,7 +1003,9 @@ class HierarchicalIncrementalGreedySelector:
                     for cell in candidate.covered_cells:
                         self.candidates_by_cell[cell].add(candidate.identity)
                     for filter_name in candidate.filters:
-                        self.candidates_by_filter[filter_name].add(candidate.identity)
+                        self.candidates_by_filter[
+                            (candidate.group_id, filter_name)
+                        ].add(candidate.identity)
 
         for group in self.groups.values():
             self._publish_group(group)
@@ -1075,9 +1081,9 @@ class HierarchicalIncrementalGreedySelector:
         self,
         selected: CandidateState,
         new_cells: set[int],
-        new_filters: set[str],
+        new_group_filters: set[str],
     ) -> None:
-        """Incrementally rescore neighbors sharing newly covered cells or filters."""
+        """Rescore spatial neighbors and same-group products sharing new filters."""
 
         affected: set[str] = set()
         for cell in new_cells:
@@ -1088,8 +1094,10 @@ class HierarchicalIncrementalGreedySelector:
                 if candidate.active:
                     candidate.uncovered_cell_count -= 1
                     affected.add(identity)
-        for filter_name in new_filters:
-            identities = self.candidates_by_filter.get(filter_name, set())
+        for filter_name in new_group_filters:
+            identities = self.candidates_by_filter.get(
+                (selected.group_id, filter_name), set()
+            )
             self.metrics["filter_edge_visits"] += len(identities)
             for identity in identities:
                 candidate = self.candidates[identity]
@@ -1128,6 +1136,11 @@ class HierarchicalIncrementalGreedySelector:
         )
         selected_candidates: list[CandidateState] = []
         selected_cells: set[int] = set()
+        selected_filters_by_group: dict[
+            tuple[str, str, str], set[str]
+        ] = defaultdict(set)
+        # The global union remains useful for reporting and the overall
+        # minimum-filter goal, but does not control a candidate's filter bonus.
         selected_filters: set[str] = set()
         total_size = 0
         steps: list[dict[str, Any]] = []
@@ -1166,10 +1179,13 @@ class HierarchicalIncrementalGreedySelector:
                 continue
 
             new_cells = set(candidate.covered_cells) - selected_cells
-            new_filters = set(candidate.filters) - selected_filters
+            new_group_filters = (
+                set(candidate.filters) - selected_filters_by_group[candidate.group_id]
+            )
             selected_candidates.append(candidate)
             selected_cells.update(new_cells)
-            selected_filters.update(new_filters)
+            selected_filters_by_group[candidate.group_id].update(new_group_filters)
+            selected_filters.update(candidate.filters)
             total_size += candidate.file_size_bytes
             candidate.active = False
             candidate.version += 1
@@ -1183,7 +1199,7 @@ class HierarchicalIncrementalGreedySelector:
                     "filters": sorted(candidate.filters),
                     "file_size_bytes": candidate.file_size_bytes,
                     "new_coverage_fraction": self.grid.fraction_for_count(len(new_cells)),
-                    "new_filter_count": len(new_filters),
+                    "new_filter_count": len(new_group_filters),
                     "score": candidate.score,
                     "cumulative_coverage_fraction": self.grid.fraction_for_count(len(selected_cells)),
                     "cumulative_filters": sorted(selected_filters),
@@ -1205,7 +1221,7 @@ class HierarchicalIncrementalGreedySelector:
                 candidate.file_size_bytes / MIB,
                 total_size / MIB,
             )
-            self._update_affected_candidates(candidate, new_cells, new_filters)
+            self._update_affected_candidates(candidate, new_cells, new_group_filters)
 
         if len(selected_candidates) >= self.options.max_products:
             stop_reason = (
@@ -1230,6 +1246,9 @@ class HierarchicalIncrementalGreedySelector:
             "selected_size_bytes": total_size,
             "selected_size_mib": round(total_size / MIB, 6),
             "selected_filter_count": len(selected_filters),
+            "selected_group_filter_count": sum(
+                len(filters) for filters in selected_filters_by_group.values()
+            ),
             "selected_product_count": len(selected_products),
             "eligible_candidate_count": len(self.candidates),
             "observation_group_count": len(self.groups),
@@ -1237,6 +1256,7 @@ class HierarchicalIncrementalGreedySelector:
         }
         result = {
             "algorithm": "hierarchical_incremental_greedy",
+            "filter_novelty_scope": "observation_group",
             "summary": selection_summary,
             "candidate_count": sum(self.branch_fetched_counts.values()),
             "eligible_candidate_count": len(self.candidates),
@@ -1282,7 +1302,9 @@ def greedy_select_products(
         2. Validate required footprint, filter, instrument, size, and URI fields.
         3. Group eligible products by mission, instrument, and observation.
         4. Build group heaps plus spatial-cell and filter inverted indexes.
-        5. Repeatedly choose the product with the highest marginal score::
+        5. Repeatedly choose the product with the highest marginal score. A
+           filter is new when it has not yet been selected in that product's
+           observation group::
 
                (coverage_weight * new_coverage
                 + filter_weight * new_filter_count)

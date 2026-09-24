@@ -33,7 +33,8 @@ public struct GreedyScienceProductSelectionOptions {
     public var targetCoverageFraction: Double
     public var minimumDistinctFilters: Int
 
-    /// Benefit weights in `(coverageWeight * newCoverage + filterWeight * newFilters) / size`.
+    /// Benefit weights in `(coverageWeight * newCoverage + filterWeight * newGroupFilters) / size`.
+    /// Filter novelty is evaluated within the candidate's observation group.
     public var coverageWeight: Double
     public var filterWeight: Double
 
@@ -111,6 +112,7 @@ public struct GreedyScienceProductSelectionStep: Codable {
     public let fileSizeBytes: Int64
     public let newCoverageFraction: Double
     public let newAreaSquareDegrees: Double
+    /// Filters not previously selected from this step's observation group.
     public let newFilterCount: Int
     public let score: Double
     public let cumulativeCoverageFraction: Double
@@ -164,6 +166,7 @@ public struct GreedyScienceProductSelectionResult {
     public let selectedProducts: [CoamResult]
     public let selectedObservationGroups: [ObservationGroup]
     public let coveredFraction: Double
+    /// Global union of filters in the selected products, used for reporting.
     public let selectedFilters: [String]
     public let totalSelectedSizeBytes: Int64
     public let budgetSkippedCandidateCount: Int
@@ -173,6 +176,8 @@ public struct GreedyScienceProductSelectionResult {
     public var coveragePercentage: Double { coveredFraction * 100 }
     public var selectedSizeMiB: Double { Double(totalSelectedSizeBytes) / 1_048_576 }
     public var selectedObservationGroupCount: Int { selectedObservationGroups.count }
+    /// Count of unique observation-group/filter pairs accepted by the traversal.
+    public var selectedGroupFilterCount: Int { steps.reduce(0) { $0 + $1.newFilterCount } }
 
     internal func replacingSelectedProducts(
         _ products: [CoamResult],
@@ -544,6 +549,13 @@ private struct GreedyObservationGroupID: Hashable {
     }
 }
 
+/// A filter is considered new within one observation group, not globally.
+/// This lets the same useful filter compete independently in separate visits.
+private struct GreedyObservationGroupFilterID: Hashable {
+    let groupID: GreedyObservationGroupID
+    let filter: String
+}
+
 private final class GreedyScienceProductCandidateState {
     let product: CoamResult
     let identity: String
@@ -690,7 +702,7 @@ private final class GreedyHierarchicalScienceProductSelector {
     private var candidatesByIdentity: [String: GreedyScienceProductCandidateState] = [:]
     private var groups: [GreedyObservationGroupID: GreedyObservationGroupQueue] = [:]
     private var candidatesByCell: [Int: Set<String>] = [:]
-    private var candidatesByFilter: [String: Set<String>] = [:]
+    private var candidatesByFilter: [GreedyObservationGroupFilterID: Set<String>] = [:]
     private var rootHeap = GreedyBinaryHeap<GreedyRootHeapEntry>(
         sort: greedyRootEntryRanksBefore
     )
@@ -722,7 +734,11 @@ private final class GreedyHierarchicalScienceProductSelector {
                 candidatesByCell[cell, default: []].insert(candidate.identity)
             }
             for filter in candidate.filters {
-                candidatesByFilter[filter, default: []].insert(candidate.identity)
+                let groupFilterID = GreedyObservationGroupFilterID(
+                    groupID: candidate.groupID,
+                    filter: filter
+                )
+                candidatesByFilter[groupFilterID, default: []].insert(candidate.identity)
             }
         }
 
@@ -736,6 +752,9 @@ private final class GreedyHierarchicalScienceProductSelector {
         let minimumFilters = max(options.minimumDistinctFilters, 0)
         var selectedCandidates: [GreedyScienceProductCandidateState] = []
         var selectedCells = Set<Int>()
+        var selectedFiltersByGroup: [GreedyObservationGroupID: Set<String>] = [:]
+        // Keep the global union for reporting and the overall minimum-filter
+        // goal. Candidate novelty is calculated from the group-local set.
         var selectedFilters = Set<String>()
         var totalSize: Int64 = 0
         var steps: [GreedyScienceProductSelectionStep] = []
@@ -771,11 +790,14 @@ private final class GreedyHierarchicalScienceProductSelector {
             }
 
             let newCells = candidate.coveredCells.subtracting(selectedCells)
-            let newFilters = candidate.filters.subtracting(selectedFilters)
+            let newGroupFilters = candidate.filters.subtracting(
+                selectedFiltersByGroup[candidate.groupID] ?? []
+            )
             let selectedScore = candidate.score
             selectedCandidates.append(candidate)
             selectedCells.formUnion(newCells)
-            selectedFilters.formUnion(newFilters)
+            selectedFiltersByGroup[candidate.groupID, default: []].formUnion(newGroupFilters)
+            selectedFilters.formUnion(candidate.filters)
             totalSize += candidate.fileSizeBytes
             candidate.isActive = false
             candidate.version += 1
@@ -791,7 +813,7 @@ private final class GreedyHierarchicalScienceProductSelector {
                     fileSizeBytes: candidate.fileSizeBytes,
                     newCoverageFraction: newCoverage,
                     newAreaSquareDegrees: newCoverage * grid.targetAreaSquareDegrees,
-                    newFilterCount: newFilters.count,
+                    newFilterCount: newGroupFilters.count,
                     score: selectedScore,
                     cumulativeCoverageFraction: grid.coverageFraction(for: selectedCells),
                     cumulativeFilters: selectedFilters.sorted(),
@@ -801,7 +823,7 @@ private final class GreedyHierarchicalScienceProductSelector {
             updateAffectedCandidates(
                 selected: candidate,
                 newCells: newCells,
-                newFilters: newFilters
+                newGroupFilters: newGroupFilters
             )
         }
 
@@ -894,7 +916,7 @@ private final class GreedyHierarchicalScienceProductSelector {
     private func updateAffectedCandidates(
         selected: GreedyScienceProductCandidateState,
         newCells: Set<Int>,
-        newFilters: Set<String>
+        newGroupFilters: Set<String>
     ) {
         var affected = Set<String>()
         for cell in newCells {
@@ -908,8 +930,12 @@ private final class GreedyHierarchicalScienceProductSelector {
                 affected.insert(identity)
             }
         }
-        for filter in newFilters {
-            let identities = candidatesByFilter[filter] ?? []
+        for filter in newGroupFilters {
+            let groupFilterID = GreedyObservationGroupFilterID(
+                groupID: selected.groupID,
+                filter: filter
+            )
+            let identities = candidatesByFilter[groupFilterID] ?? []
             filterEdgeVisits += identities.count
             for identity in identities {
                 guard let candidate = candidatesByIdentity[identity], candidate.isActive else {

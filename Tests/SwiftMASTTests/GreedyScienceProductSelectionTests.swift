@@ -189,6 +189,56 @@ final class GreedyScienceProductSelectionTests: XCTestCase {
         XCTAssertGreaterThan(forward.complexityMetrics.filterEdgeVisits, 0)
     }
 
+    func testFilterNoveltyIsScopedToEachObservationGroup() {
+        let mast = SwiftMAST()
+        let products = [
+            makeProduct(
+                id: "jw00001-o001_t001_nircam_f435w_a",
+                filter: "F435W",
+                sizeMB: 5
+            ),
+            makeProduct(
+                id: "jw00001-o001_t001_nircam_f435w_b",
+                filter: "F435W",
+                sizeMB: 6
+            ),
+            makeProduct(
+                id: "jw00001-o002_t001_nircam_f435w",
+                filter: "F435W",
+                sizeMB: 5
+            ),
+        ]
+        let options = GreedyScienceProductSelectionOptions(
+            maxSelectedProducts: 2,
+            targetCoverageFraction: 1,
+            minimumDistinctFilters: 2,
+            coverageWeight: 0,
+            filterWeight: 1,
+            sizePenaltyExponent: 0,
+            fetchFITSHeadersForSelectedProducts: false
+        )
+
+        let result = mast.selectScienceProductsGreedily(
+            from: [makeGroup(products)],
+            targetName: "Test target",
+            targetRA: 10,
+            targetDec: 0,
+            radiusDegrees: 0.05,
+            options: options
+        )
+
+        XCTAssertEqual(result.selectedProducts.count, 2)
+        XCTAssertEqual(result.selectedObservationGroupCount, 2)
+        XCTAssertEqual(result.selectedFilters, ["F435W"])
+        XCTAssertEqual(result.selectedGroupFilterCount, 2)
+        XCTAssertEqual(result.steps.map(\.newFilterCount), [1, 1])
+        XCTAssertEqual(
+            Set(result.selectedObservationGroups.map(\.observationKey)),
+            ["jw00001-o001_t001_nircam", "jw00001-o002_t001_nircam"]
+        )
+        XCTAssertEqual(result.stopReason, .maximumProductsReached)
+    }
+
     private func makeGroup(_ products: [CoamResult]) -> ObservationGroup {
         ObservationGroup(
             mission: "JWST",
