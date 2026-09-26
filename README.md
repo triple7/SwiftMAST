@@ -265,6 +265,39 @@ Use `--tap-order group|min-size|max-size` to compare observation grouping with m
 or maximum content-length ordering. Dynamic coverage/filter gains always remain in the
 local greedy selector.
 
+### Science-product footprint image
+
+`plot_mast_science_product_footprints.py` turns a greedy JSON report into a sky map.
+The left panel contains every product that passes the selector's compulsory metadata
+checks, while the right panel contains only the greedy selection. Transparent CAOM
+`s_region` polygons/circles make repeated and overlapping footprints visible; the
+dashed circle is the requested target region.
+
+`--color-by filter` is the default and distributes the available filters around the
+AOSImage-compatible HSV wheel. `--color-by observation-group` instead resets that
+palette inside every observation group: all one-product groups are green; two-product
+groups are blue/orange; three-product groups are blue/red/green; and so on. In both
+cases the fallback formula is `(300 - 180/count + index * 360/count) mod 360`.
+`--color-by mission` retains the compact fixed JWST/HST/HLA palette.
+
+Every run writes a companion `*-colors.json` key containing hues, hex values, eligible
+counts, and selected counts. Observation-group mode additionally records the ordered
+science products and resolved colour inside every eligible and selected group. Supply
+an optional `--preferred-colors colors.json` object to override generated values with
+catalog-style `#RRGGBB` colours.
+
+```bash
+MPLCONFIGDIR=/private/tmp/swiftmast-matplotlib-cache \
+.venv/bin/python Sources/scripts/plot_mast_science_product_footprints.py \
+  Resources/results/ngc628-greedy-10gb.json \
+  --color-by filter \
+  --output Resources/results/ngc628-science-product-footprints.png \
+  --svg-output Resources/results/ngc628-science-product-footprints.svg
+```
+
+The renderer requires Matplotlib and prints the eligible/selected product, observation
+group, and footprint-shape counts after writing the image.
+
 ## Science Product Extraction
 
 The `extractScienceProducts` API downloads a FITS file from MAST and extracts individual image HDUs into `ScienceProduct` objects, each with converted JPEG imagery and structured FITS headers.
