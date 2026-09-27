@@ -11,6 +11,24 @@ import SwiftQValue
 
 public typealias TargetCoordinates = (ra: Float, dec: Float, radius: Float)
 
+private struct SANTATargetResolution: Decodable {
+    let ra: Double?
+    let dec: Double?
+    let decl: Double?
+    let radius: Double?
+
+    var declination: Double? { decl ?? dec }
+}
+
+private struct SANTATargetResolutionResponse: Decodable {
+    let resolvedItems: [SANTATargetResolution]?
+    let resolvedCoordinate: [SANTATargetResolution]?
+
+    var resolutions: [SANTATargetResolution] {
+        resolvedCoordinate ?? resolvedItems ?? []
+    }
+}
+
 /// SwiftMAST common API calls
 /// These convenience functions allow quick access to some of the more interesting MAST API data requests.
 /// The MAST portal can be very complex to navigate, however most users would be looking to do the following investigations:
@@ -53,31 +71,141 @@ extension SwiftMAST {
      * result: Closure returning TargetCoordinates or nil if unresolved
      */
     public func lookupTargetCoordinates(
-        targetName: String, result: @escaping (TargetCoordinates?) -> Void
+        targetName: String,
+        radius: Float? = nil,
+        result: @escaping (TargetCoordinates?) -> Void
     ) {
+        if let radius, !radius.isFinite || radius <= 0 {
+            self.log(
+                .RequestError,
+                message: "lookupTargetCoordinates: Search radius must be greater than zero"
+            )
+            result(nil)
+            return
+        }
+
         self.setTargetId(targetId: targetName)
         let targetStart = CACurrentMediaTime()
         self.lookupTargetByName(
             targetName: targetName,
             result: { targetLookup in
-                guard !targetLookup.isEmpty, let table = self.targets[targetName] else {
-                    self.log(
-                        .RequestError,
-                        message: "lookupTargetCoordinates: Could not resolve target '\(targetName)'"
+                guard !targetLookup.isEmpty,
+                      let resolved = self.targets[targetName]?.getNameLookupResults().first
+                else {
+                    self.lookupTargetCoordinatesUsingSANTA(
+                        targetName: targetName,
+                        radius: radius,
+                        startedAt: targetStart,
+                        result: result
                     )
-                    result(nil)
                     return
                 }
-                let targetEnd = CACurrentMediaTime()
-                self.log(
-                    .OK,
-                    message:
-                        "lookupTargetCoordinates: Target '\(targetName)' resolved in \(String(format: "%.2f", targetEnd - targetStart))s"
-                )
-                let resolved = table.getNameLookupResults().first!
                 self.setTargetAssets(target: targetName, targetInfo: resolved)
-                result((ra: resolved.ra, dec: resolved.dec, radius: resolved.radius))
+                let effectiveRadius = radius ?? resolved.radius
+                guard effectiveRadius.isFinite, effectiveRadius > 0 else {
+                    self.lookupTargetCoordinatesUsingSANTA(
+                        targetName: targetName,
+                        radius: radius,
+                        startedAt: targetStart,
+                        result: result
+                    )
+                    return
+                }
+                self.logTargetResolution(
+                    targetName: targetName,
+                    radius: effectiveRadius,
+                    source: radius == nil ? "Mast.Name.Lookup" : "caller",
+                    startedAt: targetStart
+                )
+                result((ra: resolved.ra, dec: resolved.dec, radius: effectiveRadius))
             })
+    }
+
+    /// Use STScI's SANTA resolver only when Mast.Name.Lookup cannot provide a usable radius.
+    private func lookupTargetCoordinatesUsingSANTA(
+        targetName: String,
+        radius: Float?,
+        startedAt: CFTimeInterval,
+        result: @escaping (TargetCoordinates?) -> Void
+    ) {
+        var components = URLComponents(string: "https://mastresolver.stsci.edu/Santa-war/query")
+        components?.queryItems = [
+            URLQueryItem(name: "name", value: targetName),
+            URLQueryItem(name: "outputFormat", value: "JSON"),
+            URLQueryItem(name: "source", value: "SwiftMAST"),
+        ]
+        guard let url = components?.url else {
+            result(nil)
+            return
+        }
+
+        var request = URLRequest(url: url)
+        request.timeoutInterval = 20
+        URLSession.shared.dataTask(with: request) { data, response, error in
+            guard error == nil,
+                  let response = response as? HTTPURLResponse,
+                  (200..<300).contains(response.statusCode),
+                  let data,
+                  let payload = try? JSONDecoder().decode(
+                    SANTATargetResolutionResponse.self,
+                    from: data
+                  ),
+                  let resolved = payload.resolutions.first,
+                  let resolvedRA = resolved.ra,
+                  let resolvedDec = resolved.declination,
+                  resolvedRA.isFinite,
+                  resolvedDec.isFinite,
+                  (0..<360).contains(resolvedRA),
+                  (-90...90).contains(resolvedDec)
+            else {
+                self.log(
+                    .RequestError,
+                    message: "lookupTargetCoordinates: Could not resolve target '\(targetName)' or its radius"
+                )
+                result(nil)
+                return
+            }
+
+            let santaRadius = resolved.radius.map(Float.init)
+            guard let effectiveRadius = radius ?? santaRadius,
+                  effectiveRadius.isFinite,
+                  effectiveRadius > 0
+            else {
+                self.log(
+                    .RequestError,
+                    message: "lookupTargetCoordinates: SANTA did not return a usable radius for '\(targetName)'"
+                )
+                result(nil)
+                return
+            }
+
+            self.logTargetResolution(
+                targetName: targetName,
+                radius: effectiveRadius,
+                source: radius == nil ? "SANTA" : "caller",
+                startedAt: startedAt
+            )
+            result((ra: Float(resolvedRA), dec: Float(resolvedDec), radius: effectiveRadius))
+        }.resume()
+    }
+
+    private func logTargetResolution(
+        targetName: String,
+        radius: Float,
+        source: String,
+        startedAt: CFTimeInterval
+    ) {
+        let elapsed = CACurrentMediaTime() - startedAt
+        self.log(
+            .OK,
+            message:
+                "lookupTargetCoordinates: Target '\(targetName)' resolved in \(String(format: "%.2f", elapsed))s",
+            metadata: [
+                "event": "targetResolutionFinished",
+                "radiusDegrees": String(radius),
+                "radiusSource": source,
+            ]
+        )
     }
 
     /** Get the missions list
@@ -328,10 +456,11 @@ extension SwiftMAST {
      * result: Closure returning filtered CoamResult entries
      */
     public func getScienceImageQueryResults(
-        targetName: String, filterOptions: ImageryFilterOptions = .defaultScience,
+        targetName: String, radius: Float? = nil,
+        filterOptions: ImageryFilterOptions = .defaultScience,
         pageSize: Int = 50, page: Int = 1, result: @escaping ([CoamResult]) -> Void
     ) {
-        self.lookupTargetCoordinates(targetName: targetName) { coordinates in
+        self.lookupTargetCoordinates(targetName: targetName, radius: radius) { coordinates in
             guard let coordinates = coordinates else {
                 result([])
                 return
@@ -730,30 +859,28 @@ extension SwiftMAST {
      to the documents folder under MAST/target_name/instrument_name/
      */
     public func downloadPreview(
-        targetName: String, pageSize: Int = 30, token: String? = nil,
+        targetName: String, radius: Float? = nil, pageSize: Int = 30, token: String? = nil,
         completion: @escaping (URL?) -> Void
     ) {
         print("downloadpreview: \(targetName)")
         self.setTargetId(targetId: targetName)
         let targetStart = CACurrentMediaTime()
-        self.lookupTargetByName(
+        self.lookupTargetCoordinates(
             targetName: targetName,
-            result: { targetLookup in
-                guard !targetLookup.isEmpty, let table = self.targets[targetName] else {
+            radius: radius,
+            result: { coordinates in
+                guard let coordinates else {
                     print("downloadpreview: Unable to resolve \(targetName)")
                     completion(nil)
                     return
                 }
                 let targetEnd = CACurrentMediaTime()
                 print("downloadpreview: target found in \(targetEnd - targetStart)")
-                let resolved = table.getNameLookupResults().first!
-                // Save the initial target info
-                self.setTargetAssets(target: targetName, targetInfo: resolved)
 
                 // Get the preview
                 self.getMASTPreviewImage(
-                    targetName: targetName, ra: resolved.ra, dec: resolved.dec,
-                    radius: resolved.radius, pageSize: pageSize, token: token
+                    targetName: targetName, ra: coordinates.ra, dec: coordinates.dec,
+                    radius: coordinates.radius, pageSize: pageSize, token: token
                 ) { urls in
                     completion(urls)
                 }
@@ -892,7 +1019,7 @@ extension SwiftMAST {
      ```
      */
     public func downloadImagery(
-        targetName: String, productType: ProductType = .Jpeg,
+        targetName: String, radius: Float? = nil, productType: ProductType = .Jpeg,
         filterOptions: ImageryFilterOptions = .defaultScience, pageSize: Int = 50,
         page: Int = 1, token: String? = nil, completion: @escaping ([URL]) -> Void
     ) {
@@ -903,6 +1030,7 @@ extension SwiftMAST {
         )
         self.lookupTargetCoordinates(
             targetName: targetName,
+            radius: radius,
             result: { coordinates in
                 guard let coordinates = coordinates else {
                     self.log(
@@ -1045,12 +1173,13 @@ extension SwiftMAST {
      */
     public func getJWSTFilteredProducts(
         targetName: String,
+        radius: Float? = nil,
         instruments: [String]? = nil,
         calibLevels: [String] = ["3", "4"],
         pageSize: Int = 200,
         result: @escaping ([String: CoamResult]) -> Void
     ) {
-        self.lookupTargetCoordinates(targetName: targetName) { coordinates in
+        self.lookupTargetCoordinates(targetName: targetName, radius: radius) { coordinates in
             guard let coordinates = coordinates else {
                 self.log(
                     .RequestError,
@@ -1241,6 +1370,7 @@ extension SwiftMAST {
      */
     public func getJWSTScienceProducts(
         targetName: String,
+        radius: Float? = nil,
         instruments: [String]? = nil,
         calibLevels: [String] = ["3", "4"],
         pageSize: Int = 200,
@@ -1249,6 +1379,7 @@ extension SwiftMAST {
     ) {
         self.getJWSTFilteredProducts(
             targetName: targetName,
+            radius: radius,
             instruments: instruments,
             calibLevels: calibLevels,
             pageSize: pageSize
@@ -1424,6 +1555,7 @@ extension SwiftMAST {
      */
     public func getObservationGroups(
         targetName: String,
+        radius: Float? = nil,
         mission: ObservationMission,
         instruments: [String]? = nil,
         filterBands: [String]? = nil,
@@ -1436,6 +1568,7 @@ extension SwiftMAST {
     ) {
         getObservationGroups(
             targetName: targetName,
+            radius: radius,
             missions: [mission],
             instruments: instruments,
             filterBands: filterBands,
@@ -1455,6 +1588,7 @@ extension SwiftMAST {
      */
     public func getObservationGroups(
         targetName: String,
+        radius: Float? = nil,
         missions: [ObservationMission] = ObservationMission.jwstAndHST,
         instruments: [String]? = nil,
         filterBands: [String]? = nil,
@@ -1465,7 +1599,7 @@ extension SwiftMAST {
         sortOrder: ObservationProductSortOrder = .filter,
         result: @escaping ([ObservationGroup]) -> Void
     ) {
-        self.lookupTargetCoordinates(targetName: targetName) { coordinates in
+        self.lookupTargetCoordinates(targetName: targetName, radius: radius) { coordinates in
             guard let coordinates = coordinates else {
                 self.log(
                     .RequestError,
@@ -2005,6 +2139,7 @@ extension SwiftMAST {
      */
     public func getObservationGroupsUsingTAP(
         targetName: String,
+        radius: Float? = nil,
         missions: [ObservationMission] = ObservationMission.jwstAndHST,
         instruments: [String]? = nil,
         filterBands: [String]? = nil,
@@ -2016,7 +2151,7 @@ extension SwiftMAST {
         includeFITSImageHeaderMetadata: Bool = true,
         result: @escaping ([ObservationGroup]) -> Void
     ) {
-        self.lookupTargetCoordinates(targetName: targetName) { coordinates in
+        self.lookupTargetCoordinates(targetName: targetName, radius: radius) { coordinates in
             guard let coordinates = coordinates else {
                 self.log(
                     .RequestError,
@@ -2174,7 +2309,7 @@ extension SwiftMAST {
         targetName: String?,
         ra: Double?,
         dec: Double?,
-        radiusDegrees: Double,
+        radiusDegrees: Double? = nil,
         missions: [ObservationMission] = ObservationMission.jwstAndHST,
         filters: [String]? = nil,
         columns: ObservationTAPColumnProfile = .targetCompositeSelection,
@@ -2184,7 +2319,17 @@ extension SwiftMAST {
         headerFetchPolicy: ObservationFITSHeaderFetchPolicy = .shortlistedOnly(maxPerFilter: 1),
         result: @escaping ([ObservationGroup]) -> Void
     ) {
-        if let ra, let dec {
+        if let radiusDegrees, !radiusDegrees.isFinite || radiusDegrees <= 0 {
+            self.log(
+                .RequestError,
+                message: "Target composite TAP search radius must be greater than zero",
+                metadata: ["event": "tapObservationSearchInvalidRadius"]
+            )
+            result([])
+            return
+        }
+
+        if let ra, let dec, let radiusDegrees {
             executeObservationGroupsTAPQuery(
                 targetName: targetName ?? "Coordinate target",
                 ra: Float(ra),
@@ -2216,7 +2361,10 @@ extension SwiftMAST {
             return
         }
 
-        self.lookupTargetCoordinates(targetName: targetName) { coordinates in
+        self.lookupTargetCoordinates(
+            targetName: targetName,
+            radius: radiusDegrees.map(Float.init)
+        ) { coordinates in
             guard let coordinates else {
                 self.log(
                     .RequestError,
@@ -2232,9 +2380,9 @@ extension SwiftMAST {
 
             self.getTargetCompositeCandidates(
                 targetName: targetName,
-                ra: Double(coordinates.ra),
-                dec: Double(coordinates.dec),
-                radiusDegrees: radiusDegrees,
+                ra: ra ?? Double(coordinates.ra),
+                dec: dec ?? Double(coordinates.dec),
+                radiusDegrees: Double(coordinates.radius),
                 missions: missions,
                 filters: filters,
                 columns: columns,
@@ -2791,6 +2939,7 @@ extension SwiftMAST {
      */
     public func getJWSTObservationGroups(
         targetName: String,
+        radius: Float? = nil,
         instruments: [String]? = nil,
         filterBands: [String]? = nil,
         calibLevels: [String] = ["3", "4"],
@@ -2801,6 +2950,7 @@ extension SwiftMAST {
     ) {
         self.getObservationGroups(
             targetName: targetName,
+            radius: radius,
             missions: ObservationMission.jwstOnly,
             instruments: instruments,
             filterBands: filterBands,

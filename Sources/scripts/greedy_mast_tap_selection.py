@@ -72,6 +72,7 @@ from urllib3.util.retry import Retry
 
 MAST_TAP_URL = "https://mast.stsci.edu/vo-tap/api/v0.1/caom/sync"
 MAST_API_URL = "https://mast.stsci.edu/api/v0/invoke"
+SANTA_RESOLVER_URL = "https://mastresolver.stsci.edu/Santa-war/query"
 MAST_DOWNLOAD_URL = "https://mast.stsci.edu/api/v0.1/Download/file"
 DEFAULT_MISSIONS = ("JWST", "HST", "HLA")
 TAP_TABLES = ("dbo.obspointing", "dbo.caomplane", "dbo.caomartifact")
@@ -383,8 +384,10 @@ def execute_tap_queries(
     return ordered, failures
 
 
-def resolve_target(target: str, timeout: float = 30, retries: int = 5) -> tuple[float, float]:
-    """Resolve a target name through Mast.Name.Lookup."""
+def resolve_target(
+    target: str, timeout: float = 30, retries: int = 5
+) -> tuple[float, float, float]:
+    """Resolve target coordinates and angular radius, falling back to SANTA."""
 
     started = time.monotonic()
     LOGGER.info("Target resolution started target=%r", target)
@@ -393,29 +396,87 @@ def resolve_target(target: str, timeout: float = 30, retries: int = 5) -> tuple[
         "params": {"input": target, "format": "json"},
         "format": "json",
     }
-    response = post_form_json(
-        MAST_API_URL,
-        {"request": json.dumps(mast_request, separators=(",", ":"))},
-        timeout,
-        retries,
-    )
-    coordinates = response.get("resolvedCoordinate")
-    if not isinstance(coordinates, list) or not coordinates:
-        raise RuntimeError(f"MAST could not resolve target {target!r}")
-
-    first = coordinates[0]
+    first: dict[str, Any] = {}
     try:
-        position = float(first["ra"]), float(first["decl"])
-    except (KeyError, TypeError, ValueError) as error:
-        raise RuntimeError(f"Invalid target-resolution response: {first!r}") from error
+        response = post_form_json(
+            MAST_API_URL,
+            {"request": json.dumps(mast_request, separators=(",", ":"))},
+            timeout,
+            retries,
+        )
+        coordinates = response.get("resolvedCoordinate")
+        if isinstance(coordinates, list) and coordinates:
+            first = coordinates[0]
+    except RuntimeError as error:
+        LOGGER.warning("Mast.Name.Lookup failed; trying SANTA error=%s", error)
+
+    def finite_positive(value: Any) -> float | None:
+        try:
+            number = float(value)
+        except (TypeError, ValueError):
+            return None
+        return number if math.isfinite(number) and number > 0 else None
+
+    try:
+        ra = float(first["ra"])
+        dec = float(first["decl"])
+    except (KeyError, TypeError, ValueError):
+        ra = dec = math.nan
+    radius = finite_positive(first.get("radius"))
+    radius_source = "Mast.Name.Lookup"
+
+    if not (math.isfinite(ra) and math.isfinite(dec) and radius is not None):
+        LOGGER.info("SANTA target resolution started target=%r", target)
+        with requests_session(retries) as session:
+            try:
+                santa_response = session.get(
+                    SANTA_RESOLVER_URL,
+                    params={
+                        "name": target,
+                        "outputFormat": "JSON",
+                        "source": "SwiftMAST",
+                    },
+                    timeout=timeout,
+                )
+                santa_response.raise_for_status()
+                santa_payload = santa_response.json()
+            except (requests.RequestException, requests.exceptions.JSONDecodeError) as error:
+                raise RuntimeError(
+                    f"MAST and SANTA could not resolve target {target!r}: {error}"
+                ) from error
+        items = None
+        if isinstance(santa_payload, dict):
+            items = santa_payload.get("resolvedCoordinate") or santa_payload.get(
+                "resolvedItems"
+            )
+        if not isinstance(items, list) or not items:
+            raise RuntimeError(f"MAST and SANTA could not resolve target {target!r}")
+        santa = items[0]
+        try:
+            if not math.isfinite(ra):
+                ra = float(santa["ra"])
+            if not math.isfinite(dec):
+                dec = float(santa.get("decl", santa.get("dec")))
+        except (KeyError, TypeError, ValueError) as error:
+            raise RuntimeError(f"Invalid SANTA target response: {santa!r}") from error
+        radius = radius or finite_positive(santa.get("radius"))
+        radius_source = "SANTA"
+
+    if not (0 <= ra < 360 and -90 <= dec <= 90 and radius is not None):
+        raise RuntimeError(
+            f"Target resolver did not return usable coordinates and radius for {target!r}"
+        )
     LOGGER.info(
-        "Target resolution finished target=%r ra=%.8f dec=%.8f elapsed_seconds=%.3f",
+        "Target resolution finished target=%r ra=%.8f dec=%.8f radius_degrees=%.8f "
+        "radius_source=%s elapsed_seconds=%.3f",
         target,
-        position[0],
-        position[1],
+        ra,
+        dec,
+        radius,
+        radius_source,
         time.monotonic() - started,
     )
-    return position
+    return ra, dec, radius
 
 
 # ---------------------------------------------------------------------------
@@ -1697,8 +1758,8 @@ def download_selected_products(
 # Command-line orchestration and report generation
 # ---------------------------------------------------------------------------
 
-def parse_args() -> argparse.Namespace:
-    """Define query, diagnostics, logging, and optional selection arguments."""
+def build_argument_parser() -> argparse.ArgumentParser:
+    """Build the reusable query, diagnostics, and selection CLI parser."""
 
     parser = argparse.ArgumentParser(
         description=(
@@ -1709,7 +1770,11 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--target", help="Target name to resolve, for example 'NGC 628'.")
     parser.add_argument("--ra", type=float, help="ICRS right ascension in degrees.")
     parser.add_argument("--dec", type=float, help="ICRS declination in degrees.")
-    parser.add_argument("--radius", type=float, default=0.1, help="Search radius in degrees (default: 0.1).")
+    parser.add_argument(
+        "--radius",
+        type=float,
+        help="Optional search radius in degrees; defaults to the resolved target radius.",
+    )
     parser.add_argument("--missions", default=",".join(DEFAULT_MISSIONS), help="Comma-separated MAST collections.")
     parser.add_argument("--filters", default="", help="Optional comma-separated filter-name fragments.")
     parser.add_argument("--calib-levels", default="3,4", help="Comma-separated calibration levels (default: 3,4).")
@@ -1839,7 +1904,13 @@ def parse_args() -> argparse.Namespace:
         default=48,
         help="Coverage grid width/height (default: 48).",
     )
-    return parser.parse_args()
+    return parser
+
+
+def parse_args() -> argparse.Namespace:
+    """Parse query, diagnostics, logging, and optional selection arguments."""
+
+    return build_argument_parser().parse_args()
 
 
 def main() -> int:
@@ -1863,7 +1934,7 @@ def main() -> int:
         args.tap_order,
     )
 
-    if args.radius <= 0:
+    if args.radius is not None and args.radius <= 0:
         raise ValueError("--radius must be greater than zero")
     if args.limit <= 0:
         raise ValueError("--limit must be greater than zero")
@@ -1901,16 +1972,32 @@ def main() -> int:
         if args.ra is None:
             if not args.target:
                 raise ValueError("provide --target or both --ra and --dec")
-            ra, dec = resolve_target(args.target, timeout=args.timeout, retries=args.retries)
+            ra, dec, resolved_radius = resolve_target(
+                args.target, timeout=args.timeout, retries=args.retries
+            )
         else:
             ra, dec = args.ra, args.dec
+            resolved_radius = None
+            if args.radius is None:
+                if not args.target:
+                    raise ValueError(
+                        "provide --radius with coordinates, or also provide --target "
+                        "so its radius can be resolved"
+                    )
+                _, _, resolved_radius = resolve_target(
+                    args.target, timeout=args.timeout, retries=args.retries
+                )
+
+        effective_radius = args.radius if args.radius is not None else resolved_radius
+        if effective_radius is None or effective_radius <= 0:
+            raise ValueError("a positive search radius is required")
 
         if not 0 <= ra < 360:
             raise ValueError("--ra must be in [0, 360)")
         if not -90 <= dec <= 90:
             raise ValueError("--dec must be in [-90, 90]")
 
-        resolved_position = {"ra": ra, "dec": dec, "radius_degrees": args.radius}
+        resolved_position = {"ra": ra, "dec": dec, "radius_degrees": effective_radius}
         missions = parse_csv_values(args.missions)
         filters = parse_csv_values(args.filters) if args.filters.strip() else []
         product_types = parse_csv_values(args.product_types)
@@ -1938,7 +2025,7 @@ def main() -> int:
                     build_science_product_query(
                         ra=ra,
                         dec=dec,
-                        radius=args.radius,
+                        radius=effective_radius,
                         missions=[mission],
                         filters=filters,
                         calibration_levels=calibration_levels,
@@ -1960,7 +2047,7 @@ def main() -> int:
                     build_science_product_query(
                         ra=ra,
                         dec=dec,
-                        radius=args.radius,
+                        radius=effective_radius,
                         missions=missions,
                         filters=filters,
                         calibration_levels=calibration_levels,

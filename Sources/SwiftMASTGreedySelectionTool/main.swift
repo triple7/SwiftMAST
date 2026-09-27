@@ -3,7 +3,7 @@ import SwiftMAST
 
 private struct Arguments {
     var target = "NGC 628"
-    var radiusDegrees = 0.05
+    var radiusDegrees: Double?
     var missions = ObservationMission.jwstAndHST
     var instruments: [String]?
     var filters: [String]?
@@ -69,7 +69,7 @@ Usage:
 
 Options:
   --target NAME            Resolvable MAST target (default: NGC 628)
-  --radius DEG             Search-cone radius (default: 0.05)
+  --radius DEG             Optional search radius; defaults to the resolved target radius
   --missions LIST          Comma-separated JWST,HST,PS1,GALEX,SWIFT,TESS (HST includes HLA)
   --instruments LIST       Optional comma-separated TAP instrument names
   --filters LIST           Optional comma-separated filter names
@@ -122,7 +122,16 @@ private func parseArguments() throws -> Arguments {
             print(usage)
             exit(0)
         case "--target": parsed.target = try value(after: flag)
-        case "--radius": parsed.radiusDegrees = Double(try value(after: flag)) ?? parsed.radiusDegrees
+        case "--radius":
+            let rawRadius = try value(after: flag)
+            guard let radius = Double(rawRadius) else {
+                throw NSError(
+                    domain: "SwiftMASTGreedySelectionTool",
+                    code: 2,
+                    userInfo: [NSLocalizedDescriptionKey: "Invalid radius: \(rawRadius)"]
+                )
+            }
+            parsed.radiusDegrees = radius
         case "--missions":
             let requested = commaSeparated(try value(after: flag)).map { $0.uppercased() }
             parsed.missions = ObservationMission.allCases.filter { requested.contains($0.rawValue) }
@@ -248,8 +257,10 @@ do {
 
     let mast = SwiftMAST()
     var reports: [SelectionRunReport] = []
+    var effectiveRadiusDegrees: Double?
     for preset in presets {
         let selection = runSelection(mast: mast, arguments: arguments, preset: preset)
+        effectiveRadiusDegrees = selection.radiusDegrees
         printSelection(selection, preset: preset)
         reports.append(
             SelectionRunReport(
@@ -290,7 +301,7 @@ do {
 
     let report = ComparisonReport(
         target: arguments.target,
-        radiusDegrees: arguments.radiusDegrees,
+        radiusDegrees: effectiveRadiusDegrees ?? 0,
         generatedAt: ISO8601DateFormatter().string(from: Date()),
         runs: reports
     )

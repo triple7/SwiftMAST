@@ -217,13 +217,13 @@ extension SwiftMAST {
     /// fetch -> validate -> branch -> score -> select -> enrich selected headers -> regroup.
     public func selectScienceProductsUsingGreedyTAP(
         targetName: String,
-        radiusDegrees: Double = 0.05,
+        radiusDegrees: Double? = nil,
         options: GreedyScienceProductSelectionOptions = .init(),
         result: @escaping (GreedyScienceProductSelectionResult) -> Void
     ) {
         let trimmedTargetName = targetName.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmedTargetName.isEmpty,
-              radiusDegrees > 0,
+              (radiusDegrees.map({ $0.isFinite && $0 > 0 }) ?? true),
               !options.missions.isEmpty,
               options.candidateRowLimit > 0,
               options.maxSelectedProducts > 0,
@@ -239,24 +239,28 @@ extension SwiftMAST {
             result(
                 emptyGreedyScienceProductSelectionResult(
                     targetName: trimmedTargetName,
-                    radiusDegrees: radiusDegrees,
+                    radiusDegrees: radiusDegrees ?? 0,
                     stopReason: .invalidConfiguration
                 )
             )
             return
         }
 
-        lookupTargetCoordinates(targetName: trimmedTargetName) { coordinates in
+        lookupTargetCoordinates(
+            targetName: trimmedTargetName,
+            radius: radiusDegrees.map(Float.init)
+        ) { coordinates in
             guard let coordinates else {
                 result(
                     self.emptyGreedyScienceProductSelectionResult(
                         targetName: trimmedTargetName,
-                        radiusDegrees: radiusDegrees,
+                        radiusDegrees: radiusDegrees ?? 0,
                         stopReason: .targetResolutionFailed
                     )
                 )
                 return
             }
+            let effectiveRadiusDegrees = Double(coordinates.radius)
 
             self.log(
                 .OK,
@@ -264,7 +268,7 @@ extension SwiftMAST {
                 metadata: [
                     "event": "greedyScienceProductSelectionStarted",
                     "targetName": trimmedTargetName,
-                    "radiusDegrees": String(radiusDegrees),
+                    "radiusDegrees": String(effectiveRadiusDegrees),
                     "candidateRowLimit": String(options.candidateRowLimit),
                 ]
             )
@@ -275,7 +279,7 @@ extension SwiftMAST {
                     targetName: trimmedTargetName,
                     targetRA: Double(coordinates.ra),
                     targetDec: Double(coordinates.dec),
-                    radiusDegrees: radiusDegrees,
+                    radiusDegrees: effectiveRadiusDegrees,
                     options: options
                 )
 
@@ -335,7 +339,7 @@ extension SwiftMAST {
                     targetName: trimmedTargetName,
                     ra: coordinates.ra,
                     dec: coordinates.dec,
-                    radius: Float(radiusDegrees),
+                    radius: coordinates.radius,
                     missions: [mission],
                     instruments: options.instruments,
                     filterBands: options.filterBands,

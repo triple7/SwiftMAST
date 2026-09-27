@@ -169,7 +169,6 @@ let options = GreedyScienceProductSelectionOptions(
 
 SwiftMAST().selectScienceProductsUsingGreedyTAP(
     targetName: "NGC 628",
-    radiusDegrees: 0.05,
     options: options
 ) { selection in
     print(selection.selectedObservationGroups)
@@ -178,6 +177,12 @@ SwiftMAST().selectScienceProductsUsingGreedyTAP(
     print(selection.complexityMetrics)
 }
 ```
+
+The search radius is optional for every target-name convenience API. When omitted,
+SwiftMAST uses the target's angular radius returned by `Mast.Name.Lookup`; if that
+response has no usable radius, it falls back to STScI SANTA. Pass `radius` (or
+`radiusDegrees` for the greedy API) only to override the resolved value. Coordinate-only
+overloads still require a radius because they do not resolve a target name.
 
 The coverage calculation uses a deterministic grid approximation of the union of
 the selected `s_region` footprints. When enabled, FITS headers are fetched only after
@@ -190,7 +195,6 @@ smallest-download configurations:
 swift run swiftmast-greedy-selection \
   --target "NGC 628" \
   --missions HST \
-  --radius 0.03 \
   --rows 100 \
   --max-products 10 \
   --max-mb 1000 \
@@ -461,9 +465,9 @@ mast.getJWSTFilteredProducts(
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
 | `targetName` | `String` | — | Human-readable target identifier |
+| `radius` | `Float?` | `nil` | Optional override; target-name searches otherwise use the resolved target radius |
 | `ra` | `Float` | — | Right Ascension (degrees, J2000) — coordinate overload only |
 | `dec` | `Float` | — | Declination (degrees, J2000) — coordinate overload only |
-| `radius` | `Float` | — | Search radius (degrees) — coordinate overload only |
 | `instruments` | `[String]?` | `nil` | Restrict to specific instruments, e.g. `["MIRI/IMAGE"]` or `["NIRCAM/IMAGE"]`. `nil` returns all. |
 | `calibLevels` | `[String]` | `["3", "4"]` | CAOM calibration levels to include |
 | `pageSize` | `Int` | `200` | Maximum products fetched per MAST page |
@@ -525,6 +529,7 @@ Accepts the same parameters as `getJWSTFilteredProducts`, plus an optional `toke
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
 | `targetName` | `String` | — | Human-readable target identifier |
+| `radius` | `Float?` | `nil` | Optional override; otherwise uses the resolved target radius |
 | `instruments` | `[String]?` | `nil` | Restrict to specific instruments |
 | `calibLevels` | `[String]` | `["3", "4"]` | CAOM calibration levels |
 | `pageSize` | `Int` | `200` | Maximum products per MAST page |
@@ -633,6 +638,7 @@ Filters are sorted by the numeric wavelength extracted from the filter name:
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
 | `targetName` | `String` | — | Human-readable target identifier |
+| `radius` | `Float?` | `nil` | Optional override; otherwise uses the resolved target radius |
 | `instruments` | `[String]?` | `nil` | Restrict to specific instruments (e.g. `["MIRI/IMAGE"]`) |
 | `filterBands` | `[String]?` | `nil` | Restrict to specific filters (e.g. `["F150W"]`) |
 | `calibLevels` | `[String]` | `["3", "4"]` | CAOM calibration levels |

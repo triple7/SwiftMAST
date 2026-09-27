@@ -6,7 +6,7 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 
 SCRIPT = Path(__file__).parents[2] / "Sources" / "scripts" / "greedy_mast_tap_selection.py"
@@ -59,8 +59,44 @@ class HierarchicalGreedyTAPSelectionTests(unittest.TestCase):
         self.assertEqual(args.workers, 1)
         self.assertEqual(args.eligibility_filter_location, "local")
         self.assertEqual(args.tap_order, "group")
+        self.assertIsNone(args.radius)
         self.assertFalse(args.download_selected)
         self.assertEqual(args.cache_root, Path.home() / "Documents" / "MAST")
+
+    def test_target_resolution_returns_mast_radius(self) -> None:
+        with patch.object(
+            MODULE,
+            "post_form_json",
+            return_value={
+                "resolvedCoordinate": [
+                    {"ra": 24.17, "decl": 15.78, "radius": 0.055}
+                ]
+            },
+        ):
+            resolved = MODULE.resolve_target("NGC 628")
+
+        self.assertEqual(resolved, (24.17, 15.78, 0.055))
+
+    def test_target_resolution_uses_santa_when_mast_radius_is_missing(self) -> None:
+        response = MagicMock()
+        response.json.return_value = {
+            "resolvedCoordinate": [
+                {"ra": 24.17, "decl": 15.78, "radius": 0.056}
+            ]
+        }
+        session = MagicMock()
+        session.__enter__.return_value = session
+        session.get.return_value = response
+
+        with patch.object(
+            MODULE,
+            "post_form_json",
+            return_value={"resolvedCoordinate": [{"ra": 24.17, "decl": 15.78}]},
+        ), patch.object(MODULE, "requests_session", return_value=session):
+            resolved = MODULE.resolve_target("NGC 628")
+
+        self.assertEqual(resolved, (24.17, 15.78, 0.056))
+        session.get.assert_called_once()
 
     def test_query_uses_configurable_calibration_levels_and_product_types(self) -> None:
         query = MODULE.build_science_product_query(
