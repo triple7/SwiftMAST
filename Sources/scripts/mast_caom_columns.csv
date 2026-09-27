@@ -1,0 +1,349 @@
+table_name,column_name,description,datatype,unit
+dbo.allpointing,calib_level,calibration level (-1 though 5),int,n.n
+dbo.allpointing,dataproduct_type,type of product,char,n.n
+dbo.allpointing,datarights,current data access rights,char,n.n
+dbo.allpointing,dataurl,url to download the data,char,n.n
+dbo.allpointing,em_max,maximum wavelength,double,m
+dbo.allpointing,em_min,minimum wavelength,double,m
+dbo.allpointing,filters,instrument filter names,char,n.n
+dbo.allpointing,instrument_name,instrument name,char,n.n
+dbo.allpointing,intenttype,science/calibration purpose,char,n.n
+dbo.allpointing,jpegurl,url to download the data preview,char,n.n
+dbo.allpointing,mtflag,flag for moving target,boolean,n.n
+dbo.allpointing,objid,internal object id,long,n.n
+dbo.allpointing,obs_collection,name of data collection,char,n.n
+dbo.allpointing,obs_id,internal dataset identifier,char,n.n
+dbo.allpointing,obs_title,proposal title,char,n.n
+dbo.allpointing,obsid,internal observation id,long,n.n
+dbo.allpointing,project,project that created plane,char,n.n
+dbo.allpointing,proposal_id,collection specific proposal identifier,char,n.n
+dbo.allpointing,proposal_pi,proposal principal investigator name,char,n.n
+dbo.allpointing,proposal_type,project that created observation,char,n.n
+dbo.allpointing,provenance_name,process that created plane,char,n.n
+dbo.allpointing,s_dec,dec of central coordinates,double,deg
+dbo.allpointing,s_ra,ra of central coordinates,double,deg
+dbo.allpointing,s_region,region bounded by observation,char,deg
+dbo.allpointing,sequence_number,sequence number assigned by observatory,int,n.n
+dbo.allpointing,srcden,estimated source density per square degree,double,n.n
+dbo.allpointing,t_exptime,total exposure time,double,s
+dbo.allpointing,t_max,observation end mjd,double,d
+dbo.allpointing,t_min,observation start mjd,double,d
+dbo.allpointing,t_obs_release,release date mjd,double,d
+dbo.allpointing,target_classification,target classification from proposal,char,n.n
+dbo.allpointing,target_name,name of target,char,n.n
+dbo.allpointing,wavelength_region,em region,char,n.n
+dbo.calpointing,calib_level,calibration level (-1 through 5),int,n.n
+dbo.calpointing,dataproduct_type,type of product,char,n.n
+dbo.calpointing,datarights,current data access rights,char,n.n
+dbo.calpointing,dataurl,url to download the data,char,n.n
+dbo.calpointing,em_max,maximum wavelength,double,m
+dbo.calpointing,em_min,minimum wavelength,double,m
+dbo.calpointing,filters,em region,char,n.n
+dbo.calpointing,instrument_name,instrument name,char,n.n
+dbo.calpointing,intenttype,science/calibration purpose,char,n.n
+dbo.calpointing,jpegurl,url to download the data preview,char,n.n
+dbo.calpointing,mtflag,flag for moving target,boolean,n.n
+dbo.calpointing,objid,internal object id,long,n.n
+dbo.calpointing,obs_collection,name of data collection,char,n.n
+dbo.calpointing,obs_id,internal dataset identifier,char,n.n
+dbo.calpointing,obs_title,proposal title,char,n.n
+dbo.calpointing,obsid,internal observation id,long,n.n
+dbo.calpointing,project,project that created plane,char,n.n
+dbo.calpointing,proposal_id,collection specific proposal identifier,char,n.n
+dbo.calpointing,proposal_pi,proposal principal investigator name,char,n.n
+dbo.calpointing,proposal_type,project that created observation,char,n.n
+dbo.calpointing,provenance_name,process that created plane,char,n.n
+dbo.calpointing,s_dec,dec of central coordinates,double,deg
+dbo.calpointing,s_ra,ra of central coordinates,double,deg
+dbo.calpointing,s_region,region bounded by observation,char,n.n
+dbo.calpointing,sequence_number,sequence number assign by observatory,int,n.n
+dbo.calpointing,srcden,estimated source density per square degree,double,n.n
+dbo.calpointing,t_exptime,total exposure time,double,s
+dbo.calpointing,t_max,observation end mjd,double,d
+dbo.calpointing,t_min,observation start mjd,double,d
+dbo.calpointing,t_obs_release,release date mjd,double,n.n
+dbo.calpointing,target_classification,target classification from proposal,char,n.n
+dbo.calpointing,target_name,name of target,char,n.n
+dbo.calpointing,wavelength_region,em region,char,n.n
+dbo.caomartifact,accmetachecksum,checksum of metadata in this entity+children,char,n.n
+dbo.caomartifact,artifacttid,internal id,long,n.n
+dbo.caomartifact,collection,name of data collection,char,n.n
+dbo.caomartifact,contentchecksum,checksum of file,char,n.n
+dbo.caomartifact,contentlength,estimated size of file,long,kbyte
+dbo.caomartifact,contentreadgroups,group identifier for access,char,n.n
+dbo.caomartifact,contentrelease,date of release,char,n.n
+dbo.caomartifact,contentrights,current content rights,char,n.n
+dbo.caomartifact,contenttype,mime-type of content,char,n.n
+dbo.caomartifact,creationdate,timestamp of file creation,char,n.n
+dbo.caomartifact,datauri,url to download the data,char,n.n
+dbo.caomartifact,id,unique plane identifier (uuid),char,n.n
+dbo.caomartifact,lastmodified,timestamp of last modification of this row,char,n.n
+dbo.caomartifact,maxlastmodified,timestamp of last modification of this observation,char,n.n
+dbo.caomartifact,metachecksum,checksum of metadata in this entity,char,n.n
+dbo.caomartifact,metaproducer,identifier for producer of this entity,char,n.n
+dbo.caomartifact,planetid,internal id,long,n.n
+dbo.caomartifact,planeuuid,unique plane identifier (uuid),char,n.n
+dbo.caomartifact,productfilename,name of data file,char,n.n
+dbo.caomartifact,producttype,type of product,char,n.n
+dbo.caomartifact,producttypeid,link to descripton of data,int,n.n
+dbo.caomartifact,recordcreated,timestamp of first load into database,char,n.n
+dbo.caomartifact,recordmodified,timestamp of last modification to database,char,n.n
+dbo.caomartifact,releasetype,type of release,char,n.n
+dbo.caomartifact,statuscode,internal code,int,n.n
+dbo.caommembers,collection,name of data collection,char,n.n
+dbo.caommembers,derivedtid,internal id,long,n.n
+dbo.caommembers,recordcreated,timestamp of first load into database,char,n.n
+dbo.caommembers,recordmodified,timestamp of last modification to database,char,n.n
+dbo.caommembers,simpletid,internal id,long,n.n
+dbo.caommembers,statuscode,internal code,int,n.n
+dbo.caomobservation,accmetachecksum,checksum of metadata in this entity+children,char,n.n
+dbo.caomobservation,algname,algorithm defining observation,char,n.n
+dbo.caomobservation,collection,name of data collection,char,n.n
+dbo.caomobservation,envambienttemp,temperature at telescope during observation,double,K
+dbo.caomobservation,envelevation,elevation above horizon,double,deg
+dbo.caomobservation,envhumidity,atmospheric humidity,double,n.n
+dbo.caomobservation,envphotometric,conditions were photometric,boolean,n.n
+dbo.caomobservation,envseeing,atmospheric seeing (fwhm),double,arcsec
+dbo.caomobservation,envtau,zenith optical depth,double,n.n
+dbo.caomobservation,envwavelengthtau,wavelength at which tau measured,double,m
+dbo.caomobservation,id,unique observation identifier (uuid),char,n.n
+dbo.caomobservation,inskeywords,selected instrument keywords,char,n.n
+dbo.caomobservation,insname,name of instrument,char,n.n
+dbo.caomobservation,intent,science/calibration purpose,char,n.n
+dbo.caomobservation,lastmodified,timestamp of last modification of this row,char,n.n
+dbo.caomobservation,linked,flag for link table,char,n.n
+dbo.caomobservation,maxlastmodified,timestamp of last modification of this observation,char,n.n
+dbo.caomobservation,maxlevel,maximum calibration level of processing,int,n.n
+dbo.caomobservation,metachecksum,checksum of metadata in this entity,char,n.n
+dbo.caomobservation,metadatarights,current metadata access rights,char,n.n
+dbo.caomobservation,metaproducer,identifier for producer of this entity,char,n.n
+dbo.caomobservation,metareadgroups,group identifier for access to metadata,char,n.n
+dbo.caomobservation,metarelease,date of metadata release,char,n.n
+dbo.caomobservation,nobs,number of member observations,int,n.n
+dbo.caomobservation,observationid,internal dataset identifier,char,n.n
+dbo.caomobservation,observationtid,internal id,long,n.n
+dbo.caomobservation,obstype,simple/composite/derived observation flag,char,n.n
+dbo.caomobservation,prpid,collection specific proposal identifier,char,n.n
+dbo.caomobservation,prpkeywords,selected proposal keywords,char,n.n
+dbo.caomobservation,prppi,proposal principal investigator name,char,n.n
+dbo.caomobservation,prpproject,project that created observation,char,n.n
+dbo.caomobservation,prptitle,proposal title,char,n.n
+dbo.caomobservation,recordcreated,timestamp of first load into database,char,n.n
+dbo.caomobservation,recordmodified,timestamp of last modification to database,char,n.n
+dbo.caomobservation,reqflag,flag describing satisfied proposal requirements,char,n.n
+dbo.caomobservation,sequencenumber,sequence number assigned by observatory,int,n.n
+dbo.caomobservation,statuscode,internal code,int,n.n
+dbo.caomobservation,tlsgeolocationx,x component of geocentric location of telescope,double,n.n
+dbo.caomobservation,tlsgeolocationy,y component of geocentric location of telescope,double,n.n
+dbo.caomobservation,tlsgeolocationz,z component of geocentric location of telescope,double,n.n
+dbo.caomobservation,tlskeywords,selected instrument keywords,char,n.n
+dbo.caomobservation,tlsname,name of telescope,char,n.n
+dbo.caomobservation,trgclassification,target classification from proposal,char,n.n
+dbo.caomobservation,trgid,alternate name of target,char,n.n
+dbo.caomobservation,trgkeywords,selected target keywords,char,n.n
+dbo.caomobservation,trgmoving,flag for moving target,boolean,n.n
+dbo.caomobservation,trgname,name of target,char,n.n
+dbo.caomobservation,trgposcoordsys,reference frame,char,n.n
+dbo.caomobservation,trgposdec,dec of central coordinates,double,deg
+dbo.caomobservation,trgposequinox,equinox of reference frame,double,yr
+dbo.caomobservation,trgposra,ra of central coordinates,double,deg
+dbo.caomobservation,trgredshift,redshift of target,double,n.n
+dbo.caomobservation,trgstandard,target is a standard,boolean,n.n
+dbo.caomobservation,trgtype,target classification from proposal,char,n.n
+dbo.caomobservation,type,type of observation,char,n.n
+dbo.caomplane,accmetachecksum,checksum of metadata in this entity+children,char,n.n
+dbo.caomplane,calibrationlevel,calibration level (-1 through 5),int,n.n
+dbo.caomplane,collection,name of data collection,char,n.n
+dbo.caomplane,creatorid,unique creator identifier for this product,char,n.n
+dbo.caomplane,cstctype,coordinate type for custom axis,char,n.n
+dbo.caomplane,cstdimension,dimensions along custom axis (naxis1),int,n.n
+dbo.caomplane,cstlower,lower bound for custom axis,double,n.n
+dbo.caomplane,cstupper,upper bound for custom axis,double,n.n
+dbo.caomplane,dataproducttype,type of product,char,n.n
+dbo.caomplane,datareadgroups,group identifier for access to data,char,n.n
+dbo.caomplane,datarelease,date of data release,char,n.n
+dbo.caomplane,datarights,current data access rights,char,n.n
+dbo.caomplane,dqflag,data quality,char,n.n
+dbo.caomplane,enrbandpassname,filter name,char,n.n
+dbo.caomplane,enrboundsstcs,interval bounded by observation,char,m
+dbo.caomplane,enrdimension,dimensions along spectral axis (naxis1),int,n.n
+dbo.caomplane,enremband,energy band names,char,n.n
+dbo.caomplane,enrmax,max wavelength,double,d
+dbo.caomplane,enrmin,min wavelength,double,d
+dbo.caomplane,enrresolvingpower,median resolving power,double,m
+dbo.caomplane,enrresolvingpowerlower,lower resolving power,double,m
+dbo.caomplane,enrresolvingpowerupper,upper resolving power,double,m
+dbo.caomplane,enrrestwavelength,wavelength of spectral feature,double,m
+dbo.caomplane,enrsamplesize,median pixel size on spectral axes,double,m
+dbo.caomplane,enrtransition,atom or molecule,char,n.n
+dbo.caomplane,id,unique plane identifier (uuid),char,n.n
+dbo.caomplane,lastmodified,timestamp of last modification of this row,char,n.n
+dbo.caomplane,maxlastmodified,timestamp of last modification of this observation,char,n.n
+dbo.caomplane,metachecksum,checksum of metadata in this entity,char,n.n
+dbo.caomplane,metadatarights,current metadata access rights,char,n.n
+dbo.caomplane,metaproducer,identifier for producer of this entity,char,n.n
+dbo.caomplane,metareadgroups,group identifier for access to metadata,char,n.n
+dbo.caomplane,metarelease,date of metadata release,char,n.n
+dbo.caomplane,midexpdate,datetime of exposure,char,n.n
+dbo.caomplane,mtrbackground,background intensity,double,Jy.pixel**-1
+dbo.caomplane,mtrbackgroundstddev,backgroun standard deviation,double,Jy.pixel**-1
+dbo.caomplane,mtrfluxdensitylimit,flux density limit where s:n=5 for point sources,double,Jy
+dbo.caomplane,mtrmaglimit,ab magnitude limit where s:n=5 for point sources,double,mag
+dbo.caomplane,mtrsamplesnr,sample signal to noise ratio,double,n.n
+dbo.caomplane,mtrsourcenumberdensity,number density of sources per square degree,double,n.n
+dbo.caomplane,observationtid,internal id,long,n.n
+dbo.caomplane,observationuuid,unique observation identifier (uuid),char,n.n
+dbo.caomplane,obsucd,observable axis ucd,char,n.n
+dbo.caomplane,planetid,internal id,long,n.n
+dbo.caomplane,plrdimension,dimensions along polarization axis (naxis1),int,n.n
+dbo.caomplane,plrstate,polarization states,char,n.n
+dbo.caomplane,posboundsstcs,region bounded by observation,char,deg
+dbo.caomplane,posdimension1,dimensions along one spatial axis (naxis1),int,n.n
+dbo.caomplane,posdimension2,dimensions along other spatial axis (naxis2),int,n.n
+dbo.caomplane,posresolution,median spatial resolution (fwhm),double,arcsec
+dbo.caomplane,posresolutionlower,lower spatial resolution (fwhm),double,arcsec
+dbo.caomplane,posresolutionupper,upper spatial resolution (fwhm),double,arcsec
+dbo.caomplane,possamplesize,median pixel size on spatial axes,double,arcsec
+dbo.caomplane,postimedependant,flag that position is time dependant,boolean,n.n
+dbo.caomplane,previewuri,url to download the data preview,char,n.n
+dbo.caomplane,productid,name of this product,char,n.n
+dbo.caomplane,producturi,url to download the data,char,n.n
+dbo.caomplane,prvinputs,inputs to process,char,n.n
+dbo.caomplane,prvkeywords,selected process keywords,char,n.n
+dbo.caomplane,prvlastexecuted,process last executed,char,n.n
+dbo.caomplane,prvname,process that created plane,char,n.n
+dbo.caomplane,prvproducer,source of data,char,n.n
+dbo.caomplane,prvproject,project that created data,char,n.n
+dbo.caomplane,prvreference,external reference url,char,n.n
+dbo.caomplane,prvrunid,process run number,char,n.n
+dbo.caomplane,prvversion,processing software version,char,n.n
+dbo.caomplane,recordcreated,timestamp of first load into database,char,n.n
+dbo.caomplane,recordmodified,timestamp of last modification to database,char,n.n
+dbo.caomplane,releasedate,datetime of release,double,n.n
+dbo.caomplane,statuscode,internal code,int,n.n
+dbo.caomplane,timboundsstcs,interval bounded by observation,char,m
+dbo.caomplane,timdimension,dimensions along time axis (naxis1),int,n.n
+dbo.caomplane,timexposure,median exposure per pixel,double,s
+dbo.caomplane,timmax,mjd observation end,double,d
+dbo.caomplane,timmin,mjd observation start,double,d
+dbo.caomplane,timresolution,median resolution,double,d
+dbo.caomplane,timresolutionlower,lower resolution,double,d
+dbo.caomplane,timresolutionupper,upper resolution,double,d
+dbo.caomplane,timsamplesize,median pixel size on time axes,double,d
+dbo.mastlinks,collection,name of data collection,char,n.n
+dbo.mastlinks,linkcollection,name of linked data collection,char,n.n
+dbo.mastlinks,linktid,unique observation identifier,long,n.n
+dbo.mastlinks,linktype,type of link between observations,char,n.n
+dbo.mastlinks,obstid,unique observation identifier,long,n.n
+dbo.mastlinks,recordcreated,timestamp for the creation of this record,char,n.n
+dbo.mastlinks,recordmodified,timestamp for the last modification of this record,char,n.n
+dbo.mastproductdescription,contenttype,content-type of the product,char,n.n
+dbo.mastproductdescription,dataproducttype,product type (image / spectrum etc),char,n.n
+dbo.mastproductdescription,description,description of the product,char,n.n
+dbo.mastproductdescription,documentationurl,url for extended documentation,char,n.n
+dbo.mastproductdescription,fileextension,file extension,char,n.n
+dbo.mastproductdescription,groupdescription,group description,char,n.n
+dbo.mastproductdescription,instrument,instrument name,char,n.n
+dbo.mastproductdescription,mission,mission the product belongs to,char,n.n
+dbo.mastproductdescription,mrpflag,flag for minimum recommended product,boolean,n.n
+dbo.mastproductdescription,producttype,product type (science / calibration etc),char,n.n
+dbo.mastproductdescription,project,project the product belongs to,char,n.n
+dbo.mastproductdescription,subgroupdescription,subgroup description,char,n.n
+dbo.mastproductdescription,suffix,mission data type,char,n.n
+dbo.mastproductdescription,typeid,unique id for the product description,int,n.n
+dbo.obspointing,calib_level,calibration level (-1 through 5),int,n.n
+dbo.obspointing,dataproduct_type,type of product,char,n.n
+dbo.obspointing,datarights,current data access rights,char,n.n
+dbo.obspointing,dataurl,url to download the data,char,n.n
+dbo.obspointing,em_max,maximum wavelength,double,m
+dbo.obspointing,em_min,minimum wavelength,double,m
+dbo.obspointing,filters,em region,char,n.n
+dbo.obspointing,instrument_name,instrument name,char,n.n
+dbo.obspointing,intenttype,science/calibration purpose,char,n.n
+dbo.obspointing,jpegurl,url to download the data preview,char,n.n
+dbo.obspointing,mtflag,flag for moving target,boolean,n.n
+dbo.obspointing,objid,internal object id,long,n.n
+dbo.obspointing,obs_collection,name of data collection,char,n.n
+dbo.obspointing,obs_id,internal dataset identifier,char,n.n
+dbo.obspointing,obs_title,proposal title,char,n.n
+dbo.obspointing,obsid,internal observation id,long,n.n
+dbo.obspointing,project,project that created plane,char,n.n
+dbo.obspointing,proposal_id,collection specific proposal identifier,char,n.n
+dbo.obspointing,proposal_pi,proposal principal investigator name,char,n.n
+dbo.obspointing,proposal_type,project that created observation,char,n.n
+dbo.obspointing,provenance_name,process that created plane,char,n.n
+dbo.obspointing,s_dec,dec of central coordinates,double,deg
+dbo.obspointing,s_ra,ra of central coordinates,double,deg
+dbo.obspointing,s_region,region bounded by observation,char,n.n
+dbo.obspointing,sequence_number,sequence number assigned by observatory,int,n.n
+dbo.obspointing,srcden,estimated source density per square degree,double,n.n
+dbo.obspointing,t_exptime,total exposure time,double,s
+dbo.obspointing,t_max,observation end mjd,double,d
+dbo.obspointing,t_min,observation start mjd,double,d
+dbo.obspointing,t_obs_release,release date mjd,double,n.n
+dbo.obspointing,target_classification,target classification from proposal,char,n.n
+dbo.obspointing,target_name,name of target,char,n.n
+dbo.obspointing,wavelength_region,em region,char,n.n
+ivoa.obscore,access_estsize,estimated size of download,long,kbyte
+ivoa.obscore,access_format,format of the data file(s),char,n.n
+ivoa.obscore,access_url,url to download the data,char,n.n
+ivoa.obscore,calib_level,calibration level (-1 through 5),int,n.n
+ivoa.obscore,dataproduct_type,type of product,char,n.n
+ivoa.obscore,em_max,maximum wavelength,double,m
+ivoa.obscore,em_min,minimum wavelength,double,m
+ivoa.obscore,em_res_power,typical spectral resolution,double,n.n
+ivoa.obscore,em_xel,dimensions along energy axis (naxis),int,n.n
+ivoa.obscore,facility_name,telescope name,char,n.n
+ivoa.obscore,instrument_name,instrument name,char,n.n
+ivoa.obscore,o_ucd,ucd describing observable axis,char,n.n
+ivoa.obscore,objid,primary key,long,n.n
+ivoa.obscore,obs_collection,name of data collection,char,n.n
+ivoa.obscore,obs_id,internal dataset identifier,char,n.n
+ivoa.obscore,obs_publisher_did,publisher dataset identifier,char,n.n
+ivoa.obscore,pol_states,polarization states in data,char,n.n
+ivoa.obscore,pol_xel,dimensions along polarization axis,int,n.n
+ivoa.obscore,s_dec,dec of central coordinates,double,deg
+ivoa.obscore,s_fov,size of region covered,double,deg
+ivoa.obscore,s_ra,ra of central coordinates,double,deg
+ivoa.obscore,s_region,region bounded by observation,char,n.n
+ivoa.obscore,s_resolution,typical spatial resolution,double,arcsec
+ivoa.obscore,s_xel1,dimensions along one spatial axis (naxis1),int,n.n
+ivoa.obscore,s_xel2,dimensions along other spatial axis (naxis2),int,n.n
+ivoa.obscore,t_exptime,total exposure time,double,s
+ivoa.obscore,t_max,observation end mjd,double,d
+ivoa.obscore,t_min,observation start mjd,double,d
+ivoa.obscore,t_resolution,typical temporal resolution,double,s
+ivoa.obscore,t_xel,dimensions along time axis (naxis),int,n.n
+ivoa.obscore,target_name,name of target,char,n.n
+tap_schema.columns,arraysize,Length of variable length char strings,char,
+tap_schema.columns,column_index,recommended column ordering,int,
+tap_schema.columns,column_name,Column name,char,
+tap_schema.columns,datatype,ADQL datatype,char,
+tap_schema.columns,description,Brief description of column,char,
+tap_schema.columns,indexed,Whether there is an index on this column,int,
+tap_schema.columns,principal,Whether the column is a principal key,int,
+tap_schema.columns,"""size""",Length of variable length datatypes,int,
+tap_schema.columns,std,Whether there is a standard column for the data model,int,
+tap_schema.columns,table_name,Fully qualified table name,char,
+tap_schema.columns,ucd,UCD of column if any,char,
+tap_schema.columns,unit,Unit in VO standard format,char,
+tap_schema.columns,utype,Utype of column if any,char,
+tap_schema.columns,xtype,extended datatype,char,
+tap_schema.key_columns,from_column,Key column in the from table,char,
+tap_schema.key_columns,key_id,Key identifier from TAP_SCHEMA.keys,char,
+tap_schema.key_columns,target_column,Key column in the target table,char,
+tap_schema.keys,description,Description of this key,char,
+tap_schema.keys,from_table,Fully qualified table name,char,
+tap_schema.keys,key_id,Unique key identifier,char,
+tap_schema.keys,target_table,Fully qualified table name,char,
+tap_schema.keys,utype,Utype of this key,char,
+tap_schema.schemas,description,Brief description of the schema,char,
+tap_schema.schemas,schema_index,index value,int,
+tap_schema.schemas,schema_name,Fully qualified schema name,char,
+tap_schema.schemas,utype,Utype if schema corresponds to a data model,char,
+tap_schema.tables,description,Brief description of the table,char,
+tap_schema.tables,schema_name,Fully qualified schema name,char,
+tap_schema.tables,table_index,index value,int,
+tap_schema.tables,table_name,Fully qualified table name,char,
+tap_schema.tables,table_type,"One of: table, view",char,
+tap_schema.tables,utype,Utype if this table corresponds to a data model,char,
