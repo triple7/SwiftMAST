@@ -1,21 +1,35 @@
 #!/usr/bin/env python3
-"""Qualify and select MAST mosaics for a multi-filter composite.
+"""Qualify, select, and visualize MAST mosaics for a multi-filter composite.
 
 Phase 1 (``qualify``) performs TAP metadata queries and creates a reviewable
 set of observation groups. Phase 2 (``select``) is offline: it reads Phase 1,
 applies group-aware greedy selection, and emits a Phase 3 download manifest.
+``render`` plots the selected CAOM sky footprints and their colour assignments.
 No FITS pixels are downloaded by this script.
+
+Example::
+
+    python Sources/scripts/mast_composite_pipeline.py render \
+      --input research/pipeline-runs/ngc628/phase-2-download-manifest.json \
+      --color-by filter
+
+The renderer can colour footprints by ``filter``, ``observation-group``, or
+``mission``. Observation-group mode resets the AOSImage fallback palette in
+each image stack, so the overlapping product colours preview that stack's
+composition.
 """
 
 from __future__ import annotations
 
 import argparse
+import colorsys
 import csv
 import hashlib
 import importlib.util
 import json
 import logging
 import math
+import re
 import statistics
 import sys
 from collections import Counter, defaultdict
@@ -27,7 +41,10 @@ import matplotlib
 
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
+from matplotlib.colors import to_hex, to_rgba
+from matplotlib.lines import Line2D
 from matplotlib.patches import Circle as MatCircle
+from matplotlib.patches import Patch
 from matplotlib.patches import Polygon as MatPolygon
 
 
@@ -46,6 +63,14 @@ EXTRA_COLUMNS = (
     "a.contentchecksum AS contentchecksum",
     *(f"{expression} AS {name}" for name, expression in QUALITY_COLUMNS),
 )
+COLOR_BY_OPTIONS = ("filter", "observation-group", "mission")
+MISSION_COLORS = {
+    "JWST": "#CC79A7",
+    "HST": "#0072B2",
+    "HLA": "#E69F00",
+}
+FALLBACK_COLOR = "#009E73"
+HEX_COLOR = re.compile(r"^#?[0-9A-Fa-f]{6}$")
 
 
 def load_greedy():
@@ -817,6 +842,548 @@ def plot_beauty(path: Path, tap, grid, selected: list[dict[str, Any]], target_co
     plt.close(figure)
 
 
+def natural_key(value: str) -> tuple[Any, ...]:
+    """Sort names containing numbers in the order a person expects."""
+
+    return tuple(
+        int(part) if part.isdigit() else part.upper()
+        for part in re.split(r"(\d+)", value)
+    )
+
+
+def distributed_color(index: int, count: int) -> tuple[float, str]:
+    """Return the fallback colour used by AOSImage's distributed HSV palette."""
+
+    hue = ((300.0 - 180.0 / count) + index / count * 360.0 + 360.0) % 360.0
+    red, green, blue = colorsys.hsv_to_rgb(hue / 360.0, 1.0, 1.0)
+    return hue, to_hex((red, green, blue), keep_alpha=False).upper()
+
+
+def load_preferred_colors(path: Path | None) -> dict[str, str]:
+    """Load optional category-to-hex overrides for the footprint renderer."""
+
+    if path is None:
+        return {}
+    decoded = read_json(path.expanduser().resolve())
+    if not isinstance(decoded, dict):
+        raise ValueError("--preferred-colors must contain a JSON object")
+    colors: dict[str, str] = {}
+    for raw_key, raw_color in decoded.items():
+        key = str(raw_key)
+        color = str(raw_color)
+        if HEX_COLOR.fullmatch(color) is None:
+            raise ValueError(
+                f"invalid preferred colour for {key!r}: {color!r}; use #RRGGBB"
+            )
+        colors[key] = "#" + color.lstrip("#").upper()
+    return colors
+
+
+def render_product_identity(product: dict[str, Any]) -> str:
+    """Return a stable identifier for one selected science product."""
+
+    uri = str(product.get("datauri") or "").strip()
+    if uri:
+        return uri
+    return "\x1f".join(
+        str(product.get(key) or "")
+        for key in ("obs_collection", "obs_id", "instrument_name", "filters")
+    )
+
+
+def render_group_identity(product: dict[str, Any]) -> str:
+    """Return the observation-stack identity stored by Phase 1/2."""
+
+    explicit = str(product.get("observation_group_id") or "").strip()
+    if explicit:
+        return explicit
+    return ":".join(
+        (
+            str(product.get("obs_collection") or "UNKNOWN").upper(),
+            str(product.get("instrument_name") or "UNKNOWN").upper(),
+            str(product.get("observation_key") or product.get("obs_id") or "UNKNOWN"),
+        )
+    )
+
+
+def selected_drawables(tap, products: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Parse Phase 2 products into drawable CAOM footprint records."""
+
+    drawables = []
+    seen: set[str] = set()
+    for product in products:
+        identity = render_product_identity(product)
+        if identity in seen:
+            LOGGER.warning("Skipping duplicate selected product datauri=%s", identity)
+            continue
+        seen.add(identity)
+        shapes = tap.parse_s_region(footprint_text(product))
+        if shapes is None:
+            LOGGER.warning("Skipping selected product with invalid footprint datauri=%s", identity)
+            continue
+        filters = tuple(sorted(tap.filter_keys(product.get("filters")), key=natural_key))
+        drawables.append(
+            {
+                "identity": identity,
+                "product": product,
+                "mission": str(product.get("obs_collection") or "UNKNOWN").upper(),
+                "group": render_group_identity(product),
+                "filters": filters or ("UNKNOWN",),
+                "shapes": shapes,
+            }
+        )
+    return drawables
+
+
+def drawable_order(drawable: dict[str, Any]) -> tuple[Any, ...]:
+    """Provide stable ordering within an observation stack."""
+
+    product = drawable["product"]
+    rank = int(finite_number(product.get("selection_rank")) or 1_000_000)
+    return (
+        rank,
+        natural_key("+".join(drawable["filters"])),
+        natural_key(str(product.get("obs_id") or "")),
+        drawable["identity"],
+    )
+
+
+def render_color_plan(
+    drawables: list[dict[str, Any]],
+    color_by: str,
+    preferred_colors: dict[str, str],
+) -> tuple[dict[str, tuple[str, ...]], dict[str, dict[str, Any]]]:
+    """Assign global colours or AOSImage group-local colours to products."""
+
+    assignments: dict[str, tuple[str, ...]] = {}
+    usage: Counter[str] = Counter()
+    entries: dict[str, dict[str, Any]] = {}
+
+    if color_by == "observation-group":
+        groups: dict[str, list[dict[str, Any]]] = defaultdict(list)
+        for drawable in drawables:
+            groups[drawable["group"]].append(drawable)
+        for group in sorted(groups, key=natural_key):
+            members = sorted(groups[group], key=drawable_order)
+            count = len(members)
+            for index, drawable in enumerate(members):
+                preferred_key = next(
+                    (
+                        key
+                        for key in (
+                            drawable["identity"],
+                            group,
+                            *drawable["filters"],
+                        )
+                        if key in preferred_colors
+                    ),
+                    None,
+                )
+                if preferred_key is None:
+                    key = f"N{count}:P{index + 1}"
+                    hue, color = distributed_color(index, count)
+                    label = f"{count} products / position {index + 1}"
+                    source = "aosimage_group_local_hsv"
+                else:
+                    key = f"preferred:{preferred_key}"
+                    hue = None
+                    color = preferred_colors[preferred_key]
+                    label = f"Preferred {preferred_key}"
+                    source = "preferred_hex"
+                assignments[drawable["identity"]] = (key,)
+                usage[key] += 1
+                entries.setdefault(
+                    key,
+                    {
+                        "key": key,
+                        "label": label,
+                        "color": color,
+                        "hue_degrees": round(hue, 9) if hue is not None else None,
+                        "source": source,
+                        "product_count": 0,
+                    },
+                )
+        for key, count in usage.items():
+            entries[key]["product_count"] = count
+        return assignments, entries
+
+    if color_by == "mission":
+        categories = sorted({drawable["mission"] for drawable in drawables}, key=natural_key)
+    else:
+        categories = sorted(
+            {name for drawable in drawables for name in drawable["filters"]},
+            key=natural_key,
+        )
+    for index, category in enumerate(categories):
+        if color_by == "mission":
+            hue = None
+            color = MISSION_COLORS.get(category, FALLBACK_COLOR)
+            source = "fixed_mission_palette"
+        else:
+            hue, color = distributed_color(index, len(categories))
+            source = "aosimage_distributed_hsv"
+        if category in preferred_colors:
+            color = preferred_colors[category]
+            source = "preferred_hex"
+        entries[category] = {
+            "key": category,
+            "label": category,
+            "color": color,
+            "hue_degrees": round(hue, 9) if hue is not None else None,
+            "source": source,
+            "product_count": 0,
+        }
+    for drawable in drawables:
+        keys = (
+            (drawable["mission"],)
+            if color_by == "mission"
+            else tuple(drawable["filters"])
+        )
+        assignments[drawable["identity"]] = keys
+        for key in keys:
+            entries[key]["product_count"] += 1
+    return assignments, entries
+
+
+def local_offset(
+    ra: float,
+    dec: float,
+    center_ra: float,
+    center_dec: float,
+) -> tuple[float, float]:
+    """Project ICRS coordinates to small-angle offsets in arcminutes."""
+
+    wrapped_ra = (ra - center_ra + 180.0) % 360.0 - 180.0
+    return (
+        wrapped_ra * math.cos(math.radians(center_dec)) * 60.0,
+        (dec - center_dec) * 60.0,
+    )
+
+
+def render_shape_bounds(
+    shape: str,
+    numbers: tuple[float, ...],
+    center_ra: float,
+    center_dec: float,
+) -> tuple[float, float, float, float]:
+    """Return local bounds for a CAOM circle or polygon."""
+
+    if shape == "CIRCLE":
+        x, y = local_offset(numbers[0], numbers[1], center_ra, center_dec)
+        radius = numbers[2] * 60.0
+        return x - radius, x + radius, y - radius, y + radius
+    points = [
+        local_offset(numbers[index], numbers[index + 1], center_ra, center_dec)
+        for index in range(0, len(numbers), 2)
+    ]
+    xs = [point[0] for point in points]
+    ys = [point[1] for point in points]
+    return min(xs), max(xs), min(ys), max(ys)
+
+
+def add_render_shape(
+    axis,
+    shape: str,
+    numbers: tuple[float, ...],
+    center_ra: float,
+    center_dec: float,
+    *,
+    edgecolor: str,
+    facecolor: str,
+    edge_alpha: float,
+    face_alpha: float,
+    linewidth: float,
+    zorder: int,
+) -> None:
+    """Add one projected CAOM shape to a Matplotlib axis."""
+
+    style = {
+        "edgecolor": to_rgba(edgecolor, edge_alpha),
+        "facecolor": to_rgba(facecolor, face_alpha),
+        "linewidth": linewidth,
+        "zorder": zorder,
+    }
+    if shape == "CIRCLE":
+        x, y = local_offset(numbers[0], numbers[1], center_ra, center_dec)
+        axis.add_patch(MatCircle((x, y), numbers[2] * 60.0, **style))
+        return
+    points = [
+        local_offset(numbers[index], numbers[index + 1], center_ra, center_dec)
+        for index in range(0, len(numbers), 2)
+    ]
+    axis.add_patch(MatPolygon(points, closed=True, **style))
+
+
+def read_render_input(path: Path) -> tuple[dict[str, Any], list[dict[str, Any]], dict[str, Any]]:
+    """Read a compatible Phase 2 selection or download manifest."""
+
+    report = read_json(path)
+    artifact = report.get("artifact")
+    if artifact == "mast-composite-phase-2-selection":
+        config = report.get("configuration") or {}
+        position = {
+            "target": config.get("target"),
+            "ra": config.get("ra"),
+            "dec": config.get("dec"),
+            "radius_degrees": config.get("radius_degrees"),
+        }
+    elif artifact == "mast-composite-download-manifest":
+        position = {"target": report.get("target"), **(report.get("position") or {})}
+    else:
+        raise ValueError(
+            "--input must be a Phase 2 selection or Phase 2 download manifest"
+        )
+    try:
+        normalized = {
+            "target": str(position.get("target") or "Coordinate target"),
+            "ra": float(position["ra"]),
+            "dec": float(position["dec"]),
+            "radius_degrees": float(position["radius_degrees"]),
+        }
+    except (KeyError, TypeError, ValueError) as error:
+        raise ValueError("render input is missing a valid target position") from error
+    products = report.get("selected_products")
+    if not isinstance(products, list) or not products:
+        raise ValueError("render input contains no selected products")
+    return normalized, products, report.get("summary") or {}
+
+
+def render_product_label(drawable: dict[str, Any], label_by: str) -> str:
+    """Return the optional short label drawn at a product centre."""
+
+    product = drawable["product"]
+    if label_by == "rank":
+        return str(product.get("selection_rank") or "")
+    if label_by == "filter":
+        return "+".join(drawable["filters"])
+    if label_by == "group":
+        return str(product.get("observation_group") or drawable["group"].split(":")[-1])
+    return ""
+
+
+def run_render(args: argparse.Namespace) -> int:
+    """Render selected Phase 2 products without querying TAP or reading FITS."""
+
+    tap = load_greedy()
+    input_path = args.input.expanduser().resolve()
+    position, products, summary = read_render_input(input_path)
+    drawables = selected_drawables(tap, products)
+    if not drawables:
+        raise ValueError("none of the selected products has a drawable CAOM footprint")
+    skipped = len(products) - len(drawables)
+    preferred = load_preferred_colors(args.preferred_colors)
+    assignments, color_entries = render_color_plan(
+        drawables, args.color_by, preferred
+    )
+
+    center_ra = position["ra"]
+    center_dec = position["dec"]
+    radius_arcminutes = position["radius_degrees"] * 60.0
+    bounds = [
+        render_shape_bounds(shape, numbers, center_ra, center_dec)
+        for drawable in drawables
+        for shape, numbers in drawable["shapes"]
+    ]
+    bounds.append(
+        (-radius_arcminutes, radius_arcminutes, -radius_arcminutes, radius_arcminutes)
+    )
+    minimum_x = min(bound[0] for bound in bounds)
+    maximum_x = max(bound[1] for bound in bounds)
+    minimum_y = min(bound[2] for bound in bounds)
+    maximum_y = max(bound[3] for bound in bounds)
+    padding = max(maximum_x - minimum_x, maximum_y - minimum_y) * 0.055
+
+    figure, axis = plt.subplots(figsize=(11, 9))
+    axis.add_patch(
+        MatCircle(
+            (0.0, 0.0),
+            radius_arcminutes,
+            facecolor="#ECEFF1",
+            edgecolor="#222222",
+            linewidth=1.4,
+            linestyle=(0, (5, 4)),
+            alpha=0.55,
+            zorder=0,
+        )
+    )
+    for drawable in drawables:
+        keys = assignments[drawable["identity"]]
+        colors = [color_entries[key]["color"] for key in keys]
+        for shape, numbers in drawable["shapes"]:
+            add_render_shape(
+                axis,
+                shape,
+                numbers,
+                center_ra,
+                center_dec,
+                edgecolor=colors[0],
+                facecolor=colors[0],
+                edge_alpha=0.0,
+                face_alpha=0.16,
+                linewidth=0.0,
+                zorder=2,
+            )
+            for layer, color in enumerate(reversed(colors)):
+                add_render_shape(
+                    axis,
+                    shape,
+                    numbers,
+                    center_ra,
+                    center_dec,
+                    edgecolor=color,
+                    facecolor=color,
+                    edge_alpha=0.8,
+                    face_alpha=0.0,
+                    linewidth=1.0 + 0.65 * (len(colors) - layer - 1),
+                    zorder=3,
+                )
+        label = render_product_label(drawable, args.label_by)
+        if label:
+            product = drawable["product"]
+            ra = finite_number(product.get("s_ra"))
+            dec = finite_number(product.get("s_dec"))
+            if ra is not None and dec is not None:
+                x, y = local_offset(ra, dec, center_ra, center_dec)
+                axis.annotate(
+                    label,
+                    (x, y),
+                    fontsize=6.5,
+                    ha="center",
+                    va="center",
+                    color="#263238",
+                    zorder=5,
+                )
+
+    groups = {drawable["group"] for drawable in drawables}
+    filters = {name for drawable in drawables for name in drawable["filters"]}
+    selected_mib = float(summary.get("selected_size_mib") or 0.0)
+    coverage = 100.0 * float(summary.get("coverage_fraction") or 0.0)
+    axis.scatter([0.0], [0.0], marker="+", s=42, linewidths=1.4, color="#222222", zorder=6)
+    axis.set_title(
+        f"{position['target']} selected science-product footprints\n"
+        f"{len(drawables)} products • {len(groups)} observation groups • "
+        f"{len(filters)} filters • {selected_mib:.1f} MiB • {coverage:.2f}% coverage",
+        fontsize=13,
+        pad=12,
+    )
+    axis.set_xlabel("Right-ascension offset (arcmin; east is left)")
+    axis.set_ylabel("Declination offset (arcmin)")
+    axis.set_xlim(maximum_x + padding, minimum_x - padding)
+    axis.set_ylim(minimum_y - padding, maximum_y + padding)
+    axis.set_aspect("equal", adjustable="box")
+    axis.grid(True, color="#B0BEC5", linewidth=0.45, alpha=0.36)
+    axis.set_axisbelow(True)
+
+    ordered_entries = sorted(color_entries.values(), key=lambda item: natural_key(item["key"]))
+    legend_limit = 36
+    visible_entries = ordered_entries[:legend_limit]
+    handles = [
+        Patch(
+            facecolor=entry["color"],
+            edgecolor=entry["color"],
+            alpha=0.45,
+            label=f"{entry['label']} ({entry['product_count']})",
+        )
+        for entry in visible_entries
+    ]
+    if len(visible_entries) < len(ordered_entries):
+        handles.append(
+            Line2D(
+                [],
+                [],
+                color="none",
+                label=f"+{len(ordered_entries) - len(visible_entries)} more in colour-key JSON",
+            )
+        )
+    handles.append(
+        Line2D(
+            [0],
+            [0],
+            color="#222222",
+            linewidth=1.4,
+            linestyle=(0, (5, 4)),
+            label="Target boundary",
+        )
+    )
+    figure.legend(
+        handles=handles,
+        loc="lower center",
+        bbox_to_anchor=(0.5, 0.015),
+        ncol=min(6, max(1, len(handles))),
+        frameon=False,
+        fontsize=8,
+        title=f"Colour by {args.color_by}; number in parentheses is selected-product usage",
+        title_fontsize=9,
+    )
+    figure.subplots_adjust(bottom=0.19)
+
+    output = (
+        args.output.expanduser().resolve()
+        if args.output is not None
+        else input_path.with_name("phase-2-selected-product-footprints.png")
+    )
+    color_key_output = (
+        args.color_key_output.expanduser().resolve()
+        if args.color_key_output is not None
+        else output.with_name(f"{output.stem}-colors.json")
+    )
+    output.parent.mkdir(parents=True, exist_ok=True)
+    figure.savefig(output, dpi=args.dpi, facecolor="white", bbox_inches="tight")
+    svg_output = args.svg_output.expanduser().resolve() if args.svg_output else None
+    if svg_output is not None:
+        svg_output.parent.mkdir(parents=True, exist_ok=True)
+        figure.savefig(svg_output, format="svg", facecolor="white", bbox_inches="tight")
+    plt.close(figure)
+
+    product_assignments = []
+    for drawable in sorted(drawables, key=drawable_order):
+        keys = assignments[drawable["identity"]]
+        product = drawable["product"]
+        product_assignments.append(
+            {
+                "selection_rank": product.get("selection_rank"),
+                "datauri": product.get("datauri"),
+                "observation_group": drawable["group"],
+                "mission": drawable["mission"],
+                "filters": list(drawable["filters"]),
+                "palette_keys": list(keys),
+                "colors": [color_entries[key]["color"] for key in keys],
+            }
+        )
+    color_payload = {
+        "schema_version": SCHEMA_VERSION,
+        "artifact": "mast-composite-selected-product-render",
+        "source": str(input_path),
+        "color_by": args.color_by,
+        "fallback_formula": "hue = (300 - 180/count + index * 360/count) mod 360",
+        "categories": ordered_entries,
+        "products": product_assignments,
+    }
+    write_json(color_key_output, color_payload)
+    render_summary = {
+        "input": str(input_path),
+        "output": str(output),
+        "svg_output": str(svg_output) if svg_output is not None else None,
+        "color_key_output": str(color_key_output),
+        "color_by": args.color_by,
+        "selected_product_count": len(products),
+        "rendered_product_count": len(drawables),
+        "skipped_product_count": skipped,
+        "observation_group_count": len(groups),
+        "filter_count": len(filters),
+    }
+    LOGGER.info(
+        "Render complete products=%s groups=%s filters=%s color_by=%s output=%s",
+        len(drawables),
+        len(groups),
+        len(filters),
+        args.color_by,
+        output,
+    )
+    print(json.dumps(render_summary, indent=2))
+    return 0
+
+
 def run_select(args: argparse.Namespace) -> int:
     tap = load_greedy()
     input_path = args.input.expanduser().resolve()
@@ -1191,7 +1758,10 @@ def positive_int(value: str) -> int:
 
 
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description=__doc__)
+    parser = argparse.ArgumentParser(
+        description=__doc__,
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
     parser.add_argument("--log-level", choices=("DEBUG", "INFO", "WARNING", "ERROR"), default="INFO")
     subparsers = parser.add_subparsers(dest="command", required=True)
 
@@ -1223,6 +1793,68 @@ def build_parser() -> argparse.ArgumentParser:
     select.add_argument("--size-penalty-exponent", type=float, default=1.0)
     select.add_argument("--grid-dimension", type=positive_int, default=48)
     select.set_defaults(func=run_select)
+
+    render = subparsers.add_parser(
+        "render",
+        help="Visualize the selected Phase 2 science-product footprints",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""Examples:
+  # Colour every selected footprint by filter (default)
+  mast_composite_pipeline.py render --input phase-2-download-manifest.json
+
+  # Preview each observation stack with the AOSImage group-local palette
+  mast_composite_pipeline.py render --input phase-2-selection.json \\
+    --color-by observation-group --label-by rank
+
+The command uses only saved Phase 2 metadata. It does not query TAP or
+download/open FITS pixel data.
+""",
+    )
+    render.add_argument(
+        "--input",
+        type=Path,
+        required=True,
+        help="Phase 2 selection JSON or Phase 2 download manifest.",
+    )
+    render.add_argument(
+        "--output",
+        type=Path,
+        help="PNG/PDF/SVG output; defaults beside the input manifest.",
+    )
+    render.add_argument(
+        "--svg-output",
+        type=Path,
+        help="Optional additional vector SVG output.",
+    )
+    render.add_argument(
+        "--color-by",
+        choices=COLOR_BY_OPTIONS,
+        default="filter",
+        help="Colour footprints by filter, observation-group stack, or mission.",
+    )
+    render.add_argument(
+        "--preferred-colors",
+        type=Path,
+        help="Optional JSON object mapping filters/categories to #RRGGBB colours.",
+    )
+    render.add_argument(
+        "--color-key-output",
+        type=Path,
+        help="Colour/product assignment JSON; defaults beside the rendered image.",
+    )
+    render.add_argument(
+        "--label-by",
+        choices=("none", "rank", "filter", "group"),
+        default="none",
+        help="Optional label drawn at each product centre (default: none).",
+    )
+    render.add_argument(
+        "--dpi",
+        type=positive_int,
+        default=180,
+        help="Raster output resolution (default: 180).",
+    )
+    render.set_defaults(func=run_render)
     return parser
 
 

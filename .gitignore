@@ -16,6 +16,7 @@ __pycache__/
 
 research/fit-headers/*.key
 research/mastFiles
+research/pipeline-runs/
 
 # Local research notes that should not be published
 Documentation/.local/
