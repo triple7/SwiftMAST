@@ -10,9 +10,9 @@ SCRIPT = (
     Path(__file__).parents[2]
     / "Sources"
     / "scripts"
-    / "download_mast_selection_adaptive.py"
+    / "download_mast_selection.py"
 )
-SPEC = importlib.util.spec_from_file_location("download_mast_selection_adaptive", SCRIPT)
+SPEC = importlib.util.spec_from_file_location("download_mast_selection", SCRIPT)
 assert SPEC is not None and SPEC.loader is not None
 MODULE = importlib.util.module_from_spec(SPEC)
 sys.modules[SPEC.name] = MODULE
@@ -24,6 +24,24 @@ def card(keyword: str, value: str) -> bytes:
 
 
 class AdaptiveDownloadTests(unittest.TestCase):
+    def test_explicit_adaptive_subcommand(self) -> None:
+        args = MODULE.build_parser().parse_args(
+            ["adaptive", "--manifest", "phase-2-download-manifest.json"]
+        )
+
+        self.assertEqual(args.command, "adaptive")
+        self.assertIs(args.func, MODULE.run_adaptive)
+        self.assertEqual(args.min_preview_width, 1024)
+
+    def test_legacy_arguments_route_to_fits_subcommand(self) -> None:
+        normalized = MODULE.normalized_cli_args(
+            ["--manifest", "phase-2-download-manifest.json", "--dry-run"]
+        )
+        args = MODULE.build_parser().parse_args(normalized)
+
+        self.assertEqual(args.command, "fits")
+        self.assertIs(args.func, MODULE.run_fits)
+
     def test_fits_header_parser_reads_dimensions_and_padding(self) -> None:
         data = b"".join(
             (
