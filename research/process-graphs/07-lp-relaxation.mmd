@@ -1,0 +1,31 @@
+flowchart TD
+  readCsv["Read the group CSV. Keep qualifies True. representativeIDs collapse identical token sets. tokens come from the ID columns. averageFileBytes = totalBytes divided by observationIDCount. groupCount = qualified rows containing the filter."]
+  channelCount["channelCount is a caller integer, default 3. It can be smaller than 10 because IDs may be left out."]
+  vars["Create fractions from 0 to 1: include of row and ID, assign of filter and channel, link of row, ID, token, and channel."]
+  oneChannel["For each filter, the sum of assign over channels is at most 1. A sum of 0 means the filter is unused."]
+  mustColor["For each representative ID and each of its tokens, include is at most the sum of assign over channels for that token."]
+  linkBounds["For each row, ID, token, and channel: link is at most include, link is at most assign, and link is at least include + assign - 1. Those three bounds force link to equal the product."]
+  onePerGroup["For each row and channel, the sum of link over every ID and token in the row is at most 1. A dual-token ID occupies one channel per token."]
+  budget["The sum of include times averageFileBytes is at most budgetBytes."]
+  objective["Maximize the sum of include times weight. weight of an ID = the sum of groupCount over its tokens."]
+  solve["Solve the linear program."]
+  chosen["chosenChannel = the channel with the largest assign. Tie: smaller channel index. NONE when every assign for that filter is 0."]
+  sortIds["Sort representative IDs by include descending, then observationID ascending."]
+  spentInit["spent = 0. heldChannels of each row = empty."]
+  moreGate{"Another ID in that order?"}
+  noneGate{"chosenChannel of any of its tokens is NONE?"}
+  skipId["Skip the ID."]
+  clashGate{"Its chosen channels overlap heldChannels of its row?"}
+  priceGate{"spent + averageFileBytes at most budgetBytes, and maxBytes of the row at most budgetBytes minus spent?"}
+  takeId["Take the ID. spent = spent + averageFileBytes. Add its chosen channels to heldChannels."]
+  done["Output: the rounded ID list and chosenChannel. This rounding does not require 3 channels in every opened row."]
+
+  readCsv --> channelCount --> vars --> oneChannel --> mustColor --> linkBounds --> onePerGroup --> budget --> objective --> solve --> chosen --> sortIds --> spentInit --> moreGate
+  moreGate -->|no| done
+  moreGate -->|yes| noneGate
+  noneGate -->|yes| skipId --> moreGate
+  noneGate -->|no| clashGate
+  clashGate -->|yes| skipId
+  clashGate -->|no| priceGate
+  priceGate -->|no| skipId
+  priceGate -->|yes| takeId --> moreGate

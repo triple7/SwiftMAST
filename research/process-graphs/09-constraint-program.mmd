@@ -1,0 +1,15 @@
+flowchart TD
+  readCsv["Read the group CSV. Keep qualifies True. Compute representativeIDs, tokens, averageFileBytes = totalBytes divided by observationIDCount, groupCount, and adjacent pairs."]
+  rank["frequencyRank of a filter = 1 + how many filters have a strictly larger groupCount. Equal groupCount values share a rank. F555W has rank 1."]
+  top["primaryRankLimit is a caller integer, default 5. topFilters = filters whose frequencyRank is at most that limit."]
+  model["Build the same 0-1 model as option 08, including opened at least primaryChannelCount IDs, the budget on averageFileBytes, and minimumGroupsPerChannel."]
+  gate["For each channel index from 0 up to primaryChannelCount minus 1, default the first 3 channels: the sum of assign over topFilters on that channel is at least 1."]
+  meaning["Each primary hue is held by at least one common filter. A rare filter receives that hue only when it is not adjacent to the top filter placed on that hue. F555W, F814W, and F435W are pairwise adjacent, so they land on three different primary hues."]
+  solver["Solve with OR-Tools CP-SAT. Objective is the same three steps: most opened rows, then most colored filters, then smallest sum of include times averageFileBytes."]
+  feasible{"Does a solution satisfy the rank gate?"}
+  infeasible["Report infeasible. Do not widen primaryRankLimit automatically."]
+  done["Output: the same binaries as option 08, with the rank gate satisfied."]
+
+  readCsv --> rank --> top --> model --> gate --> meaning --> solver --> feasible
+  feasible -->|no| infeasible
+  feasible -->|yes| done

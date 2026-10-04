@@ -1,0 +1,32 @@
+flowchart TD
+  readCsv["Read the group CSV. Keep qualifies True. representativeIDs collapse identical token sets. averageFileBytes = totalBytes divided by observationIDCount."]
+  binOf["channelOf = binOf from the same edges as option 05. Default edges: 0, 300, 450, 600, 800, 2000, 5000, 30000 nm. This chart does not reuse option 05's purchased rows."]
+  assigned{"Every token of this representative ID has a bin?"}
+  dropId["Drop the ID."]
+  item["Make one item. channels = the set of channelOf for its tokens. estimatedPrice = averageFileBytes of its row. The same price applies to every item from that row."]
+  bonus["completionBonus is a caller number, default 3."]
+  state["spent = 0. heldChannels of each row = empty. purchased = empty."]
+  valueAdded["added = channels of the item minus heldChannels of its row."]
+  valueGate{"Is added empty?"}
+  valueZero["value = 0."]
+  valuePos["base = size of added. before = size of heldChannels. after = size of heldChannels union channels. bonus = completionBonus when before is under primaryChannelCount and after reaches it, default threshold 3. Otherwise bonus = 0. value = base + bonus."]
+  fitsPrice{"estimatedPrice less than or equal to budgetBytes minus spent?"}
+  fitsMax{"maxBytes of the row less than or equal to budgetBytes minus spent? maxBytes is the guard, because the true size of this one file is unknown and is at most maxBytes."}
+  reject["Item is not a candidate."]
+  ratio["ratio = value divided by estimatedPrice. Unit is per byte."]
+  anyGate{"Any unpurchased item with value greater than 0 that fits both checks?"}
+  pick["Take the item with the largest ratio, then the largest value, then observationID alphabetically, then observationGroup alphabetically."]
+  update["Add the item to purchased. spent = spent + estimatedPrice. Add its channels to heldChannels of its row."]
+  done["Output: purchased, spent, and channelOf."]
+
+  readCsv --> binOf --> assigned
+  assigned -->|no| dropId
+  assigned -->|yes| item --> bonus --> state --> valueAdded --> valueGate
+  valueGate -->|yes| valueZero --> reject
+  valueGate -->|no| valuePos --> fitsPrice
+  fitsPrice -->|no| reject
+  fitsPrice -->|yes| fitsMax
+  fitsMax -->|no| reject
+  fitsMax -->|yes| ratio --> anyGate
+  anyGate -->|no| done
+  anyGate -->|yes| pick --> update --> valueAdded

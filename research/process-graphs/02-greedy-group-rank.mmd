@@ -1,0 +1,39 @@
+flowchart TD
+  readCsv["Read the group CSV."]
+  qualGate{"qualifies equals True?"}
+  dropRow["Drop the row."]
+  scoreStep["score = filterCount divided by totalBytes divided by 1048576. Numerator is the filterCount column. Denominator is totalBytes in mebibytes. 1048576 = 1024 times 1024."]
+  sortStep["Sort qualified rows by score descending, then observationGroup ascending."]
+  spentInit["spent = 0. acceptedRows = empty."]
+  moreGate{"Another row in that sort order?"}
+  fitGate{"spent + totalBytes less than or equal to budgetBytes?"}
+  skipRow["Leave the row unbought."]
+  takeRow["Append the row. spent = spent + totalBytes. Keep every observationID, including a coarse duplicate, because totalBytes already includes that file."]
+  selected["SelectedFilters = union of filtersInGroup over acceptedRows. filtersInGroup is the union of tokens parsed from the ID columns."]
+  degreeStep["degreeInSet of a selected filter = how many other SelectedFilters share a qualified row with it."]
+  orderStep["Color order = SelectedFilters sorted by degreeInSet descending, then groupCount descending, then filter name ascending. groupCount = qualified rows that contain the filter."]
+  colorOne["Visit the next filter. forbidden = hue indexes already given to adjacent filters earlier in the order."]
+  hueStep["hueIndex = smallest integer at least 0 that is not in forbidden."]
+  moreColor{"Another filter in the color order?"}
+  hueCount["hueCount = 1 + the largest hueIndex. It is at least 10 if a 10-filter group was bought."]
+  hueGate{"length of DisplayHues at least hueCount?"}
+  shortStop["Stop. shortfall = hueCount minus length of DisplayHues. Do not invent colors."]
+  salience["salience of a display index = length of DisplayHues minus that index. Index 0 has the largest salience."]
+  permStep["Try every reassignment P of hue indexes onto the first hueCount display indexes."]
+  permScore["score of P = sum over selected filters of groupCount times salience of P of hueIndex."]
+  bestP["bestP = the reassignment with the largest score. Tie: the lexicographically smallest tuple P of 0, P of 1, and so on."]
+  paint["displayColor of a filter = DisplayHues at bestP of hueIndex."]
+  done["Output: acceptedRows, spent, and displayColor."]
+
+  readCsv --> qualGate
+  qualGate -->|no| dropRow
+  qualGate -->|yes| scoreStep --> sortStep --> spentInit --> moreGate
+  moreGate -->|no| selected
+  moreGate -->|yes| fitGate
+  fitGate -->|no| skipRow --> moreGate
+  fitGate -->|yes| takeRow --> moreGate
+  selected --> degreeStep --> orderStep --> colorOne --> hueStep --> moreColor
+  moreColor -->|yes| colorOne
+  moreColor -->|no| hueCount --> hueGate
+  hueGate -->|no| shortStop
+  hueGate -->|yes| salience --> permStep --> permScore --> bestP --> paint --> done

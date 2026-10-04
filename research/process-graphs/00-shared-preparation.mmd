@@ -1,0 +1,21 @@
+flowchart TD
+  readCsv["Read phase-1-observation-groups.csv. 173 rows."]
+  oneRow["Read one row: observationGroup, qualifies, observationIDCount, uriCount, filterCount, footprintCount, totalBytes, medianBytes, maxBytes, observationID1 through observationID10."]
+  qualGate{"qualifies equals True?"}
+  dropRow["Drop the row. It enters no later total."]
+  keepRow["Keep the row. QualifiedRows ends at 38 rows."]
+  obsIds["observationIDs = the non-blank ID columns, in column order."]
+  tokenStep["tokens of an ID = uppercase captures of F, FQ, or G plus digits. CLEAR is ignored. A hyphen starts another capture. f405n-f444w yields F405N and F444W. f110w_all and f110w_coarse-all both yield F110W."]
+  filtersStep["filtersInGroup = union of tokens over observationIDs. Its size equals the filterCount column on every qualified row."]
+  avgStep["averageFileBytes = totalBytes divided by observationIDCount. One price for every ID in the row, because uriCount equals observationIDCount."]
+  repStep["representativeIDs = IDs that share the same sorted token tuple collapse to the alphabetically first ID. f110w_all is kept and f110w_coarse-all is dropped."]
+  allStep["AllFilters = union of filtersInGroup over QualifiedRows. 33 names."]
+  countStep["groupCount of a filter = how many QualifiedRows contain it. F555W is 29, F814W is 25, F435W is 18."]
+  adjStep["adjacent A and B = A and B are different and some QualifiedRow contains both. 116 pairs."]
+  degStep["degree of a filter = how many filters are adjacent to it."]
+  maxStep["maxFiltersInAnyGroup = maximum filterCount over QualifiedRows = 10. That group is a clique of 10."]
+  callerStep["Caller inputs, absent from the CSV: budgetBytes, WavelengthTable in nanometres, DisplayHues with index 0 most preferred, primaryChannelCount default 3, BlueMaxNm default 500, GreenMaxNm default 650."]
+
+  readCsv --> oneRow --> qualGate
+  qualGate -->|no| dropRow
+  qualGate -->|yes| keepRow --> obsIds --> tokenStep --> filtersStep --> avgStep --> repStep --> allStep --> countStep --> adjStep --> degStep --> maxStep --> callerStep

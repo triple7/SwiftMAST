@@ -1,0 +1,23 @@
+flowchart TD
+  readCsv["Read the group CSV. Keep qualifies True. tokens come from the ID columns. AllFilters is the union, 33 names. This chart does not read budgetBytes and does not drop files."]
+  adjStep["adjacent A and B = some qualified row contains both."]
+  degreeStep["degree = how many filters are adjacent. groupCount = how many qualified rows contain the filter."]
+  orderStep["Color order = AllFilters sorted by degree descending, then groupCount descending, then filter name ascending."]
+  visit["Visit the next filter. forbidden = hue indexes already given to adjacent filters earlier in the order."]
+  hueStep["hueIndex = smallest integer at least 0 that is not in forbidden."]
+  moreGate{"Another filter in the color order?"}
+  hueCount["hueCount = 1 + the largest hueIndex. hueCount is at least maxFiltersInAnyGroup, which is 10, because that group is a clique."]
+  displayGate{"length of DisplayHues at least hueCount?"}
+  shortStop["Stop. shortfall = hueCount minus length of DisplayHues. Three display colors cannot color this graph."]
+  salience["salience of a display index = length of DisplayHues minus that index. Index 0 is the preferred color."]
+  permStep["Try every reassignment P of the hue indexes onto display indexes. 10 indexes means 3628800 permutations."]
+  permScore["score of P = sum over all 33 filters of groupCount times salience of P of hueIndex."]
+  bestP["bestP = largest score. Tie: lexicographically smallest tuple of P of 0, P of 1, and so on."]
+  paint["displayColor = DisplayHues at bestP of hueIndex. A one-group filter keeps its own hue index and loses the preferred color when a higher groupCount can take it."]
+  done["Output: hueIndex and displayColor for every filter. No accepted ID list."]
+
+  readCsv --> adjStep --> degreeStep --> orderStep --> visit --> hueStep --> moreGate
+  moreGate -->|yes| visit
+  moreGate -->|no| hueCount --> displayGate
+  displayGate -->|no| shortStop
+  displayGate -->|yes| salience --> permStep --> permScore --> bestP --> paint --> done

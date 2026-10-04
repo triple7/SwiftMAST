@@ -1,0 +1,59 @@
+flowchart TD
+  readCsv["Read the group CSV."]
+  qualGate{"qualifies equals True?"}
+  dropRow["Drop the row."]
+  prep["From the qualified row: observationIDs, tokens, representativeIDs, groupCount, and averageFileBytes = totalBytes divided by observationIDCount."]
+  waveGate{"Is the filter in WavelengthTable?"}
+  unassigned["channelOf = UNASSIGNED."]
+  blueGate{"wavelength less than BlueMaxNm, default 500?"}
+  chBlue["channelOf = blue. Display color = DisplayHues index 0."]
+  greenGate{"wavelength less than GreenMaxNm, default 650?"}
+  chGreen["channelOf = green. Display color = DisplayHues index 1."]
+  chRed["channelOf = red. Display color = DisplayHues index 2."]
+  idGate{"Does any token of this representative ID have channelOf UNASSIGNED?"}
+  dropId["Drop the ID."]
+  channelsOf["channelsOf = the set of channelOf for its tokens. One ID can hold two channels."]
+  candStep["For this row and one channel, candidates = representative IDs whose channelsOf contain that channel."]
+  candGate{"Any candidate for this channel?"}
+  emptyCh["This channel stays empty."]
+  scoreStep["channelScore = groupCount of the token that maps to this channel."]
+  winnerStep["winner = the candidate with the largest channelScore. Tie: observationID alphabetically first."]
+  keptStep["keptIDs = the set of winners. A dual-token ID that wins two channels is stored once."]
+  distinctStep["distinctChannelCount = how many of blue, green, and red have a winner."]
+  openGate{"distinctChannelCount at least primaryChannelCount, default 3?"}
+  closed["Row is not openable."]
+  costStep["estimatedCost = averageFileBytes times the number of keptIDs."]
+  hitStep["canonicalHit = 1 when kept tokens include F435W, F555W, and F814W. Otherwise 0. That trio is the caller constant PreferredTriple."]
+  sortStep["Sort openable rows by canonicalHit descending, then distinctChannelCount descending, then estimatedCost ascending, then observationGroup ascending."]
+  spentInit["spent = 0. accepted = empty."]
+  moreGate{"Another openable row in that sort order?"}
+  fitGate{"spent + estimatedCost less than or equal to budgetBytes?"}
+  skipRow["Leave the row unbought."]
+  takeRow["Add keptIDs to accepted. spent = spent + estimatedCost."]
+  done["Output: accepted IDs, spent, and blue, green, or red for each kept filter."]
+
+  readCsv --> qualGate
+  qualGate -->|no| dropRow
+  qualGate -->|yes| prep --> waveGate
+  waveGate -->|no| unassigned
+  waveGate -->|yes| blueGate
+  blueGate -->|yes| chBlue
+  blueGate -->|no| greenGate
+  greenGate -->|yes| chGreen
+  greenGate -->|no| chRed
+  unassigned --> idGate
+  chBlue --> idGate
+  chGreen --> idGate
+  chRed --> idGate
+  idGate -->|yes| dropId
+  idGate -->|no| channelsOf --> candStep --> candGate
+  candGate -->|no| emptyCh
+  candGate -->|yes| scoreStep --> winnerStep
+  emptyCh --> keptStep
+  winnerStep --> keptStep --> distinctStep --> openGate
+  openGate -->|no| closed
+  openGate -->|yes| costStep --> hitStep --> sortStep --> spentInit --> moreGate
+  moreGate -->|no| done
+  moreGate -->|yes| fitGate
+  fitGate -->|no| skipRow --> moreGate
+  fitGate -->|yes| takeRow --> moreGate

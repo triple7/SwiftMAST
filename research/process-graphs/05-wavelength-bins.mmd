@@ -1,0 +1,43 @@
+flowchart TD
+  readCsv["Read the group CSV. Keep qualifies True. Parse tokens. representativeIDs collapse identical token sets. averageFileBytes = totalBytes divided by observationIDCount. groupCount = qualified rows containing the filter."]
+  edges["BinEdgesNm is a caller list. Default nanometre edges: 0, 300, 450, 600, 800, 2000, 5000, 30000. binCount = length of edges minus 1."]
+  hueGate{"length of DisplayHues at least binCount?"}
+  shortStop["Stop. Not enough display colors for the bins."]
+  listed{"Filter present in WavelengthTable?"}
+  noBin["binOf = UNASSIGNED. An ID containing it is not a candidate."]
+  binOf["binOf = the i where edge i is less than or equal to the wavelength, and the wavelength is less than edge i+1. Display color of bin i = DisplayHues index i."]
+  minBins["minimumBins is a caller integer, default 3."]
+  perBin["For this row and bin i, candidates = representative IDs with at least one token in that bin."]
+  candGate{"Any candidate?"}
+  emptyBin["Bin i has no winner."]
+  binScore["binScore = the largest groupCount among that ID's tokens in bin i."]
+  winner["winner = largest binScore. Tie: observationID alphabetically first."]
+  kept["keptIDs = the set of winners. filledBins = how many bins have a winner."]
+  openGate{"filledBins at least minimumBins?"}
+  closed["Row stays closed. The two WFC3 IR skycells have only F110W and F160W, so they fill two bins and stay closed when minimumBins is 3."]
+  density["estimatedCost = averageFileBytes times the number of keptIDs. density = filledBins divided by estimatedCost. Unit is bins per byte."]
+  sortStep["Sort openable rows by density descending, then observationGroup ascending."]
+  spentInit["spent = 0."]
+  moreGate{"Another openable row?"}
+  fitGate{"spent + estimatedCost less than or equal to budgetBytes?"}
+  skipRow["Leave the row unbought."]
+  takeRow["Buy keptIDs. spent = spent + estimatedCost."]
+  done["Output: accepted IDs, spent, and DisplayHues at binOf for each kept filter."]
+
+  readCsv --> edges --> hueGate
+  hueGate -->|no| shortStop
+  hueGate -->|yes| listed
+  listed -->|no| noBin
+  listed -->|yes| binOf
+  noBin --> minBins
+  binOf --> minBins --> perBin --> candGate
+  candGate -->|no| emptyBin
+  candGate -->|yes| binScore --> winner
+  emptyBin --> kept
+  winner --> kept --> openGate
+  openGate -->|no| closed
+  openGate -->|yes| density --> sortStep --> spentInit --> moreGate
+  moreGate -->|no| done
+  moreGate -->|yes| fitGate
+  fitGate -->|no| skipRow --> moreGate
+  fitGate -->|yes| takeRow --> moreGate

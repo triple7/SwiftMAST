@@ -1,0 +1,50 @@
+flowchart TD
+  readCsv["Read the group CSV. Keep qualifies True. representativeIDs collapse identical token sets. averageFileBytes = totalBytes divided by observationIDCount."]
+  initKept["Initial kept = the purchased ID set from option 06. If that set is empty, kept starts empty."]
+  initChannel["Initial channelOf = binOf from option 05 for filters that appear in kept. C = primaryChannelCount, default 3, so each channel is an integer from 0 to 2."]
+  conflict["conflictCount = over each row with a kept ID, and over each channel, max of 0 and occupants minus 1. occupants = kept IDs in that row with a token on that channel."]
+  spent["spent = sum of averageFileBytes over kept IDs. budgetOverage = max of 0 and spent minus budgetBytes."]
+  under["underfilled = over each row with at least one kept ID, max of 0 and primaryChannelCount minus the number of distinct channels among its kept tokens."]
+  diversity["diversity = over each of the C channels, how many rows occupy that channel."]
+  join["Match each kept ID to obs_id in qualified_rows of the Phase 1 JSON. unmatchedIDCount = kept IDs with no record."]
+  grid["Grid points come from the Phase 1 ra, dec, radius_degrees, and caller gridDimension, default 48. Those four numbers are not in the group CSV."]
+  cover["coveredPoints = grid points inside the union of s_region polygons of matched kept IDs. coverageFraction = coveredPoints divided by the number of grid points. An empty grid gives 0."]
+  weights["Caller weights: conflictWeight 1000, budgetWeight 1000, underfillWeight 100, unmatchedWeight 100, coverageWeight 10, diversityWeight 1."]
+  fitness["fitness = 10 times coverageFraction, plus diversity, minus 1000 times conflictCount, minus 1000 times budgetOverage divided by budgetBytes, minus 100 times underfilled, minus 100 times unmatchedIDCount. budgetBytes must be greater than 0."]
+  which{"Which search?"}
+
+  temp["Annealing. temperature starts at caller startTemperature, default 1. coolingRate default 0.999. stepCount default 20000."]
+  moveKind{"Pick Add, Drop, or Recolor with equal probability."}
+  addMove["Add: choose a representative ID that is not kept, uniformly."]
+  dropMove["Drop: choose a kept ID, uniformly."]
+  recolorMove["Recolor: choose a filter that occurs in kept, and assign a different channel from 0 to C-1, uniformly."]
+  delta["delta = fitness after the move, minus fitness before the move."]
+  better{"delta at least 0?"}
+  acceptGood["Keep the move."]
+  chance["Accept the worse move with probability exp of delta divided by temperature. Otherwise undo it."]
+  cool["temperature = temperature times coolingRate. Remember the state with the highest fitness seen."]
+  moreAnneal{"Steps completed less than stepCount?"}
+  annealOut["Output the remembered state: kept, channelOf, fitness, coverageFraction, spent."]
+
+  pop["Population search. Same fitness. populationSize default 40. generations default 100."]
+  chrom["A chromosome is one bit per representative ID, ordered by observationGroup then observationID, plus channelOf for every one of the 33 filters."]
+  cross["Crossover: each child bit is copied from parent A or parent B with equal probability. Each child channelOf is copied from one parent with equal probability."]
+  mutate["Mutation: each ID bit flips with probability 1 divided by the number of representative IDs. Each filter receives a new random channel with probability 1 divided by 33."]
+  tournament["Next generation: tournaments of 3. Copy the highest fitness forward."]
+  moreGen{"Generation index less than generations?"}
+  popOut["Output the highest-fitness chromosome in the final generation, plus coverageFraction and spent."]
+
+  readCsv --> initKept --> initChannel --> conflict --> spent --> under --> diversity --> join --> grid --> cover --> weights --> fitness --> which
+  which -->|annealing| temp --> moveKind
+  moveKind -->|Add| addMove --> delta
+  moveKind -->|Drop| dropMove --> delta
+  moveKind -->|Recolor| recolorMove --> delta
+  delta --> better
+  better -->|yes| acceptGood --> cool
+  better -->|no| chance --> cool
+  cool --> moreAnneal
+  moreAnneal -->|yes| moveKind
+  moreAnneal -->|no| annealOut
+  which -->|population| pop --> chrom --> cross --> mutate --> tournament --> moreGen
+  moreGen -->|yes| cross
+  moreGen -->|no| popOut

@@ -1,0 +1,21 @@
+flowchart TD
+  readCsv["Read the group CSV. Keep qualifies True. representativeIDs, tokens, averageFileBytes = totalBytes divided by observationIDCount, and groupCount are computed as in the shared chart."]
+  binaries["Same variables as the linear program, each restricted to 0 or 1: include, assign, link. Add opened of row, and usesChannel of row and channel. channelCount default 3. primaryChannelCount default 3. minimumGroupsPerChannel default 1."]
+  colorRules["Same color rules: each filter gets at most one channel, include requires every token to be colored, link equals include times assign, and each row puts at most one token on a channel."]
+  openedFloor["Sum of include in a row is at least primaryChannelCount times opened."]
+  openedCap["Sum of include in a row is at most the number of representativeIDs times opened. opened is at most the sum of include."]
+  usesRule["usesChannel is at least each individual link in that row and channel, and at most the sum of those links."]
+  floorRule["For each channel, the sum of usesChannel over rows is at least minimumGroupsPerChannel."]
+  budget["The sum of include times averageFileBytes is at most budgetBytes."]
+  feasible{"Is the 0-1 model feasible?"}
+  infeasible["Report infeasible. Do not drop the floor."]
+  solve1["Solve 1: maximize the sum of opened."]
+  freeze1["Freeze the sum of opened at that maximum."]
+  solve2["Solve 2: maximize the number of filters with a channel, which is the sum over filters of the sum of assign over channels."]
+  freeze2["Freeze that filter count."]
+  solve3["Solve 3: minimize the sum of include times averageFileBytes."]
+  done["Output: include, assign, opened, and the minimized byte sum. CBC can read this model through PuLP."]
+
+  readCsv --> binaries --> colorRules --> openedFloor --> openedCap --> usesRule --> floorRule --> budget --> feasible
+  feasible -->|no| infeasible
+  feasible -->|yes| solve1 --> freeze1 --> solve2 --> freeze2 --> solve3 --> done

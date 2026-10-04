@@ -1,0 +1,45 @@
+flowchart TD
+  readCsv["Read the group CSV. Keep qualifies True. Parse tokens. averageFileBytes = totalBytes divided by observationIDCount. representativeIDs collapse identical token sets to the alphabetically first ID."]
+  listed{"Filter present in WavelengthTable?"}
+  dropFilter["Exclude the filter. A trio cannot be ordered onto blue, green, and red without a wavelength."]
+  keepFilter["Add the filter to CandidateFilters."]
+  triples["Triples = every unordered set of three names from CandidateFilters. 5456 sets when all 33 filters have a wavelength."]
+  support["For one triple T: supportingRows = qualified rows whose filtersInGroup contains all three members."]
+  supportCount["supportCount = the number of supportingRows."]
+  cheapness["cheapness = sum over supportingRows of 1 divided by totalBytes. Unit is 1 per byte."]
+  best["bestTriple = largest supportCount, then largest cheapness, then alphabetically first comma-join of the sorted names."]
+  orderWave["Sort bestTriple by WavelengthTable ascending."]
+  paint["Shortest wavelength gets DisplayHues index 0, middle gets index 1, longest gets index 2."]
+  match["For each filter in bestTriple, matchingIDs = representativeIDs whose tokens contain that filter."]
+  chosen["chosenID = the alphabetically first matching ID, or none."]
+  openGate{"Every member of bestTriple has a chosenID?"}
+  closed["Row is not openable."]
+  costStep["keptIDs = the set of chosen IDs. One dual-token ID that covers two members is counted once. estimatedCost = averageFileBytes times the size of keptIDs."]
+  sortStep["Sort openable rows by estimatedCost ascending, then observationGroup ascending."]
+  spentInit["spent = 0."]
+  moreGate{"Another openable row?"}
+  fitGate{"spent + estimatedCost less than or equal to budgetBytes?"}
+  skipRow["Leave the row unbought."]
+  takeRow["Buy keptIDs. spent = spent + estimatedCost."]
+  sixGate{"length of DisplayHues at least 6?"}
+  stopOne["Stop after the first trio. Output accepted IDs, spent, and the three hues."]
+  idleRows["idleRows = qualified rows that were not bought."]
+  idleFilters["idleFilters = filters that appear in an idle row, minus bestTriple, minus filters missing from WavelengthTable."]
+  idleGate{"At least 3 idleFilters?"}
+  stopIdle["Stop. No second trio."]
+  second["Repeat supportCount, cheapness, and the budget loop on idleFilters and idleRows. Paint that trio with DisplayHues indexes 3, 4, and 5. Continue from the current spent."]
+  done["Output: both purchases, spent, and six hues."]
+
+  readCsv --> listed
+  listed -->|no| dropFilter
+  listed -->|yes| keepFilter --> triples --> support --> supportCount --> cheapness --> best --> orderWave --> paint --> match --> chosen --> openGate
+  openGate -->|no| closed
+  openGate -->|yes| costStep --> sortStep --> spentInit --> moreGate
+  moreGate -->|yes| fitGate
+  fitGate -->|no| skipRow --> moreGate
+  fitGate -->|yes| takeRow --> moreGate
+  moreGate -->|no| sixGate
+  sixGate -->|no| stopOne
+  sixGate -->|yes| idleRows --> idleFilters --> idleGate
+  idleGate -->|no| stopIdle
+  idleGate -->|yes| second --> done
