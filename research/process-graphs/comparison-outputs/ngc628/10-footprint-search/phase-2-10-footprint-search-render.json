@@ -1,0 +1,196 @@
+{
+  "color_by": "filter",
+  "legend": {
+    "F1000W": "#DB00FF",
+    "F110W": "#FF00DB",
+    "F1130W": "#FF0092",
+    "F1280W": "#FF0049",
+    "F1500W": "#FF0000",
+    "F160W": "#FF4900",
+    "F1800W": "#FF9200",
+    "F205W": "#FFDB00",
+    "F2100W": "#DBFF00",
+    "F2550W": "#92FF00",
+    "F275W": "#49FF00",
+    "F300M": "#00FF00",
+    "F335M": "#00FF49",
+    "F336W": "#00FF92",
+    "F360M": "#00FFDB",
+    "F435W": "#00DBFF",
+    "F438W": "#0092FF",
+    "F555W": "#0049FF",
+    "F560W": "#0000FF",
+    "F770W": "#4900FF",
+    "F814W": "#9200FF"
+  },
+  "path": "/Users/dayo/projects/SwiftMAST/research/process-graphs/comparison-outputs/ngc628/10-footprint-search/phase-2-10-footprint-search-footprints.png",
+  "product_textures": [
+    {
+      "filter_variation_key": "F110W",
+      "identity": "https://hla.stsci.edu/cgi-bin/getdata.cgi?dataset=HST_11229_06_NIC_NIC2_F110W_drz.fits",
+      "obs_id": "HST_11229_06_NIC_NIC2_F110W",
+      "observation_texture_key": "HLA:NICMOS/NIC2:HST_11229_06_NIC_NIC2"
+    },
+    {
+      "filter_variation_key": "F160W",
+      "identity": "https://hla.stsci.edu/cgi-bin/getdata.cgi?dataset=HST_11229_06_NIC_NIC2_F160W_drz.fits",
+      "obs_id": "HST_11229_06_NIC_NIC2_F160W",
+      "observation_texture_key": "HLA:NICMOS/NIC2:HST_11229_06_NIC_NIC2"
+    },
+    {
+      "filter_variation_key": "F205W",
+      "identity": "https://hla.stsci.edu/cgi-bin/getdata.cgi?dataset=HST_11229_06_NIC_NIC2_F205W_drz.fits",
+      "obs_id": "HST_11229_06_NIC_NIC2_F205W",
+      "observation_texture_key": "HLA:NICMOS/NIC2:HST_11229_06_NIC_NIC2"
+    },
+    {
+      "filter_variation_key": "F2550W",
+      "identity": "mast:JWST/product/jw02666-o007_t004_miri_f2550w_i2d.fits",
+      "obs_id": "jw02666-o007_t004_miri_f2550w",
+      "observation_texture_key": "JWST:MIRI/IMAGE:jw02666-o007_t004_miri"
+    },
+    {
+      "filter_variation_key": "F770W",
+      "identity": "mast:JWST/product/jw02107-o039_t018_miri_f770w_i2d.fits",
+      "obs_id": "jw02107-o039_t018_miri_f770w",
+      "observation_texture_key": "JWST:MIRI/IMAGE:jw02107-o039_t018_miri"
+    },
+    {
+      "filter_variation_key": "F435W",
+      "identity": "mast:HST/product/hst_11675_02_acs_wfc_f435w_jb4t02_drz.fits",
+      "obs_id": "hst_11675_02_acs_wfc_f435w_jb4t02",
+      "observation_texture_key": "HST:ACS/WFC:hst_11675_02_acs_wfc"
+    },
+    {
+      "filter_variation_key": "F555W",
+      "identity": "mast:HST/product/hst_11675_02_acs_wfc_f555w_jb4t02_drz.fits",
+      "obs_id": "hst_11675_02_acs_wfc_f555w_jb4t02",
+      "observation_texture_key": "HST:ACS/WFC:hst_11675_02_acs_wfc"
+    },
+    {
+      "filter_variation_key": "F814W",
+      "identity": "mast:HST/product/hst_11675_02_acs_wfc_f814w_jb4t02_drz.fits",
+      "obs_id": "hst_11675_02_acs_wfc_f814w_jb4t02",
+      "observation_texture_key": "HST:ACS/WFC:hst_11675_02_acs_wfc"
+    },
+    {
+      "filter_variation_key": "F1130W",
+      "identity": "mast:JWST/product/jw06049-o001_t001_miri_f1130w_i2d.fits",
+      "obs_id": "jw06049-o001_t001_miri_f1130w",
+      "observation_texture_key": "JWST:MIRI/IMAGE:jw06049-o001_t001_miri"
+    },
+    {
+      "filter_variation_key": "F275W",
+      "identity": "mast:HST/product/hst_14116_01_wfc3_uvis_f275w_icw701_drc.fits",
+      "obs_id": "hst_14116_01_wfc3_uvis_f275w_icw701",
+      "observation_texture_key": "HST:WFC3/UVIS:hst_14116_01_wfc3_uvis"
+    },
+    {
+      "filter_variation_key": "F336W",
+      "identity": "mast:HST/product/hst_14116_01_wfc3_uvis_f336w_icw701_drc.fits",
+      "obs_id": "hst_14116_01_wfc3_uvis_f336w_icw701",
+      "observation_texture_key": "HST:WFC3/UVIS:hst_14116_01_wfc3_uvis"
+    },
+    {
+      "filter_variation_key": "F438W",
+      "identity": "mast:HST/product/hst_14116_01_wfc3_uvis_f438w_icw701_drc.fits",
+      "obs_id": "hst_14116_01_wfc3_uvis_f438w_icw701",
+      "observation_texture_key": "HST:WFC3/UVIS:hst_14116_01_wfc3_uvis"
+    },
+    {
+      "filter_variation_key": "F1000W",
+      "identity": "mast:JWST/product/jw02666-o007_t004_miri_f1000w_i2d.fits",
+      "obs_id": "jw02666-o007_t004_miri_f1000w",
+      "observation_texture_key": "JWST:MIRI/IMAGE:jw02666-o007_t004_miri"
+    },
+    {
+      "filter_variation_key": "F1280W",
+      "identity": "mast:JWST/product/jw02666-o007_t004_miri_f1280w_i2d.fits",
+      "obs_id": "jw02666-o007_t004_miri_f1280w",
+      "observation_texture_key": "JWST:MIRI/IMAGE:jw02666-o007_t004_miri"
+    },
+    {
+      "filter_variation_key": "F1500W",
+      "identity": "mast:JWST/product/jw02666-o007_t004_miri_f1500w_i2d.fits",
+      "obs_id": "jw02666-o007_t004_miri_f1500w",
+      "observation_texture_key": "JWST:MIRI/IMAGE:jw02666-o007_t004_miri"
+    },
+    {
+      "filter_variation_key": "F1800W",
+      "identity": "mast:JWST/product/jw02666-o007_t004_miri_f1800w_i2d.fits",
+      "obs_id": "jw02666-o007_t004_miri_f1800w",
+      "observation_texture_key": "JWST:MIRI/IMAGE:jw02666-o007_t004_miri"
+    },
+    {
+      "filter_variation_key": "F2100W",
+      "identity": "mast:JWST/product/jw02666-o007_t004_miri_f2100w_i2d.fits",
+      "obs_id": "jw02666-o007_t004_miri_f2100w",
+      "observation_texture_key": "JWST:MIRI/IMAGE:jw02666-o007_t004_miri"
+    },
+    {
+      "filter_variation_key": "F560W",
+      "identity": "mast:JWST/product/jw02666-o007_t004_miri_f560w_i2d.fits",
+      "obs_id": "jw02666-o007_t004_miri_f560w",
+      "observation_texture_key": "JWST:MIRI/IMAGE:jw02666-o007_t004_miri"
+    },
+    {
+      "filter_variation_key": "F110W",
+      "identity": "mast:HST/product/hst_skycell-p1596x12y19_wfc3_ir_f110w_coarse-all_drz.fits",
+      "obs_id": "hst_skycell-p1596x12y19_wfc3_ir_f110w_coarse-all",
+      "observation_texture_key": "HST:WFC3/IR:hst_skycell-p1596x12y19_wfc3_ir"
+    },
+    {
+      "filter_variation_key": "F275W",
+      "identity": "mast:HST/product/hst_17932_09_wfc3_uvis_f275w_ifkj09_drc.fits",
+      "obs_id": "hst_17932_09_wfc3_uvis_f275w_ifkj09",
+      "observation_texture_key": "HST:WFC3/UVIS:hst_17932_09_wfc3_uvis"
+    },
+    {
+      "filter_variation_key": "F300M",
+      "identity": "mast:JWST/product/jw02107-o040_t018_nircam_clear-f300m_i2d.fits",
+      "obs_id": "jw02107-o040_t018_nircam_clear-f300m",
+      "observation_texture_key": "JWST:NIRCAM/IMAGE:jw02107-o040_t018_nircam"
+    },
+    {
+      "filter_variation_key": "F335M",
+      "identity": "mast:JWST/product/jw02107-o040_t018_nircam_clear-f335m_i2d.fits",
+      "obs_id": "jw02107-o040_t018_nircam_clear-f335m",
+      "observation_texture_key": "JWST:NIRCAM/IMAGE:jw02107-o040_t018_nircam"
+    },
+    {
+      "filter_variation_key": "F360M",
+      "identity": "mast:JWST/product/jw02107-o040_t018_nircam_clear-f360m_i2d.fits",
+      "obs_id": "jw02107-o040_t018_nircam_clear-f360m",
+      "observation_texture_key": "JWST:NIRCAM/IMAGE:jw02107-o040_t018_nircam"
+    },
+    {
+      "filter_variation_key": "F110W",
+      "identity": "mast:HST/product/hst_skycell-p1596x12y18_wfc3_ir_f110w_coarse-all_drz.fits",
+      "obs_id": "hst_skycell-p1596x12y18_wfc3_ir_f110w_coarse-all",
+      "observation_texture_key": "HST:WFC3/IR:hst_skycell-p1596x12y18_wfc3_ir"
+    },
+    {
+      "filter_variation_key": "F555W",
+      "identity": "mast:HST/product/hst_9796_04_acs_wfc_f555w_j8ol04_drc.fits",
+      "obs_id": "hst_9796_04_acs_wfc_f555w_j8ol04",
+      "observation_texture_key": "HST:ACS/WFC:hst_9796_04_acs_wfc"
+    }
+  ],
+  "texture_model": {
+    "astronomical_pixels_used": false,
+    "base_structure_seed": "observation_group_id; obs_id fallback",
+    "combined_colour_rule": "clip(sum of contributing filter RGB channels)",
+    "deterministic": true,
+    "filter_variation_seed": "observation key plus sorted filter names",
+    "individual_colour_rule": "output RGB = luminance times filter RGB",
+    "layers": [
+      "dark tinted field",
+      "broad faint emission",
+      "mid-scale glow",
+      "stellar points and halos",
+      "limited dust",
+      "small filter-specific emission",
+      "additive multi-filter highlights (combined view only)"
+    ]
+  }
+}

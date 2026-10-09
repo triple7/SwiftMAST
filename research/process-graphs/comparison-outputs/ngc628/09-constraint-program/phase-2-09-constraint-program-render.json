@@ -1,0 +1,283 @@
+{
+  "color_by": "filter",
+  "legend": {
+    "F1000W": "#0072B2",
+    "F110W": "#0072B2",
+    "F1130W": "#009E73",
+    "F1280W": "#FFDF00",
+    "F1500W": "#60FF00",
+    "F160W": "#009E73",
+    "F1800W": "#00FF60",
+    "F205W": "#D55E00",
+    "F2100W": "#D55E00",
+    "F2550W": "#0020FF",
+    "F275W": "#D55E00",
+    "F336W": "#FFDF00",
+    "F435W": "#D55E00",
+    "F438W": "#60FF00",
+    "F555W": "#0072B2",
+    "F560W": "#00DFFF",
+    "F770W": "#FFDF00",
+    "F814W": "#009E73"
+  },
+  "path": "/Users/dayo/projects/SwiftMAST/research/process-graphs/comparison-outputs/ngc628/09-constraint-program/phase-2-09-constraint-program-footprints.png",
+  "product_textures": [
+    {
+      "filter_variation_key": "F110W",
+      "identity": "https://hla.stsci.edu/cgi-bin/getdata.cgi?dataset=HST_11229_06_NIC_NIC2_F110W_drz.fits",
+      "obs_id": "HST_11229_06_NIC_NIC2_F110W",
+      "observation_texture_key": "HLA:NICMOS/NIC2:HST_11229_06_NIC_NIC2"
+    },
+    {
+      "filter_variation_key": "F160W",
+      "identity": "https://hla.stsci.edu/cgi-bin/getdata.cgi?dataset=HST_11229_06_NIC_NIC2_F160W_drz.fits",
+      "obs_id": "HST_11229_06_NIC_NIC2_F160W",
+      "observation_texture_key": "HLA:NICMOS/NIC2:HST_11229_06_NIC_NIC2"
+    },
+    {
+      "filter_variation_key": "F205W",
+      "identity": "https://hla.stsci.edu/cgi-bin/getdata.cgi?dataset=HST_11229_06_NIC_NIC2_F205W_drz.fits",
+      "obs_id": "HST_11229_06_NIC_NIC2_F205W",
+      "observation_texture_key": "HLA:NICMOS/NIC2:HST_11229_06_NIC_NIC2"
+    },
+    {
+      "filter_variation_key": "F275W",
+      "identity": "https://hla.stsci.edu/cgi-bin/getdata.cgi?dataset=hst_14116_01_wfc3_uvis_f275w_drz.fits",
+      "obs_id": "hst_14116_01_wfc3_uvis_f275w",
+      "observation_texture_key": "HLA:WFC3/UVIS:hst_14116_01_wfc3_uvis"
+    },
+    {
+      "filter_variation_key": "F275W",
+      "identity": "mast:HST/product/hst_14116_01_wfc3_uvis_f275w_icw701_drc.fits",
+      "obs_id": "hst_14116_01_wfc3_uvis_f275w_icw701",
+      "observation_texture_key": "HST:WFC3/UVIS:hst_14116_01_wfc3_uvis"
+    },
+    {
+      "filter_variation_key": "F336W",
+      "identity": "https://hla.stsci.edu/cgi-bin/getdata.cgi?dataset=hst_14116_01_wfc3_uvis_f336w_drz.fits",
+      "obs_id": "hst_14116_01_wfc3_uvis_f336w",
+      "observation_texture_key": "HLA:WFC3/UVIS:hst_14116_01_wfc3_uvis"
+    },
+    {
+      "filter_variation_key": "F336W",
+      "identity": "mast:HST/product/hst_14116_01_wfc3_uvis_f336w_icw701_drc.fits",
+      "obs_id": "hst_14116_01_wfc3_uvis_f336w_icw701",
+      "observation_texture_key": "HST:WFC3/UVIS:hst_14116_01_wfc3_uvis"
+    },
+    {
+      "filter_variation_key": "F435W",
+      "identity": "https://hla.stsci.edu/cgi-bin/getdata.cgi?dataset=hst_9733_01_acs_hrc_f435w_drz.fits",
+      "obs_id": "hst_9733_01_acs_hrc_f435w",
+      "observation_texture_key": "HLA:ACS/HRC:hst_9733_01_acs_hrc"
+    },
+    {
+      "filter_variation_key": "F435W",
+      "identity": "mast:HST/product/hst_9733_01_acs_hrc_f435w_j8nv01_drz.fits",
+      "obs_id": "hst_9733_01_acs_hrc_f435w_j8nv01",
+      "observation_texture_key": "HST:ACS/HRC:hst_9733_01_acs_hrc"
+    },
+    {
+      "filter_variation_key": "F435W",
+      "identity": "mast:HST/product/hst_11675_02_acs_wfc_f435w_jb4t02_drz.fits",
+      "obs_id": "hst_11675_02_acs_wfc_f435w_jb4t02",
+      "observation_texture_key": "HST:ACS/WFC:hst_11675_02_acs_wfc"
+    },
+    {
+      "filter_variation_key": "F438W",
+      "identity": "https://hla.stsci.edu/cgi-bin/getdata.cgi?dataset=hst_14116_01_wfc3_uvis_f438w_drz.fits",
+      "obs_id": "hst_14116_01_wfc3_uvis_f438w",
+      "observation_texture_key": "HLA:WFC3/UVIS:hst_14116_01_wfc3_uvis"
+    },
+    {
+      "filter_variation_key": "F438W",
+      "identity": "mast:HST/product/hst_14116_01_wfc3_uvis_f438w_icw701_drc.fits",
+      "obs_id": "hst_14116_01_wfc3_uvis_f438w_icw701",
+      "observation_texture_key": "HST:WFC3/UVIS:hst_14116_01_wfc3_uvis"
+    },
+    {
+      "filter_variation_key": "F438W",
+      "identity": "mast:HST/product/hst_17932_09_wfc3_uvis_f438w_ifkj09_drc.fits",
+      "obs_id": "hst_17932_09_wfc3_uvis_f438w_ifkj09",
+      "observation_texture_key": "HST:WFC3/UVIS:hst_17932_09_wfc3_uvis"
+    },
+    {
+      "filter_variation_key": "F555W",
+      "identity": "https://hla.stsci.edu/cgi-bin/getdata.cgi?dataset=hst_9733_01_acs_hrc_f555w_drz.fits",
+      "obs_id": "hst_9733_01_acs_hrc_f555w",
+      "observation_texture_key": "HLA:ACS/HRC:hst_9733_01_acs_hrc"
+    },
+    {
+      "filter_variation_key": "F555W",
+      "identity": "https://hla.stsci.edu/cgi-bin/getdata.cgi?dataset=hst_14116_01_wfc3_uvis_f555w_drz.fits",
+      "obs_id": "hst_14116_01_wfc3_uvis_f555w",
+      "observation_texture_key": "HLA:WFC3/UVIS:hst_14116_01_wfc3_uvis"
+    },
+    {
+      "filter_variation_key": "F555W",
+      "identity": "mast:HST/product/hst_9733_01_acs_hrc_f555w_j8nv01_drz.fits",
+      "obs_id": "hst_9733_01_acs_hrc_f555w_j8nv01",
+      "observation_texture_key": "HST:ACS/HRC:hst_9733_01_acs_hrc"
+    },
+    {
+      "filter_variation_key": "F555W",
+      "identity": "mast:HST/product/hst_11675_02_acs_wfc_f555w_jb4t02_drz.fits",
+      "obs_id": "hst_11675_02_acs_wfc_f555w_jb4t02",
+      "observation_texture_key": "HST:ACS/WFC:hst_11675_02_acs_wfc"
+    },
+    {
+      "filter_variation_key": "F555W",
+      "identity": "mast:HST/product/hst_14116_01_wfc3_uvis_f555w_icw701_drc.fits",
+      "obs_id": "hst_14116_01_wfc3_uvis_f555w_icw701",
+      "observation_texture_key": "HST:WFC3/UVIS:hst_14116_01_wfc3_uvis"
+    },
+    {
+      "filter_variation_key": "F555W",
+      "identity": "mast:HST/product/hst_17932_09_wfc3_uvis_f555w_ifkj09_drc.fits",
+      "obs_id": "hst_17932_09_wfc3_uvis_f555w_ifkj09",
+      "observation_texture_key": "HST:WFC3/UVIS:hst_17932_09_wfc3_uvis"
+    },
+    {
+      "filter_variation_key": "F560W",
+      "identity": "mast:JWST/product/jw06049-o001_t001_miri_f560w_i2d.fits",
+      "obs_id": "jw06049-o001_t001_miri_f560w",
+      "observation_texture_key": "JWST:MIRI/IMAGE:jw06049-o001_t001_miri"
+    },
+    {
+      "filter_variation_key": "F770W",
+      "identity": "mast:JWST/product/jw02107-o039_t018_miri_f770w_i2d.fits",
+      "obs_id": "jw02107-o039_t018_miri_f770w",
+      "observation_texture_key": "JWST:MIRI/IMAGE:jw02107-o039_t018_miri"
+    },
+    {
+      "filter_variation_key": "F814W",
+      "identity": "https://hla.stsci.edu/cgi-bin/getdata.cgi?dataset=hst_9733_01_acs_hrc_f814w_drz.fits",
+      "obs_id": "hst_9733_01_acs_hrc_f814w",
+      "observation_texture_key": "HLA:ACS/HRC:hst_9733_01_acs_hrc"
+    },
+    {
+      "filter_variation_key": "F814W",
+      "identity": "https://hla.stsci.edu/cgi-bin/getdata.cgi?dataset=hst_14116_01_wfc3_uvis_f814w_drz.fits",
+      "obs_id": "hst_14116_01_wfc3_uvis_f814w",
+      "observation_texture_key": "HLA:WFC3/UVIS:hst_14116_01_wfc3_uvis"
+    },
+    {
+      "filter_variation_key": "F814W",
+      "identity": "mast:HST/product/hst_9733_01_acs_hrc_f814w_j8nv01_drz.fits",
+      "obs_id": "hst_9733_01_acs_hrc_f814w_j8nv01",
+      "observation_texture_key": "HST:ACS/HRC:hst_9733_01_acs_hrc"
+    },
+    {
+      "filter_variation_key": "F814W",
+      "identity": "mast:HST/product/hst_11675_02_acs_wfc_f814w_jb4t02_drz.fits",
+      "obs_id": "hst_11675_02_acs_wfc_f814w_jb4t02",
+      "observation_texture_key": "HST:ACS/WFC:hst_11675_02_acs_wfc"
+    },
+    {
+      "filter_variation_key": "F814W",
+      "identity": "mast:HST/product/hst_14116_01_wfc3_uvis_f814w_icw701_drc.fits",
+      "obs_id": "hst_14116_01_wfc3_uvis_f814w_icw701",
+      "observation_texture_key": "HST:WFC3/UVIS:hst_14116_01_wfc3_uvis"
+    },
+    {
+      "filter_variation_key": "F814W",
+      "identity": "mast:HST/product/hst_17932_09_wfc3_uvis_f814w_ifkj09_drc.fits",
+      "obs_id": "hst_17932_09_wfc3_uvis_f814w_ifkj09",
+      "observation_texture_key": "HST:WFC3/UVIS:hst_17932_09_wfc3_uvis"
+    },
+    {
+      "filter_variation_key": "F1000W",
+      "identity": "mast:JWST/product/jw02107-o039_t018_miri_f1000w_i2d.fits",
+      "obs_id": "jw02107-o039_t018_miri_f1000w",
+      "observation_texture_key": "JWST:MIRI/IMAGE:jw02107-o039_t018_miri"
+    },
+    {
+      "filter_variation_key": "F1130W",
+      "identity": "mast:JWST/product/jw02107-o039_t018_miri_f1130w_i2d.fits",
+      "obs_id": "jw02107-o039_t018_miri_f1130w",
+      "observation_texture_key": "JWST:MIRI/IMAGE:jw02107-o039_t018_miri"
+    },
+    {
+      "filter_variation_key": "F1130W",
+      "identity": "mast:JWST/product/jw02666-o007_t004_miri_f1130w_i2d.fits",
+      "obs_id": "jw02666-o007_t004_miri_f1130w",
+      "observation_texture_key": "JWST:MIRI/IMAGE:jw02666-o007_t004_miri"
+    },
+    {
+      "filter_variation_key": "F1130W",
+      "identity": "mast:JWST/product/jw06049-o001_t001_miri_f1130w_i2d.fits",
+      "obs_id": "jw06049-o001_t001_miri_f1130w",
+      "observation_texture_key": "JWST:MIRI/IMAGE:jw06049-o001_t001_miri"
+    },
+    {
+      "filter_variation_key": "F1280W",
+      "identity": "mast:JWST/product/jw02666-o007_t004_miri_f1280w_i2d.fits",
+      "obs_id": "jw02666-o007_t004_miri_f1280w",
+      "observation_texture_key": "JWST:MIRI/IMAGE:jw02666-o007_t004_miri"
+    },
+    {
+      "filter_variation_key": "F1280W",
+      "identity": "mast:JWST/product/jw06049-o001_t001_miri_f1280w_i2d.fits",
+      "obs_id": "jw06049-o001_t001_miri_f1280w",
+      "observation_texture_key": "JWST:MIRI/IMAGE:jw06049-o001_t001_miri"
+    },
+    {
+      "filter_variation_key": "F1500W",
+      "identity": "mast:JWST/product/jw02666-o007_t004_miri_f1500w_i2d.fits",
+      "obs_id": "jw02666-o007_t004_miri_f1500w",
+      "observation_texture_key": "JWST:MIRI/IMAGE:jw02666-o007_t004_miri"
+    },
+    {
+      "filter_variation_key": "F1500W",
+      "identity": "mast:JWST/product/jw06049-o001_t001_miri_f1500w_i2d.fits",
+      "obs_id": "jw06049-o001_t001_miri_f1500w",
+      "observation_texture_key": "JWST:MIRI/IMAGE:jw06049-o001_t001_miri"
+    },
+    {
+      "filter_variation_key": "F1800W",
+      "identity": "mast:JWST/product/jw02666-o007_t004_miri_f1800w_i2d.fits",
+      "obs_id": "jw02666-o007_t004_miri_f1800w",
+      "observation_texture_key": "JWST:MIRI/IMAGE:jw02666-o007_t004_miri"
+    },
+    {
+      "filter_variation_key": "F1800W",
+      "identity": "mast:JWST/product/jw06049-o001_t001_miri_f1800w_i2d.fits",
+      "obs_id": "jw06049-o001_t001_miri_f1800w",
+      "observation_texture_key": "JWST:MIRI/IMAGE:jw06049-o001_t001_miri"
+    },
+    {
+      "filter_variation_key": "F2100W",
+      "identity": "mast:JWST/product/jw02666-o007_t004_miri_f2100w_i2d.fits",
+      "obs_id": "jw02666-o007_t004_miri_f2100w",
+      "observation_texture_key": "JWST:MIRI/IMAGE:jw02666-o007_t004_miri"
+    },
+    {
+      "filter_variation_key": "F2100W",
+      "identity": "mast:JWST/product/jw06049-o001_t001_miri_f2100w_i2d.fits",
+      "obs_id": "jw06049-o001_t001_miri_f2100w",
+      "observation_texture_key": "JWST:MIRI/IMAGE:jw06049-o001_t001_miri"
+    },
+    {
+      "filter_variation_key": "F2550W",
+      "identity": "mast:JWST/product/jw02666-o007_t004_miri_f2550w_i2d.fits",
+      "obs_id": "jw02666-o007_t004_miri_f2550w",
+      "observation_texture_key": "JWST:MIRI/IMAGE:jw02666-o007_t004_miri"
+    }
+  ],
+  "texture_model": {
+    "astronomical_pixels_used": false,
+    "base_structure_seed": "observation_group_id; obs_id fallback",
+    "combined_colour_rule": "clip(sum of contributing filter RGB channels)",
+    "deterministic": true,
+    "filter_variation_seed": "observation key plus sorted filter names",
+    "individual_colour_rule": "output RGB = luminance times filter RGB",
+    "layers": [
+      "dark tinted field",
+      "broad faint emission",
+      "mid-scale glow",
+      "stellar points and halos",
+      "limited dust",
+      "small filter-specific emission",
+      "additive multi-filter highlights (combined view only)"
+    ]
+  }
+}

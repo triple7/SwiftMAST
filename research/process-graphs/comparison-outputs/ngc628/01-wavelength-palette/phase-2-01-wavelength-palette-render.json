@@ -1,0 +1,155 @@
+{
+  "color_by": "filter",
+  "legend": {
+    "F275W": "#0072B2",
+    "F435W": "#0072B2",
+    "F555W": "#009E73",
+    "F814W": "#D55E00"
+  },
+  "path": "/Users/dayo/projects/SwiftMAST/research/process-graphs/comparison-outputs/ngc628/01-wavelength-palette/phase-2-01-wavelength-palette-footprints.png",
+  "product_textures": [
+    {
+      "filter_variation_key": "F435W",
+      "identity": "mast:HST/product/hst_11675_02_acs_wfc_f435w_jb4t02_drz.fits",
+      "obs_id": "hst_11675_02_acs_wfc_f435w_jb4t02",
+      "observation_texture_key": "HST:ACS/WFC:hst_11675_02_acs_wfc"
+    },
+    {
+      "filter_variation_key": "F555W",
+      "identity": "mast:HST/product/hst_11675_02_acs_wfc_f555w_jb4t02_drz.fits",
+      "obs_id": "hst_11675_02_acs_wfc_f555w_jb4t02",
+      "observation_texture_key": "HST:ACS/WFC:hst_11675_02_acs_wfc"
+    },
+    {
+      "filter_variation_key": "F814W",
+      "identity": "mast:HST/product/hst_11675_02_acs_wfc_f814w_jb4t02_drz.fits",
+      "obs_id": "hst_11675_02_acs_wfc_f814w_jb4t02",
+      "observation_texture_key": "HST:ACS/WFC:hst_11675_02_acs_wfc"
+    },
+    {
+      "filter_variation_key": "F435W",
+      "identity": "mast:HST/product/hst_9733_01_acs_hrc_f435w_j8nv01_drz.fits",
+      "obs_id": "hst_9733_01_acs_hrc_f435w_j8nv01",
+      "observation_texture_key": "HST:ACS/HRC:hst_9733_01_acs_hrc"
+    },
+    {
+      "filter_variation_key": "F555W",
+      "identity": "mast:HST/product/hst_9733_01_acs_hrc_f555w_j8nv01_drz.fits",
+      "obs_id": "hst_9733_01_acs_hrc_f555w_j8nv01",
+      "observation_texture_key": "HST:ACS/HRC:hst_9733_01_acs_hrc"
+    },
+    {
+      "filter_variation_key": "F814W",
+      "identity": "mast:HST/product/hst_9733_01_acs_hrc_f814w_j8nv01_drz.fits",
+      "obs_id": "hst_9733_01_acs_hrc_f814w_j8nv01",
+      "observation_texture_key": "HST:ACS/HRC:hst_9733_01_acs_hrc"
+    },
+    {
+      "filter_variation_key": "F435W",
+      "identity": "https://hla.stsci.edu/cgi-bin/getdata.cgi?dataset=hst_9733_01_acs_hrc_f435w_drz.fits",
+      "obs_id": "hst_9733_01_acs_hrc_f435w",
+      "observation_texture_key": "HLA:ACS/HRC:hst_9733_01_acs_hrc"
+    },
+    {
+      "filter_variation_key": "F555W",
+      "identity": "https://hla.stsci.edu/cgi-bin/getdata.cgi?dataset=hst_9733_01_acs_hrc_f555w_drz.fits",
+      "obs_id": "hst_9733_01_acs_hrc_f555w",
+      "observation_texture_key": "HLA:ACS/HRC:hst_9733_01_acs_hrc"
+    },
+    {
+      "filter_variation_key": "F814W",
+      "identity": "https://hla.stsci.edu/cgi-bin/getdata.cgi?dataset=hst_9733_01_acs_hrc_f814w_drz.fits",
+      "obs_id": "hst_9733_01_acs_hrc_f814w",
+      "observation_texture_key": "HLA:ACS/HRC:hst_9733_01_acs_hrc"
+    },
+    {
+      "filter_variation_key": "F435W",
+      "identity": "mast:HST/product/hst_9796_04_acs_wfc_f435w_j8ol04_drc.fits",
+      "obs_id": "hst_9796_04_acs_wfc_f435w_j8ol04",
+      "observation_texture_key": "HST:ACS/WFC:hst_9796_04_acs_wfc"
+    },
+    {
+      "filter_variation_key": "F555W",
+      "identity": "mast:HST/product/hst_9796_04_acs_wfc_f555w_j8ol04_drc.fits",
+      "obs_id": "hst_9796_04_acs_wfc_f555w_j8ol04",
+      "observation_texture_key": "HST:ACS/WFC:hst_9796_04_acs_wfc"
+    },
+    {
+      "filter_variation_key": "F814W",
+      "identity": "mast:HST/product/hst_9796_04_acs_wfc_f814w_j8ol04_drc.fits",
+      "obs_id": "hst_9796_04_acs_wfc_f814w_j8ol04",
+      "observation_texture_key": "HST:ACS/WFC:hst_9796_04_acs_wfc"
+    },
+    {
+      "filter_variation_key": "F275W",
+      "identity": "mast:HST/product/hst_14116_01_wfc3_uvis_f275w_icw701_drc.fits",
+      "obs_id": "hst_14116_01_wfc3_uvis_f275w_icw701",
+      "observation_texture_key": "HST:WFC3/UVIS:hst_14116_01_wfc3_uvis"
+    },
+    {
+      "filter_variation_key": "F555W",
+      "identity": "mast:HST/product/hst_14116_01_wfc3_uvis_f555w_icw701_drc.fits",
+      "obs_id": "hst_14116_01_wfc3_uvis_f555w_icw701",
+      "observation_texture_key": "HST:WFC3/UVIS:hst_14116_01_wfc3_uvis"
+    },
+    {
+      "filter_variation_key": "F814W",
+      "identity": "mast:HST/product/hst_14116_01_wfc3_uvis_f814w_icw701_drc.fits",
+      "obs_id": "hst_14116_01_wfc3_uvis_f814w_icw701",
+      "observation_texture_key": "HST:WFC3/UVIS:hst_14116_01_wfc3_uvis"
+    },
+    {
+      "filter_variation_key": "F275W",
+      "identity": "https://hla.stsci.edu/cgi-bin/getdata.cgi?dataset=hst_14116_01_wfc3_uvis_f275w_drz.fits",
+      "obs_id": "hst_14116_01_wfc3_uvis_f275w",
+      "observation_texture_key": "HLA:WFC3/UVIS:hst_14116_01_wfc3_uvis"
+    },
+    {
+      "filter_variation_key": "F555W",
+      "identity": "https://hla.stsci.edu/cgi-bin/getdata.cgi?dataset=hst_14116_01_wfc3_uvis_f555w_drz.fits",
+      "obs_id": "hst_14116_01_wfc3_uvis_f555w",
+      "observation_texture_key": "HLA:WFC3/UVIS:hst_14116_01_wfc3_uvis"
+    },
+    {
+      "filter_variation_key": "F814W",
+      "identity": "https://hla.stsci.edu/cgi-bin/getdata.cgi?dataset=hst_14116_01_wfc3_uvis_f814w_drz.fits",
+      "obs_id": "hst_14116_01_wfc3_uvis_f814w",
+      "observation_texture_key": "HLA:WFC3/UVIS:hst_14116_01_wfc3_uvis"
+    },
+    {
+      "filter_variation_key": "F275W",
+      "identity": "mast:HST/product/hst_17932_09_wfc3_uvis_f275w_ifkj09_drc.fits",
+      "obs_id": "hst_17932_09_wfc3_uvis_f275w_ifkj09",
+      "observation_texture_key": "HST:WFC3/UVIS:hst_17932_09_wfc3_uvis"
+    },
+    {
+      "filter_variation_key": "F555W",
+      "identity": "mast:HST/product/hst_17932_09_wfc3_uvis_f555w_ifkj09_drc.fits",
+      "obs_id": "hst_17932_09_wfc3_uvis_f555w_ifkj09",
+      "observation_texture_key": "HST:WFC3/UVIS:hst_17932_09_wfc3_uvis"
+    },
+    {
+      "filter_variation_key": "F814W",
+      "identity": "mast:HST/product/hst_17932_09_wfc3_uvis_f814w_ifkj09_drc.fits",
+      "obs_id": "hst_17932_09_wfc3_uvis_f814w_ifkj09",
+      "observation_texture_key": "HST:WFC3/UVIS:hst_17932_09_wfc3_uvis"
+    }
+  ],
+  "texture_model": {
+    "astronomical_pixels_used": false,
+    "base_structure_seed": "observation_group_id; obs_id fallback",
+    "combined_colour_rule": "clip(sum of contributing filter RGB channels)",
+    "deterministic": true,
+    "filter_variation_seed": "observation key plus sorted filter names",
+    "individual_colour_rule": "output RGB = luminance times filter RGB",
+    "layers": [
+      "dark tinted field",
+      "broad faint emission",
+      "mid-scale glow",
+      "stellar points and halos",
+      "limited dust",
+      "small filter-specific emission",
+      "additive multi-filter highlights (combined view only)"
+    ]
+  }
+}

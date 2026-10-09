@@ -1,0 +1,327 @@
+{
+  "algorithms": [
+    {
+      "algorithm": "01-wavelength-palette",
+      "description": "Wavelength RGB policy and complete-group purchase",
+      "image": "/Users/dayo/projects/SwiftMAST/research/process-graphs/comparison-outputs/ngc628/01-wavelength-palette/phase-2-01-wavelength-palette-footprints.png",
+      "implementation_note": null,
+      "selection": "/Users/dayo/projects/SwiftMAST/research/process-graphs/comparison-outputs/ngc628/01-wavelength-palette/phase-2-01-wavelength-palette-selection.json",
+      "summary": {
+        "coverage_fraction": 0.5133037694013304,
+        "coverage_percentage": 51.3304,
+        "selected_filter_count": 4,
+        "selected_filters": [
+          "F275W",
+          "F435W",
+          "F555W",
+          "F814W"
+        ],
+        "selected_group_count": 7,
+        "selected_product_count": 21,
+        "selected_size_bytes": 1955926080,
+        "selected_size_mib": 1865.316467
+      }
+    },
+    {
+      "algorithm": "02-greedy-group-rank",
+      "description": "Whole groups ranked by distinct filters per exact MiB",
+      "image": "/Users/dayo/projects/SwiftMAST/research/process-graphs/comparison-outputs/ngc628/02-greedy-group-rank/phase-2-02-greedy-group-rank-footprints.png",
+      "implementation_note": null,
+      "selection": "/Users/dayo/projects/SwiftMAST/research/process-graphs/comparison-outputs/ngc628/02-greedy-group-rank/phase-2-02-greedy-group-rank-selection.json",
+      "summary": {
+        "coverage_fraction": 0.2710643015521064,
+        "coverage_percentage": 27.1064,
+        "selected_filter_count": 17,
+        "selected_filters": [
+          "F1000W",
+          "F110W",
+          "F1130W",
+          "F1280W",
+          "F1500W",
+          "F160W",
+          "F1800W",
+          "F205W",
+          "F2100W",
+          "F2550W",
+          "F275W",
+          "F336W",
+          "F435W",
+          "F438W",
+          "F555W",
+          "F560W",
+          "F814W"
+        ],
+        "selected_group_count": 9,
+        "selected_product_count": 39,
+        "selected_size_bytes": 1302134400,
+        "selected_size_mib": 1241.812134
+      }
+    },
+    {
+      "algorithm": "03-rgb-triple-vote",
+      "description": "Globally supported three-filter RGB composition",
+      "image": "/Users/dayo/projects/SwiftMAST/research/process-graphs/comparison-outputs/ngc628/03-rgb-triple-vote/phase-2-03-rgb-triple-vote-footprints.png",
+      "implementation_note": null,
+      "selection": "/Users/dayo/projects/SwiftMAST/research/process-graphs/comparison-outputs/ngc628/03-rgb-triple-vote/phase-2-03-rgb-triple-vote-selection.json",
+      "summary": {
+        "coverage_fraction": 0.31596452328159647,
+        "coverage_percentage": 31.5965,
+        "selected_filter_count": 3,
+        "selected_filters": [
+          "F435W",
+          "F555W",
+          "F814W"
+        ],
+        "selected_group_count": 4,
+        "selected_product_count": 12,
+        "selected_size_bytes": 1117319040,
+        "selected_size_mib": 1065.558472
+      }
+    },
+    {
+      "algorithm": "04-degree-coloring",
+      "description": "Group-rank selection with conflict-graph display colours",
+      "image": "/Users/dayo/projects/SwiftMAST/research/process-graphs/comparison-outputs/ngc628/04-degree-coloring/phase-2-04-degree-coloring-footprints.png",
+      "implementation_note": "The source diagram assigns colours but does not select products; the comparison uses option 02's selected products before colouring.",
+      "selection": "/Users/dayo/projects/SwiftMAST/research/process-graphs/comparison-outputs/ngc628/04-degree-coloring/phase-2-04-degree-coloring-selection.json",
+      "summary": {
+        "coverage_fraction": 0.2710643015521064,
+        "coverage_percentage": 27.1064,
+        "selected_filter_count": 17,
+        "selected_filters": [
+          "F1000W",
+          "F110W",
+          "F1130W",
+          "F1280W",
+          "F1500W",
+          "F160W",
+          "F1800W",
+          "F205W",
+          "F2100W",
+          "F2550W",
+          "F275W",
+          "F336W",
+          "F435W",
+          "F438W",
+          "F555W",
+          "F560W",
+          "F814W"
+        ],
+        "selected_group_count": 9,
+        "selected_product_count": 39,
+        "selected_size_bytes": 1302134400,
+        "selected_size_mib": 1241.812134
+      }
+    },
+    {
+      "algorithm": "05-wavelength-bins",
+      "description": "Multi-bin spectral diversity per exact byte",
+      "image": "/Users/dayo/projects/SwiftMAST/research/process-graphs/comparison-outputs/ngc628/05-wavelength-bins/phase-2-05-wavelength-bins-footprints.png",
+      "implementation_note": null,
+      "selection": "/Users/dayo/projects/SwiftMAST/research/process-graphs/comparison-outputs/ngc628/05-wavelength-bins/phase-2-05-wavelength-bins-selection.json",
+      "summary": {
+        "coverage_fraction": 0.23447893569844788,
+        "coverage_percentage": 23.4479,
+        "selected_filter_count": 5,
+        "selected_filters": [
+          "F275W",
+          "F336W",
+          "F435W",
+          "F555W",
+          "F814W"
+        ],
+        "selected_group_count": 6,
+        "selected_product_count": 21,
+        "selected_size_bytes": 1332207360,
+        "selected_size_mib": 1270.491943
+      }
+    },
+    {
+      "algorithm": "06-file-knapsack",
+      "description": "Individual products ranked by marginal channel value",
+      "image": "/Users/dayo/projects/SwiftMAST/research/process-graphs/comparison-outputs/ngc628/06-file-knapsack/phase-2-06-file-knapsack-footprints.png",
+      "implementation_note": null,
+      "selection": "/Users/dayo/projects/SwiftMAST/research/process-graphs/comparison-outputs/ngc628/06-file-knapsack/phase-2-06-file-knapsack-selection.json",
+      "summary": {
+        "coverage_fraction": 0.6635254988913526,
+        "coverage_percentage": 66.3525,
+        "selected_filter_count": 12,
+        "selected_filters": [
+          "F1000W",
+          "F110W",
+          "F1130W",
+          "F160W",
+          "F205W",
+          "F2550W",
+          "F275W",
+          "F300M",
+          "F336W",
+          "F435W",
+          "F555W",
+          "F814W"
+        ],
+        "selected_group_count": 13,
+        "selected_product_count": 29,
+        "selected_size_bytes": 2017820160,
+        "selected_size_mib": 1924.343262
+      }
+    },
+    {
+      "algorithm": "07-lp-relaxation",
+      "description": "Fractional value/byte relaxation followed by feasible rounding",
+      "image": "/Users/dayo/projects/SwiftMAST/research/process-graphs/comparison-outputs/ngc628/07-lp-relaxation/phase-2-07-lp-relaxation-footprints.png",
+      "implementation_note": "The comparison solves the documented fractional value/byte budget relaxation and applies deterministic feasible rounding; it omits full link-variable channels.",
+      "selection": "/Users/dayo/projects/SwiftMAST/research/process-graphs/comparison-outputs/ngc628/07-lp-relaxation/phase-2-07-lp-relaxation-selection.json",
+      "summary": {
+        "coverage_fraction": 0.573170731707317,
+        "coverage_percentage": 57.3171,
+        "selected_filter_count": 16,
+        "selected_filters": [
+          "F1000W",
+          "F110W",
+          "F1130W",
+          "F1280W",
+          "F1500W",
+          "F160W",
+          "F1800W",
+          "F205W",
+          "F2100W",
+          "F275W",
+          "F336W",
+          "F435W",
+          "F438W",
+          "F555W",
+          "F560W",
+          "F814W"
+        ],
+        "selected_group_count": 10,
+        "selected_product_count": 40,
+        "selected_size_bytes": 1500978240,
+        "selected_size_mib": 1431.444397
+      }
+    },
+    {
+      "algorithm": "08-integer-linear-program",
+      "description": "Binary group-opening model solved with SciPy MILP",
+      "image": "/Users/dayo/projects/SwiftMAST/research/process-graphs/comparison-outputs/ngc628/08-integer-linear-program/phase-2-08-integer-linear-program-footprints.png",
+      "implementation_note": "SciPy MILP implements binary product inclusion, group opening, product count, and byte budget; display channels are assigned after selection.",
+      "selection": "/Users/dayo/projects/SwiftMAST/research/process-graphs/comparison-outputs/ngc628/08-integer-linear-program/phase-2-08-integer-linear-program-selection.json",
+      "summary": {
+        "coverage_fraction": 0.573170731707317,
+        "coverage_percentage": 57.3171,
+        "selected_filter_count": 18,
+        "selected_filters": [
+          "F1000W",
+          "F110W",
+          "F1130W",
+          "F1280W",
+          "F1500W",
+          "F160W",
+          "F1800W",
+          "F205W",
+          "F2100W",
+          "F2550W",
+          "F275W",
+          "F336W",
+          "F435W",
+          "F438W",
+          "F555W",
+          "F560W",
+          "F770W",
+          "F814W"
+        ],
+        "selected_group_count": 10,
+        "selected_product_count": 40,
+        "selected_size_bytes": 1874842560,
+        "selected_size_mib": 1787.989197
+      }
+    },
+    {
+      "algorithm": "09-constraint-program",
+      "description": "Binary selection with common-filter primary-colour gate",
+      "image": "/Users/dayo/projects/SwiftMAST/research/process-graphs/comparison-outputs/ngc628/09-constraint-program/phase-2-09-constraint-program-footprints.png",
+      "implementation_note": "Uses option 08's binary selection and applies the common-filter primary-colour gate deterministically because OR-Tools is not installed.",
+      "selection": "/Users/dayo/projects/SwiftMAST/research/process-graphs/comparison-outputs/ngc628/09-constraint-program/phase-2-09-constraint-program-selection.json",
+      "summary": {
+        "coverage_fraction": 0.573170731707317,
+        "coverage_percentage": 57.3171,
+        "selected_filter_count": 18,
+        "selected_filters": [
+          "F1000W",
+          "F110W",
+          "F1130W",
+          "F1280W",
+          "F1500W",
+          "F160W",
+          "F1800W",
+          "F205W",
+          "F2100W",
+          "F2550W",
+          "F275W",
+          "F336W",
+          "F435W",
+          "F438W",
+          "F555W",
+          "F560W",
+          "F770W",
+          "F814W"
+        ],
+        "selected_group_count": 10,
+        "selected_product_count": 40,
+        "selected_size_bytes": 1874842560,
+        "selected_size_mib": 1787.989197
+      }
+    },
+    {
+      "algorithm": "10-footprint-search",
+      "description": "Iterative marginal footprint and filter coverage search",
+      "image": "/Users/dayo/projects/SwiftMAST/research/process-graphs/comparison-outputs/ngc628/10-footprint-search/phase-2-10-footprint-search-footprints.png",
+      "implementation_note": "Uses deterministic marginal footprint/filter search for reproducible comparison; the stochastic annealing/population variants remain future refinements.",
+      "selection": "/Users/dayo/projects/SwiftMAST/research/process-graphs/comparison-outputs/ngc628/10-footprint-search/phase-2-10-footprint-search-selection.json",
+      "summary": {
+        "coverage_fraction": 0.6696230598669624,
+        "coverage_percentage": 66.9623,
+        "selected_filter_count": 21,
+        "selected_filters": [
+          "F1000W",
+          "F110W",
+          "F1130W",
+          "F1280W",
+          "F1500W",
+          "F160W",
+          "F1800W",
+          "F205W",
+          "F2100W",
+          "F2550W",
+          "F275W",
+          "F300M",
+          "F335M",
+          "F336W",
+          "F360M",
+          "F435W",
+          "F438W",
+          "F555W",
+          "F560W",
+          "F770W",
+          "F814W"
+        ],
+        "selected_group_count": 11,
+        "selected_product_count": 25,
+        "selected_size_bytes": 2080316160,
+        "selected_size_mib": 1983.944092
+      }
+    }
+  ],
+  "artifact": "process-graphs-phase-2-algorithm-comparison",
+  "gallery": "/Users/dayo/projects/SwiftMAST/research/process-graphs/comparison-outputs/ngc628/algorithm-comparison-gallery.png",
+  "options": {
+    "dpi": 120,
+    "grid_dimension": 48,
+    "max_file_mib": 300.0,
+    "max_products": 40,
+    "max_total_mib": 2000.0,
+    "texture_density": 10
+  },
+  "source": "/Users/dayo/projects/SwiftMAST/research/pipeline-runs/ngc628/phase-1-qualified.json",
+  "target": "NGC 628"
+}
