@@ -7,19 +7,19 @@
 
 import Foundation
 
+private enum DownloadOperationState: Int {
+    case ready
+    case executing
+    case finished
+}
+
 
 class MASTDownloadOperation : Operation, @unchecked Sendable {
     
     private var task : URLSessionDataTask!
     
-    enum OperationState : Int {
-        case ready
-        case executing
-        case finished
-    }
-    
     // default state is ready (when the operation is created)
-    private var state : OperationState = .ready {
+    private var state : DownloadOperationState = .ready {
         willSet {
             self.willChangeValue(forKey: "isExecuting")
             self.willChangeValue(forKey: "isFinished")
@@ -91,14 +91,8 @@ class MASTDirectDownloadOperation : Operation, @unchecked Sendable {
     
     private var task : URLSessionDownloadTask!
     
-    enum OperationState : Int {
-        case ready
-        case executing
-        case finished
-    }
-    
     // default state is ready (when the operation is created)
-    private var state : OperationState = .ready {
+    private var state : DownloadOperationState = .ready {
         willSet {
             self.willChangeValue(forKey: "isExecuting")
             self.willChangeValue(forKey: "isFinished")

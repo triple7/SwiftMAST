@@ -539,12 +539,8 @@ extension SwiftMAST {
     }
 }
 
-private struct GreedyObservationGroupID: Hashable {
-    let mission: String
-    let instrument: String
-    let observationKey: String
-
-    var sortKey: String {
+private extension GroupIdentity {
+    var greedySortKey: String {
         [mission, instrument, observationKey].joined(separator: "\u{1f}")
     }
 }
@@ -552,7 +548,7 @@ private struct GreedyObservationGroupID: Hashable {
 /// A filter is considered new within one observation group, not globally.
 /// This lets the same useful filter compete independently in separate visits.
 private struct GreedyObservationGroupFilterID: Hashable {
-    let groupID: GreedyObservationGroupID
+    let groupID: GroupIdentity
     let filter: String
 }
 
@@ -593,11 +589,11 @@ private final class GreedyScienceProductCandidateState {
         self.unseenFilterCount = filters.count
     }
 
-    var groupID: GreedyObservationGroupID {
-        GreedyObservationGroupID(
+    var groupID: GroupIdentity {
+        GroupIdentity(
             mission: missionBranch,
-            instrument: instrumentBranch,
-            observationKey: observationKey
+            observationKey: observationKey,
+            instrument: instrumentBranch
         )
     }
 }
@@ -622,18 +618,18 @@ private struct GreedyCandidateHeapEntry {
 
 private struct GreedyRootHeapEntry {
     let candidate: GreedyCandidateHeapEntry
-    let groupID: GreedyObservationGroupID
+    let groupID: GroupIdentity
     let groupVersion: Int
 }
 
 private final class GreedyObservationGroupQueue {
-    let id: GreedyObservationGroupID
+    let id: GroupIdentity
     var version = 0
     var candidateHeap = GreedyBinaryHeap<GreedyCandidateHeapEntry>(
         sort: greedyCandidateEntryRanksBefore
     )
 
-    init(id: GreedyObservationGroupID) {
+    init(id: GroupIdentity) {
         self.id = id
     }
 }
@@ -700,7 +696,7 @@ private final class GreedyHierarchicalScienceProductSelector {
     private let grid: GreedyCoverageGrid
     private let options: GreedyScienceProductSelectionOptions
     private var candidatesByIdentity: [String: GreedyScienceProductCandidateState] = [:]
-    private var groups: [GreedyObservationGroupID: GreedyObservationGroupQueue] = [:]
+    private var groups: [GroupIdentity: GreedyObservationGroupQueue] = [:]
     private var candidatesByCell: [Int: Set<String>] = [:]
     private var candidatesByFilter: [GreedyObservationGroupFilterID: Set<String>] = [:]
     private var rootHeap = GreedyBinaryHeap<GreedyRootHeapEntry>(
@@ -752,7 +748,7 @@ private final class GreedyHierarchicalScienceProductSelector {
         let minimumFilters = max(options.minimumDistinctFilters, 0)
         var selectedCandidates: [GreedyScienceProductCandidateState] = []
         var selectedCells = Set<Int>()
-        var selectedFiltersByGroup: [GreedyObservationGroupID: Set<String>] = [:]
+        var selectedFiltersByGroup: [GroupIdentity: Set<String>] = [:]
         // Keep the global union for reporting and the overall minimum-filter
         // goal. Candidate novelty is calculated from the group-local set.
         var selectedFilters = Set<String>()
@@ -946,7 +942,7 @@ private final class GreedyHierarchicalScienceProductSelector {
             }
         }
 
-        var affectedGroups: Set<GreedyObservationGroupID> = [selected.groupID]
+        var affectedGroups: Set<GroupIdentity> = [selected.groupID]
         for identity in affected {
             guard let candidate = candidatesByIdentity[identity],
                   let group = groups[candidate.groupID]
@@ -1067,5 +1063,5 @@ private func greedyRootEntryRanksBefore(
 ) -> Bool {
     if greedyCandidateEntryRanksBefore(lhs.candidate, rhs.candidate) { return true }
     if greedyCandidateEntryRanksBefore(rhs.candidate, lhs.candidate) { return false }
-    return lhs.groupID.sortKey < rhs.groupID.sortKey
+    return lhs.groupID.greedySortKey < rhs.groupID.greedySortKey
 }
